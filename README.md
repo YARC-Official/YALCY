@@ -12,7 +12,7 @@ YALCY is YARG's offical light controller for real world lighting effects. It cur
 |DMX output over ethernet via sACN| Working!|
 |Phillips hue entertainment api| Working!|
 |RB3E datastream, partial, just the lighting data|Working!|
-|OpenRGB| NOT YET IMPLEMENTE|
+|OpenRGB| NOT YET IMPLEMENTED|
 
 ## Running
 Download the release for your operating system.
