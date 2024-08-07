@@ -14,14 +14,14 @@ YALCY is YARG's offical light controller for real world lighting effects. It cur
 |RB3E datastream, partial, just the lighting data|Working!|
 |OpenRGB| NOT YET IMPLEMENTED|
 
-## Running
+## 📥 Downloading and Playing
 
 Download the release for your operating system.
 Run it, can be minimized.
-Run YARG.
+Run YARG (a versison that outputs the datasstream).
 Rock on.
 
-## Building
+## 🔨 Building
 
 Git clone the repo.
 Build in IDE of choice.
