@@ -6,11 +6,13 @@ Help test YALCY!
 
 ## Summary
 YALCY is YARG's offical light controller for real world lighting effects. It currently supports:
-Stage Kit and compatible hardware such as FatsCo devices.
-DMX output over ethernet via sACN.
-Phillips hue entertainment api.
-RB3E datastream, partial, just the lighting data.
-OpenRGB is NOT YET IMPLEMENTED.
+|Protocol|Status|
+| --- | --- |
+|Stage Kit and compatible hardware such as FatsCo devices| Working!|
+|DMX output over ethernet via sACN| Working!|
+|Phillips hue entertainment api| Working!|
+|RB3E datastream, partial, just the lighting data|Working!|
+|OpenRGB| NOT YET IMPLEMENTE|
 
 ## Running
 Download the release for your operating system.
