@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Folder Include="Models\" />
+        <AvaloniaResource Include="Assets\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="11.1.1" />
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.1.1" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.1.1" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.1" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.1" />
+        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.1" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.1" />
+        <PackageReference Include="Device.Net" Version="4.3.0-beta" />
+        <PackageReference Include="Haukcode.sACN" Version="2.0.19" />
+        <PackageReference Include="HidSharp" Version="2.1.0" />
+        <PackageReference Include="HueApi" Version="1.6.3" />
+        <PackageReference Include="HueApi.ColorConverters" Version="1.5.1" />
+        <PackageReference Include="HueApi.Entertainment" Version="1.5.1" />
+        <PackageReference Include="LibUsbDotNet" Version="3.0.102-alpha" />
+        <PackageReference Include="Nefarius.Utilities.DeviceManagement" Version="3.22.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="OpenRGB.NET" Version="3.1.1" />
+        <PackageReference Include="SimpleUdp" Version="2.0.2" />
+        <PackageReference Include="System.Management" Version="9.0.0-preview.6.24327.7" />
+        <PackageReference Include="Usb.Net" Version="4.3.0-beta" />
+    </ItemGroup>
+</Project>
