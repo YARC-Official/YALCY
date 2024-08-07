@@ -15,14 +15,24 @@ YALCY is YARG's offical light controller for real world lighting effects. It cur
 |OpenRGB| NOT YET IMPLEMENTED|
 
 ## Running
+
 Download the release for your operating system.
 Run it, can be minimized.
 Run YARG.
 Rock on.
 
 ## Building
+
 Git clone the repo.
 Build in IDE of choice.
+
+## 🛡️ License
+
+YALCY is licensed under the [GNU Lesser General Public License v3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html) (or later) - see the [`LICENSE`](LICENSE) file for details.
+
+## 🧰 External Licenses
+
+Some libraries/assets are **packaged** with the source code have licenses that must be included.
 
 | Link | License | Use |
 | --- | --- | --- |
