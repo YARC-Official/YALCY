@@ -100,7 +100,7 @@ public class StageKitTalker
             UdpIntake.StrobeSpeedByte.Fastest => CommandId.StrobeFastest,
             _ => CommandId.StrobeOff
         };
-        USBDeviceMonitor.SendReport(strobeSetting, 0x00);
+        UsbDeviceMonitor.SendReport(strobeSetting, 0x00);
     }
 
     private static void FogChange(UdpIntake.FogStateByte activeFogState)
@@ -111,7 +111,7 @@ public class StageKitTalker
             UdpIntake.FogStateByte.On => CommandId.FogOn,
             _ => CommandId.FogOff
         };
-        USBDeviceMonitor.SendReport(fogSetting, 0x00);
+        UsbDeviceMonitor.SendReport(fogSetting, 0x00);
     }
 
     public void EnableStageKitTalker(bool isEnabled)

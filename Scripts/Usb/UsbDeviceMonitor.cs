@@ -6,7 +6,7 @@ using HidSharp;
 using YALCY;
 using YALCY.ViewModels;
 
-public class USBDeviceMonitor
+public class UsbDeviceMonitor
 {
 
     private static List<HidDevice> _connectedDevices = new ();

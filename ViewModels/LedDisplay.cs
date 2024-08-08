@@ -13,7 +13,8 @@ namespace YALCY.ViewModels
         private bool[] _ledStates;
 
         public static readonly StyledProperty<int> ColorProperty = AvaloniaProperty.Register<LedDisplay, int>(nameof(Color));
-        Point[] BlueledPositions = new Point[]
+
+        private readonly Point[] _blueLedPositions = new Point[]
         {
             new Point(-34, -101),   // LED 0
             new Point(-4, -66), // LED 1
@@ -25,7 +26,7 @@ namespace YALCY.ViewModels
             new Point(-64, -66),  // LED 7
         };
 
-        private Point[] GreenledPositions = new Point[]
+        private readonly Point[] _greenLedPositions = new Point[]
         {
             new Point(0, -122), // LED 0 (green)
             new Point(53, -68), // LED 1 (green)
@@ -36,7 +37,8 @@ namespace YALCY.ViewModels
             new Point(-122, -68), // LED 6 (green)
             new Point(-69, -122) // LED 7 (green)
         };
-        Point[] YellowledPositions = new Point[]
+
+        private readonly Point[] _yellowLedPositions = new Point[]
         {
             new Point(-34, -165), // LED 0 (yellow)
             new Point(58, -124), // LED 1 (yellow)
@@ -47,7 +49,8 @@ namespace YALCY.ViewModels
             new Point(-165, -35), // LED 6 (yellow)
             new Point(-124, -124) // LED 7 (yellow)
         };
-        Point[] RedledPositions = new Point[]
+
+        private readonly Point[] _redLedPositions = new Point[]
         {
             new Point(17, -157), // LED 0 (red)
             new Point(85, -87), // LED 1 (red)
@@ -67,7 +70,7 @@ namespace YALCY.ViewModels
         public LedDisplay()
         {
             LedStates = new bool[8];
-            USBDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
         }
 
         public int Color
@@ -93,40 +96,42 @@ namespace YALCY.ViewModels
             if (LedStates == null) return;
 
             // Determine the image source based on the color
-            Uri imageSource = null;
+            Uri? imageSource = null;
             Point[] ledPositions = null;
 
             switch (Color)
             {
                 case 0:
                     imageSource = new Uri("avares://YALCY/Assets/Stage Kit/BlueLed.png");
-                    ledPositions = BlueledPositions;
+                    ledPositions = _blueLedPositions;
                     break;
 
                 case 1:
                     imageSource = new Uri("avares://YALCY/Assets/Stage Kit/GreenLed.png");
-                    ledPositions = GreenledPositions;
+                    ledPositions = _greenLedPositions;
                     break;
 
                 case 2:
                     imageSource = new Uri("avares://YALCY/Assets/Stage Kit/YellowLed.png");
-                    ledPositions = YellowledPositions;
+                    ledPositions = _yellowLedPositions;
                     break;
 
                 case 3:
                     imageSource = new Uri("avares://YALCY/Assets/Stage Kit/RedLed.png");
-                    ledPositions = RedledPositions;
+                    ledPositions = _redLedPositions;
                     break;
             }
 
+            if (imageSource == null) return;
             var bitmap = new Bitmap(AssetLoader.Open(imageSource));
 
             // Draw each LED at the specified position if it is on
             for (int i = 0; i < LedStates.Length; i++)
             {
-                if (LedStates[i])
+                if (!LedStates[i]) continue;
+                if (ledPositions != null)
                 {
-                    context.DrawImage(bitmap,new Rect(ledPositions[i], new Size(bitmap.Size.Width, bitmap.Size.Height)));
+                    context.DrawImage(bitmap, new Rect(ledPositions[i], new Size(bitmap.Size.Width, bitmap.Size.Height)));
                 }
             }
         }

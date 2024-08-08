@@ -8,12 +8,11 @@ using YALCY.ViewModels;
 
 public class SettingsContainer
 {
-
-    public List<DataTypes.EnableSetting> CurrentEnableSettings { get; set; }
-    public List<DataTypes.DmxSingleSetting> CurrentSingleSettings { get; set; }
-    public List<DataTypes.DmxChannelSetting> CurrentChannelSettings { get; set; }
-    public DataTypes.DmxDimmerChannelSetting CurrentMasterDimmerChannelSettings { get; set; }
-    public DataTypes.DmxDimmerValueSetting CurrentMasterDimmerValueChannelSettings { get; set; }
+    public List<EnableSetting> CurrentEnableSettings { get; set; }
+    public List<DmxSingleSetting> CurrentSingleSettings { get; set; }
+    public List<DmxChannelSetting> CurrentChannelSettings { get; set; }
+    public DmxDimmerChannelSetting CurrentMasterDimmerChannelSettings { get; set; }
+    public DmxDimmerValueSetting CurrentMasterDimmerValueChannelSettings { get; set; }
     public RegisterEntertainmentResult HueAuthResult { get; set; }
     public string? HueBridgeIP { get; set; }
     public ushort UdpListenPort { get; set; }
@@ -73,11 +72,11 @@ internal static class SettingsManager
 
     private static SettingsContainer settings = new()
     {
-        CurrentEnableSettings = new List<DataTypes.EnableSetting>(),
-        CurrentChannelSettings = new List<DataTypes.DmxChannelSetting>(),
-        CurrentSingleSettings = new List<DataTypes.DmxSingleSetting>(),
-        CurrentMasterDimmerChannelSettings = new DataTypes.DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50),
-        CurrentMasterDimmerValueChannelSettings = new DataTypes.DmxDimmerValueSetting("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255),
+        CurrentEnableSettings = new List<EnableSetting>(),
+        CurrentChannelSettings = new List<DmxChannelSetting>(),
+        CurrentSingleSettings = new List<DmxSingleSetting>(),
+        CurrentMasterDimmerChannelSettings = new DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50),
+        CurrentMasterDimmerValueChannelSettings = new DmxDimmerValueSetting("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255),
         HueAuthResult = new RegisterEntertainmentResult(),
         HueBridgeIP = "",
         UdpListenPort = 0,

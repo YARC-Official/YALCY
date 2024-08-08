@@ -38,65 +38,12 @@
         <!-- LED Visualization Panel -->
         <Canvas Grid.Row="2" Grid.Column="1" Width="200" Height="200" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Grid>
-                <Image Source="/Assets/Stage Kit/LedBackground.png"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="None"/>
+                <Image Source="/Assets/Stage Kit/LedBackground.png" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="None"/>
                 <vm:LedDisplay Color="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <vm:LedDisplay Color="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <vm:LedDisplay Color="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <vm:LedDisplay Color="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <!--
 
-                <Image Source="/Assets/Stage Kit/LedBackground.png"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="None"/>
-
-                <Image Source="/Assets/Stage Kit/RedLeds.png"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="None">
-                    <Image.RenderTransform>
-                        <TransformGroup>
-                            <TranslateTransform X="-0.5" Y="-0.5"/>
-                        </TransformGroup>
-                    </Image.RenderTransform>
-                </Image>
-
-                <Image Source="/Assets/Stage Kit/BlueLeds.png"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="None">
-                    <Image.RenderTransform>
-                        <TransformGroup>
-                            <TranslateTransform X="-0.5" Y="-0.5"/>
-                        </TransformGroup>
-                    </Image.RenderTransform>
-                </Image>
-
-                <Image Source="/Assets/Stage Kit/GreenLeds.png"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="None">
-                    <Image.RenderTransform>
-                        <TransformGroup>
-                            <TranslateTransform X="-0.5" Y="-0.5"/>
-                        </TransformGroup>
-                    </Image.RenderTransform>
-                </Image>
-
-                <Image Source="/Assets/Stage Kit/YellowLeds.png"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="None">
-                    <Image.RenderTransform>
-                        <TransformGroup>
-                            <TranslateTransform X="-0.5" Y="-0.5"/>
-                        </TransformGroup>
-                    </Image.RenderTransform>
-                </Image>
-                -->
             </Grid>
         </Canvas>
     </Grid>
@@ -296,9 +243,20 @@
         </TabItem>
 
         <TabItem Header="openRGB">
-        <!-- Toggle Button -->
-        <ToggleButton ToolTip.Tip="{Binding  OpenRgbEnabledSetting.ToolTip}" Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}" IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}" Grid.Row="0" Grid.Column="0" Margin="5" Grid.ColumnSpan="2" />
-
+            <StackPanel Margin="5">
+                <!-- Enable Button -->
+                <ToggleButton ToolTip.Tip="{Binding  OpenRgbEnabledSetting.ToolTip}" Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}" IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}" Grid.Row="0" Grid.Column="0" Margin="5" Grid.ColumnSpan="2" />
+                <!-- Info -->
+                <TextBlock Text="Setup needed:"/>
+                <TextBlock Text="1) OpenRgb Server needs to be running!" Margin="5"/>
+                <!-- IP Address Input -->
+                <TextBlock Text="Enter OpenRGB Server IP" />
+                <TextBox Text="{Binding OpenRgbServerIp}" />
+                <TextBlock Text="OpenRgb Server Port:" Grid.Row="1" Grid.Column="0" Margin="5" VerticalAlignment="Center"/>
+                <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding OpenRgbServerPort, Mode=TwoWay}" Grid.Row="1" Grid.Column="0" Margin="5" HorizontalAlignment="Right" />
+                <!-- Status messsage -->
+                <TextBlock Text="{Binding OpenRgbStatus}"/>
+            </StackPanel>
         </TabItem>
     </TabControl>
 </Window>

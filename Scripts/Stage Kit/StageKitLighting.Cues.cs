@@ -50,7 +50,7 @@ namespace YALCY
     {
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(StageKitTalker.CommandId.DisableAll, None);
+            UsbDeviceMonitor.SendReport(StageKitTalker.CommandId.DisableAll, None);
         }
     }
 
@@ -91,10 +91,10 @@ namespace YALCY
             CuePrimitives.Add(new BeatPattern(PatternList2, 2f)); //?
             CuePrimitives.Add(new BeatPattern(PatternList3, 2f)); //?
             CuePrimitives.Add(new BeatPattern(PatternList4, 2f)); //?
-            USBDeviceMonitor.SendReport(Blue, All);
-            USBDeviceMonitor.SendReport(Red, All);
-            USBDeviceMonitor.SendReport(Yellow, All);
-            USBDeviceMonitor.SendReport(Green, All);
+            UsbDeviceMonitor.SendReport(Blue, All);
+            UsbDeviceMonitor.SendReport(Red, All);
+            UsbDeviceMonitor.SendReport(Yellow, All);
+            UsbDeviceMonitor.SendReport(Green, All);
 
             foreach (var primitive in CuePrimitives)
             {
@@ -127,8 +127,8 @@ namespace YALCY
 
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Green, None);
-            USBDeviceMonitor.SendReport(Blue, None);
+            UsbDeviceMonitor.SendReport(Green, None);
+            UsbDeviceMonitor.SendReport(Blue, None);
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
 
@@ -163,8 +163,8 @@ namespace YALCY
 
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Yellow, None);
-            USBDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Yellow, None);
+            UsbDeviceMonitor.SendReport(Red, None);
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
 
@@ -229,15 +229,15 @@ namespace YALCY
         {
             if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
             {
-                USBDeviceMonitor.SendReport(Blue, None);
-                USBDeviceMonitor.SendReport(Green, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Green, None);
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 1f/LargePatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(LargePatternList2, 1f/LargePatternList2.Length)); //set
             }
             else
             {
-                USBDeviceMonitor.SendReport(Red, None);
-                USBDeviceMonitor.SendReport(Yellow, None);
+                UsbDeviceMonitor.SendReport(Red, None);
+                UsbDeviceMonitor.SendReport(Yellow, None);
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 1f/SmallPatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 1f/SmallPatternList1.Length)); //set
             }
@@ -295,14 +295,14 @@ namespace YALCY
         {
             if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
             {
-                USBDeviceMonitor.SendReport(Yellow, None);
-                USBDeviceMonitor.SendReport(Blue, None);
-                USBDeviceMonitor.SendReport(Green, None);
+                UsbDeviceMonitor.SendReport(Yellow, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Green, None);
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 1f/LargePatternList1.Length)); //set
             }
             else
             {
-                USBDeviceMonitor.SendReport(Red, None);
+                UsbDeviceMonitor.SendReport(Red, None);
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 1f/SmallPatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 1f/SmallPatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList3, 1f/SmallPatternList3.Length)); //set
@@ -372,7 +372,7 @@ namespace YALCY
         {
             if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
             {
-                USBDeviceMonitor.SendReport(Green, None);
+                UsbDeviceMonitor.SendReport(Green, None);
                 // 4 times a beats to control on and off because of the 2 different patterns on one color
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 1f)); //set
                 CuePrimitives.Add(new BeatPattern(LargePatternList2, 1f)); //set
@@ -380,7 +380,7 @@ namespace YALCY
             }
             else
             {
-                USBDeviceMonitor.SendReport(Yellow, None);
+                UsbDeviceMonitor.SendReport(Yellow, None);
                 // 4 times a beats to control on and off because of the 2 different patterns on one color
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 1f)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 1f)); //set
@@ -448,18 +448,18 @@ namespace YALCY
         {
             if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
             {
-                USBDeviceMonitor.SendReport(Red, None);
+                UsbDeviceMonitor.SendReport(Red, None);
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 0.5f)); //Set
                 CuePrimitives.Add(new BeatPattern(LargePatternList2, 0.5f)); //Set
             }
             else
             {
-                USBDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 0.5f)); //Set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 0.5f)); //Set
             }
 
-            USBDeviceMonitor.SendReport(Green, None);
+            UsbDeviceMonitor.SendReport(Green, None);
 
             foreach (var primitive in CuePrimitives)
             {
@@ -472,10 +472,10 @@ namespace YALCY
     {
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Yellow, None);
-            USBDeviceMonitor.SendReport(Red, None);
-            USBDeviceMonitor.SendReport(Blue, None);
-            USBDeviceMonitor.SendReport(Green, All);
+            UsbDeviceMonitor.SendReport(Yellow, None);
+            UsbDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Blue, None);
+            UsbDeviceMonitor.SendReport(Green, All);
         }
     }
 
@@ -483,19 +483,19 @@ namespace YALCY
     {
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Yellow, None);
-            USBDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Yellow, None);
+            UsbDeviceMonitor.SendReport(Red, None);
 
             if (StageKitTalker.PreviousLightingCue is ManualCool or LoopCool)
             {
-                USBDeviceMonitor.SendReport(Green, All);
+                UsbDeviceMonitor.SendReport(Green, All);
             }
             else
             {
-                USBDeviceMonitor.SendReport(Green, None);
+                UsbDeviceMonitor.SendReport(Green, None);
             }
 
-            USBDeviceMonitor.SendReport(Blue, All);
+            UsbDeviceMonitor.SendReport(Blue, All);
         }
     }
 
@@ -503,10 +503,10 @@ namespace YALCY
     {
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Blue, All);
-            USBDeviceMonitor.SendReport(Red, All);
-            USBDeviceMonitor.SendReport(Yellow, All);
-            USBDeviceMonitor.SendReport(Green, All);
+            UsbDeviceMonitor.SendReport(Blue, All);
+            UsbDeviceMonitor.SendReport(Red, All);
+            UsbDeviceMonitor.SendReport(Yellow, All);
+            UsbDeviceMonitor.SendReport(Green, All);
         }
     }
 
@@ -528,10 +528,10 @@ namespace YALCY
 
             if (StageKitTalker.PreviousLightingCue is Dischord)
             {
-                USBDeviceMonitor.SendReport(Red, None);
-                USBDeviceMonitor.SendReport(Yellow, None);
-                USBDeviceMonitor.SendReport(Blue, One | Three | Five | Seven);
-                USBDeviceMonitor.SendReport(Green, All);
+                UsbDeviceMonitor.SendReport(Red, None);
+                UsbDeviceMonitor.SendReport(Yellow, None);
+                UsbDeviceMonitor.SendReport(Blue, One | Three | Five | Seven);
+                UsbDeviceMonitor.SendReport(Green, All);
 
                 _enableBlueLedVocals = true;
             }
@@ -541,10 +541,10 @@ namespace YALCY
             }
             else
             {
-                USBDeviceMonitor.SendReport(Red, None);
-                USBDeviceMonitor.SendReport(Green, None);
-                USBDeviceMonitor.SendReport(Blue, None);
-                USBDeviceMonitor.SendReport(Yellow, None);
+                UsbDeviceMonitor.SendReport(Red, None);
+                UsbDeviceMonitor.SendReport(Green, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Yellow, None);
             }
 
             foreach (var primitive in CuePrimitives)
@@ -572,12 +572,12 @@ namespace YALCY
 
             if (_blueOn)
             {
-                USBDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
                 _blueOn = false;
             }
             else
             {
-                USBDeviceMonitor.SendReport(Blue, One | Three | Five | Seven);
+                UsbDeviceMonitor.SendReport(Blue, One | Three | Five | Seven);
                 _blueOn = true;
             }
 
@@ -596,10 +596,10 @@ namespace YALCY
     {
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Green, All);
-            USBDeviceMonitor.SendReport(Yellow, None);
-            USBDeviceMonitor.SendReport(Blue, None);
-            USBDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Green, All);
+            UsbDeviceMonitor.SendReport(Yellow, None);
+            UsbDeviceMonitor.SendReport(Blue, None);
+            UsbDeviceMonitor.SendReport(Red, None);
         }
     }
 
@@ -607,10 +607,10 @@ namespace YALCY
     {
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Green, None);
-            USBDeviceMonitor.SendReport(Yellow, None);
-            USBDeviceMonitor.SendReport(Blue, None);
-            USBDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Green, None);
+            UsbDeviceMonitor.SendReport(Yellow, None);
+            UsbDeviceMonitor.SendReport(Blue, None);
+            UsbDeviceMonitor.SendReport(Red, None);
         }
     }
 
@@ -638,8 +638,8 @@ namespace YALCY
 
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Green, None);
-            USBDeviceMonitor.SendReport(Blue, None);
+            UsbDeviceMonitor.SendReport(Green, None);
+            UsbDeviceMonitor.SendReport(Blue, None);
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
             // I thought the Manuals listens to the next but it doesn't seem to. I'll save this for funky fresh mode
@@ -678,8 +678,8 @@ namespace YALCY
         {
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
-            USBDeviceMonitor.SendReport(Yellow, None);
-            USBDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Yellow, None);
+            UsbDeviceMonitor.SendReport(Red, None);
 
             foreach (var primitive in CuePrimitives)
             {
@@ -698,16 +698,16 @@ namespace YALCY
 
             if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
             {
-                USBDeviceMonitor.SendReport(Blue, All);
+                UsbDeviceMonitor.SendReport(Blue, All);
             }
             else
             {
-                USBDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
             }
 
-            USBDeviceMonitor.SendReport(Red, All);
-            USBDeviceMonitor.SendReport(Green, All);
-            USBDeviceMonitor.SendReport(Yellow, All);
+            UsbDeviceMonitor.SendReport(Red, All);
+            UsbDeviceMonitor.SendReport(Green, All);
+            UsbDeviceMonitor.SendReport(Yellow, All);
 
             _anythingOn = true;
 
@@ -722,25 +722,25 @@ namespace YALCY
             if (eventName != UdpIntake.KeyFrameByte.KeyframeNext) return;
             if (_anythingOn)
             {
-                USBDeviceMonitor.SendReport(Red, None);
-                USBDeviceMonitor.SendReport(Green, None);
-                USBDeviceMonitor.SendReport(Blue, None);
-                USBDeviceMonitor.SendReport(Yellow, None);
+                UsbDeviceMonitor.SendReport(Red, None);
+                UsbDeviceMonitor.SendReport(Green, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Yellow, None);
             }
             else
             {
                 if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
                 {
-                    USBDeviceMonitor.SendReport(Blue, All);
+                    UsbDeviceMonitor.SendReport(Blue, All);
                 }
                 else
                 {
-                    USBDeviceMonitor.SendReport(Blue, None);
+                    UsbDeviceMonitor.SendReport(Blue, None);
                 }
 
-                USBDeviceMonitor.SendReport(Red, All);
-                USBDeviceMonitor.SendReport(Green, All);
-                USBDeviceMonitor.SendReport(Yellow, All);
+                UsbDeviceMonitor.SendReport(Red, All);
+                UsbDeviceMonitor.SendReport(Green, All);
+                UsbDeviceMonitor.SendReport(Yellow, All);
             }
 
             _anythingOn = !_anythingOn;
@@ -806,8 +806,8 @@ namespace YALCY
             UdpIntake.OnBeat += HandleBeatlineEvent;
             UdpIntake.OnKeyFrame += HandleKeyFrameEvent;
 
-            USBDeviceMonitor.SendReport(Red, None);
-            USBDeviceMonitor.SendReport(Blue, Two | Six);
+            UsbDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Blue, Two | Six);
 
             // Don't want to enable all, that turns on both blue patterns.
             CuePrimitives[0].Enable();
@@ -851,7 +851,7 @@ namespace YALCY
             {
                 _greenPattern.KillSelf();
 
-                USBDeviceMonitor.SendReport(Green, All);
+                UsbDeviceMonitor.SendReport(Green, All);
             }
             else
             {
@@ -878,7 +878,7 @@ namespace YALCY
 
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Green, None);
+            UsbDeviceMonitor.SendReport(Green, None);
 
             if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
             {
@@ -886,7 +886,7 @@ namespace YALCY
             }
             else
             {
-                USBDeviceMonitor.SendReport(Yellow, None);
+                UsbDeviceMonitor.SendReport(Yellow, None);
                 CuePrimitives.Add(new ListenPattern(new (StageKitTalker.CommandId, byte)[] { (Yellow, All) }, ListenTypes.RedFretDrums, true, true));
                 CuePrimitives.Add(new ListenPattern(SmallPatternList1, ListenTypes.Next));
             }
@@ -914,9 +914,9 @@ namespace YALCY
 
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Green, None);
-            USBDeviceMonitor.SendReport(Red, None);
-            USBDeviceMonitor.SendReport(Yellow, None);
+            UsbDeviceMonitor.SendReport(Green, None);
+            UsbDeviceMonitor.SendReport(Red, None);
+            UsbDeviceMonitor.SendReport(Yellow, None);
             CuePrimitives.Add(new TimedPattern(PatternList1, 2f));
             foreach (var primitive in CuePrimitives)
             {
@@ -957,16 +957,16 @@ namespace YALCY
 
         public override void Enable()
         {
-            USBDeviceMonitor.SendReport(Green, None);
+            UsbDeviceMonitor.SendReport(Green, None);
 
             if (UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.VenueSize] == (byte)UdpIntake.VenueSizeByte.Large)
             {
-                USBDeviceMonitor.SendReport(Blue, None);
+                UsbDeviceMonitor.SendReport(Blue, None);
                 CuePrimitives.Add(new TimedPattern(LargePatternList1, 1f));
             }
             else
             {
-                USBDeviceMonitor.SendReport(Red, None);
+                UsbDeviceMonitor.SendReport(Red, None);
                 CuePrimitives.Add(new TimedPattern(SmallPatternList1, 1f));
             }
 

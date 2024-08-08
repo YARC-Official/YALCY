@@ -28,7 +28,7 @@ namespace YALCY
             {
                 while (!_cancellationTokenSource.Token.IsCancellationRequested)
                 {
-                    USBDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
+                    UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
                     _patternIndex++;
 
                     // Some beat patterns are not continuous (single fire), so we need to kill them after they've run once
@@ -83,7 +83,7 @@ namespace YALCY
             _patternIndex = 0;
             _enabled = true;
             if (!_inverse) return;
-            USBDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
+            UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
             _patternIndex++;
 
             if (_patternIndex >= _patternList.Length)
@@ -147,11 +147,11 @@ namespace YALCY
 
             if (_inverse)
             {
-                USBDeviceMonitor.SendReport(_patternList[_patternIndex].color, None);
+                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, None);
             }
             else
             {
-                USBDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
+                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
             }
 
             if (_flash)
@@ -174,12 +174,12 @@ namespace YALCY
             await Task.Delay(200);
             if (_inverse)
             {
-                USBDeviceMonitor.SendReport(_patternList[_patternIndex].color,
+                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color,
                     _patternList[_patternIndex].data);
             }
             else
             {
-                USBDeviceMonitor.SendReport(_patternList[_patternIndex].color, None);
+                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, None);
             }
         }
 
@@ -216,7 +216,7 @@ namespace YALCY
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                USBDeviceMonitor.SendReport(_patternList[_patternIndex].color,
+                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color,
                     _patternList[_patternIndex].data);
 
                 await Task.Delay(TimeSpan.FromSeconds(_seconds / _patternList.Length), cancellationToken: cancellationToken);

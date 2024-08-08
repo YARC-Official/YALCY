@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using OpenRGB.NET;
-using OpenRGB.NET.Utils;
+using YALCY.ViewModels;
 
 namespace YALCY.Scripts.OpenRGB
 {
@@ -12,17 +14,33 @@ namespace YALCY.Scripts.OpenRGB
         private CancellationTokenSource cts = new();
         private Task updateTask = Task.CompletedTask;
 
+        List<Device> Keyboards = new List<Device>();
+        private Dictionary<int, Color[]> keyboardStates = new Dictionary<int, Color[]>();
+
+        private static string ip = "127.0.0.1"; // OpenRGB server IP
+        private static int port = 6742;
+        private static string name = "YALCY";
+        private static bool autoConnect = false; // can't catch exceptions in constructor
+        private static int timeoutMs = 1000;
+        private static uint protocolVersionNumber = 4;
+        private OpenRgbClient client = new OpenRgbClient(ip, port, name, autoConnect, timeoutMs, protocolVersionNumber);
+
+        App app;
+        MainWindowViewModel mainViewModel;
+
         public void EnableOpenRgbTalker(bool isEnabled)
         {
             if (isEnabled)
             {
+                // Access the MainViewModel instance
+                app = (App)Application.Current!;
+                mainViewModel = app.MainViewModel;
+
                 try
                 {
-                    using var client = new OpenRgbClient();
-
                     client.Connect();
 
-                    Console.WriteLine("Connected to OpenRGB");
+                    mainViewModel.OpenRgbStatus = "Connected to OpenRGB";
 
                     var plugins = client.GetPlugins();
 
@@ -30,45 +48,22 @@ namespace YALCY.Scripts.OpenRGB
 
                     var profiles = client.GetProfiles();
 
-                    Console.WriteLine("Found devices:");
                     foreach (var device in devices)
                     {
-                        Console.WriteLine(device.Name);
+                        if (device.Type == DeviceType.Keyboard)
+                        {
+                            Keyboards.Add(device);
+                            // Initialize the state array for each keyboard
+                            keyboardStates[device.Index] = Enumerable.Repeat(new Color(0, 0, 0), device.Leds.Length).ToArray();
+                        }
                     }
 
-                    Console.WriteLine("Starting animation");
+                    UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
 
-                    const int fps = 60;
-
-                    updateTask = Task.Run(() =>
-                    {
-                        var deviceColors = new Color[devices.Length][];
-                        for (var index = 0; index < devices.Length; index++)
-                        {
-                            var arr = ColorUtils.GetHueRainbow(devices[index].Leds.Length).ToArray();
-                            deviceColors[index] = arr.Concat(arr).ToArray();
-                        }
-                        var colorOffsets = Enumerable.Range(0, devices.Length).Select(x => x).ToArray();
-                        while (!cts.IsCancellationRequested)
-                        {
-                            for (var index = 0; index < devices.Length; index++)
-                            {
-                                var colors = deviceColors[index];
-                                if (colors.Length == 0)
-                                    continue;
-
-                                var slice = colors.AsSpan().Slice(colorOffsets[index]++ % devices[index].Leds.Length, devices[index].Leds.Length);
-                                client.UpdateLeds(index, slice);
-                            }
-
-                            Thread.Sleep(1000 / fps);
-                        }
-                    });
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"An error occurred: {ex.Message}");
-                    // Additional error handling logic can go here
+                    mainViewModel.OpenRgbStatus = $"An error occurred: {ex.Message}";
                 }
             }
             else
@@ -82,7 +77,7 @@ namespace YALCY.Scripts.OpenRGB
                 {
                     foreach (var innerException in ex.InnerExceptions)
                     {
-                        Console.WriteLine($"Task error: {innerException.Message}");
+                        mainViewModel.OpenRgbStatus = $"Task error: {innerException.Message}";
                     }
                 }
                 finally
@@ -90,6 +85,66 @@ namespace YALCY.Scripts.OpenRGB
                     cts.Dispose();
                 }
             }
+        }
+
+        private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+        {
+            switch (commandId)
+            {
+                case StageKitTalker.CommandId.BlueLeds:
+                    UpdateKeyboardColor(parameter, new Color(0, 0, 255), 0);
+                    break;
+
+                case StageKitTalker.CommandId.RedLeds:
+                    UpdateKeyboardColor(parameter, new Color(255, 0, 0), 8);
+                    break;
+
+                case StageKitTalker.CommandId.GreenLeds:
+                    UpdateKeyboardColor(parameter, new Color(0, 255, 0), 16);
+                    break;
+
+                case StageKitTalker.CommandId.YellowLeds:
+                    UpdateKeyboardColor(parameter, new Color(255, 255, 0), 24);
+                    break;
+            }
+        }
+
+        private void UpdateKeyboardColor(byte parameter, Color color, int areaOffset)
+        {
+            if (!Keyboards.Any())
+            {
+                return;
+            }
+
+            var keyboard = Keyboards[0]; // Assuming you have only one keyboard connected
+            var numAreas = 32;
+            var keysPerArea = keyboard.Leds.Length / numAreas;
+
+            // Retrieve the current state array for this keyboard
+            var colors = keyboardStates[keyboard.Index];
+
+            // Update the relevant areas with the specified color
+            for (int area = areaOffset; area < areaOffset + 8; area++)
+            {
+                for (int key = 0; key < keysPerArea; key++)
+                {
+                    int ledIndex = area * keysPerArea + key;
+                    if (ledIndex < keyboard.Leds.Length)
+                    {
+                        if ((parameter & (1 << (area - areaOffset))) != 0)
+                        {
+                            colors[ledIndex] = color;
+                        }
+                        else
+                        {
+                            colors[ledIndex] = new Color(0, 0, 0);
+                        }
+                    }
+                }
+            }
+
+            // Create a span of the updated LED colors and send it to the device
+            client.UpdateLeds(keyboard.Index, new Span<Color>(colors));
         }
     }
 }

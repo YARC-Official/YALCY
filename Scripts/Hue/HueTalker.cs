@@ -80,7 +80,7 @@ public class HueTalker : IDisposable
                 _effectLayer = _streamingGroup.GetNewLayer();
 
                 _baseEntLayer.SetState(_cancellationTokenSource.Token, new RGBColor("FFFFFF"), 1);
-                USBDeviceMonitor.OnStageKitCommand += SendRequest;
+                UsbDeviceMonitor.OnStageKitCommand += SendRequest;
             }
             catch (UnauthorizedAccessException)
             {
@@ -112,7 +112,7 @@ public class HueTalker : IDisposable
             _cancellationTokenSource?.Cancel();
 
             // Remove event handlers
-            USBDeviceMonitor.OnStageKitCommand -= SendRequest;
+            UsbDeviceMonitor.OnStageKitCommand -= SendRequest;
 
             // Dispose of the client and cancellation token
             _cancellationTokenSource?.Dispose();

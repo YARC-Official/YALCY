@@ -1,7 +1,5 @@
-using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using YALCY;
 
 namespace YARG.Integration.RB3E
@@ -17,13 +15,13 @@ namespace YARG.Integration.RB3E
             if (isEnabled)
             {
                 if (_sendClient != null) return;
-                USBDeviceMonitor.OnStageKitCommand += SendPacket;
+                UsbDeviceMonitor.OnStageKitCommand += SendPacket;
                 _sendClient = new UdpClient();
             }
             else
             {
                 if (_sendClient == null) return;
-                USBDeviceMonitor.OnStageKitCommand -= SendPacket;
+                UsbDeviceMonitor.OnStageKitCommand -= SendPacket;
                 SendPacket(StageKitTalker.CommandId.DisableAll, 0x00);
 
                 _sendClient.Dispose();
