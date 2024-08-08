@@ -18,6 +18,40 @@ namespace YALCY.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 {
+    private bool[] _redLedStates = new bool[8];
+
+    public bool[] RedLedStates
+    {
+        get => _redLedStates;
+        set => this.RaiseAndSetIfChanged(ref _redLedStates, value);
+    }
+
+    private bool[] _greenLedStates = new bool[8];
+
+    public bool[] GreenLedStates
+    {
+        get => _greenLedStates;
+        set => this.RaiseAndSetIfChanged(ref _greenLedStates, value);
+    }
+
+    private bool[] _blueLedStates = new bool[8];
+
+    public bool[] BlueLedStates
+    {
+        get => _blueLedStates;
+        set => this.RaiseAndSetIfChanged(ref _blueLedStates, value);
+    }
+
+    private bool[] _yellowLedStates = new bool[8];
+
+    public bool[] YellowLedStates
+    {
+        get => _yellowLedStates;
+        set => this.RaiseAndSetIfChanged(ref _yellowLedStates, value);
+    }
+
+
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -216,7 +250,7 @@ public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         Rb3ETalker = new Rb3eTalker();
         UdpIntake = new UdpIntake();
         UsbDeviceMonitor = new USBDeviceMonitor();
-        OpenRgbTalker = new OpenRgbTalker();
+        //OpenRgbTalker = new OpenRgbTalker();
 
         // Initialize EnableSettings using loaded settings
         InitializeEnableSettings();

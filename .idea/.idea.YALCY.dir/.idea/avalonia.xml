@@ -4,6 +4,7 @@
     <option name="projectPerEditor">
       <map>
         <entry key="App.axaml" value="YALCY.csproj" />
+        <entry key="Views/MainWindow.axaml" value="YALCY.csproj" />
       </map>
     </option>
   </component>
