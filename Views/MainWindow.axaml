@@ -1,21 +1,62 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:YALCY.ViewModels"
+        xmlns:reactiveUi="clr-namespace:ReactiveUI;assembly=ReactiveUI"
         x:Class="YALCY.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="YALCY - Yet Another Lighting Controller for YARG"
-        Width="1800" Height="1080"
+        Width="1800" Height="1080">
 
-        >
+    <Window.Styles>
+        <Style Selector="TabControl">
+            <Setter Property="BorderBrush" Value="Transparent"/> <!-- Remove the border brush -->
+            <Setter Property="BorderThickness" Value="0"/> <!-- Set the border thickness to 0 -->
+        </Style>
+
+
+        <!-- Style for TabItem default -->
+        <Style Selector="TabItem">
+            <Setter Property="Foreground" Value="#61688B" />
+            <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+            <Setter Property="FontWeight" Value="DemiBold" />
+            <Setter Property="Height" Value="65"/>
+            <Setter Property="Background" Value ="#030306" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="10,5" />
+        </Style>
+
+        <!-- Style for TabItem when hovered -->
+        <Style Selector="TabItem:hover">
+            <Setter Property="Foreground" Value="#A7ABC1"/>
+        </Style>
+
+        <Style Selector="TabItem:selected /template/ Border#PART_SelectedPipe">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+
+        <!-- Separate style for when TabItem is selected -->
+        <Style Selector="TabItem:selected">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Color="#45D8FE" Offset="0.0"/>
+                        <GradientStop Color="#0045D8FE" Offset="2.0" />
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <!-- Border at the top -->
+            <Setter Property="BorderThickness" Value="0,3,0,0"/> <!-- 3px border at the top -->
+            <Setter Property="BorderBrush" Value="#45D8FE"/> <!-- Border color -->
+        </Style>
+    </Window.Styles>
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
-
-    <TabControl Margin="5">
+<TabControl Margin="5">
 <TabItem Header="YARG">
-    <Grid ColumnDefinitions="0.4*,1*" RowDefinitions="Auto,Auto,*">
+    <Grid ColumnDefinitions="0.5*,1*" RowDefinitions="Auto,Auto,*">
         <!-- Toggle Button -->
         <ToggleButton ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}" Content="{Binding UdpEnableSetting.ToggleButtonContent}" IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}" Grid.Row="0" Grid.Column="0" Margin="5" Grid.ColumnSpan="2" />
 
@@ -25,26 +66,25 @@
 
         <!-- DataGrid inside a ScrollViewer -->
         <ScrollViewer Grid.Row="2" Grid.Column="0">
-            <DataGrid CanUserSortColumns="False" ItemsSource="{Binding ByteIndexes}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid Margin ="5" BorderThickness="1" BorderBrush="Gray" GridLinesVisibility="All" CanUserResizeColumns="False" CanUserSortColumns="False" ItemsSource="{Binding ByteIndexes}" AutoGenerateColumns="False" IsReadOnly="True">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
-                    <DataGridTextColumn Header="Byte" Binding="{Binding Index}" />
-                    <DataGridTextColumn Header="Current Value" Binding="{Binding CurrentValue}" />
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Byte" Binding="{Binding Index}" Width="*"/>
+                    <DataGridTextColumn Header="Current Value" Binding="{Binding CurrentValue}" Width="*"/>
                     <DataGridTextColumn Header="Value Description" Binding="{Binding ValueDescription}" />
                 </DataGrid.Columns>
             </DataGrid>
         </ScrollViewer>
 
         <!-- LED Visualization Panel -->
-        <Canvas Grid.Row="2" Grid.Column="1" Width="200" Height="200" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Grid>
-                <Image Source="/Assets/Stage Kit/LedBackground.png" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="None"/>
-                <vm:LedDisplay Color="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <vm:LedDisplay Color="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <vm:LedDisplay Color="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <vm:LedDisplay Color="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
-            </Grid>
+        <Canvas  x:Name="CanvasContainer" Grid.Row="2" Grid.Column="1" Width="200" Height="200" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <!-- TextBox positioned above the image -->
+            <TextBox x:Name="TextOverlay" Width="180" Canvas.Left="10" Canvas.Top="-100" HorizontalAlignment="Center" VerticalAlignment="Top" Text="Stage Kit Visualizer" Background="Transparent" Foreground="White" FontSize="16" TextAlignment="Center" BorderBrush="Transparent"/>
+            <Image x:Name="CenteredImage" Source="/Assets/Stage Kit/LedBackground.png" Stretch="None"/>
+            <vm:LedDisplay Color="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <vm:LedDisplay Color="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <vm:LedDisplay Color="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <vm:LedDisplay Color="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Canvas>
     </Grid>
 </TabItem>
@@ -259,4 +299,5 @@
             </StackPanel>
         </TabItem>
     </TabControl>
+
 </Window>

@@ -16,50 +16,50 @@ namespace YALCY.ViewModels
 
         private readonly Point[] _blueLedPositions = new Point[]
         {
-            new Point(-34, -101),   // LED 0
-            new Point(-4, -66), // LED 1
-            new Point(32, -35),// LED 2
-            new Point(-4, -5), // LED 3
-            new Point(-34, 30), // LED 4
-            new Point(-64, -5),  // LED 5
-            new Point(-101, -35),  // LED 6
-            new Point(-64, -66),  // LED 7
+            new Point(100, 32),   // LED 0
+            new Point(130, 67),   // LED 1
+            new Point(166, 98),   // LED 2
+            new Point(130, 128),  // LED 3
+            new Point(100, 164),  // LED 4
+            new Point(70, 128),   // LED 5
+            new Point(33, 98),    // LED 6
+            new Point(70, 67),    // LED 7
         };
 
         private readonly Point[] _greenLedPositions = new Point[]
         {
-            new Point(0, -122), // LED 0 (green)
-            new Point(53, -68), // LED 1 (green)
-            new Point(53, 0), // LED 2 (green)
-            new Point(0, 53), // LED 3 (green)
-            new Point(-69, 53), // LED 4 (green)
-            new Point(-122, 0), // LED 5 (green)
-            new Point(-122, -68), // LED 6 (green)
-            new Point(-69, -122) // LED 7 (green)
+            new Point(134, 11),   // LED 0 (green)
+            new Point(187, 65),   // LED 1 (green)
+            new Point(187, 133),  // LED 2 (green)
+            new Point(134, 186),  // LED 3 (green)
+            new Point(65, 186),   // LED 4 (green)
+            new Point(12, 133),   // LED 5 (green)
+            new Point(12, 65),    // LED 6 (green)
+            new Point(65, 11)     // LED 7 (green)
         };
 
         private readonly Point[] _yellowLedPositions = new Point[]
         {
-            new Point(-34, -165), // LED 0 (yellow)
-            new Point(58, -124), // LED 1 (yellow)
-            new Point(96, -35), // LED 2 (yellow)
-            new Point(58, 56), // LED 3 (yellow)
-            new Point(-34, 96), // LED 4 (yellow)
-            new Point(-124, 56), // LED 5 (yellow)
-            new Point(-165, -35), // LED 6 (yellow)
-            new Point(-124, -124) // LED 7 (yellow)
+            new Point(100, -32),  // LED 0 (yellow)
+            new Point(192, 9),    // LED 1 (yellow)
+            new Point(230, 98),   // LED 2 (yellow)
+            new Point(192, 189),  // LED 3 (yellow)
+            new Point(100, 229),  // LED 4 (yellow)
+            new Point(10, 189),   // LED 5 (yellow)
+            new Point(-31, 98),   // LED 6 (yellow)
+            new Point(10, 9)      // LED 7 (yellow)
         };
 
         private readonly Point[] _redLedPositions = new Point[]
         {
-            new Point(17, -157), // LED 0 (red)
-            new Point(85, -87), // LED 1 (red)
-            new Point(85, 19), // LED 2 (red)
-            new Point(17, 88), // LED 3 (red)
-            new Point(-85, 88), // LED 4 (red)
-            new Point(-157, 19), // LED 5 (red)
-            new Point(-157, -87), // LED 6 (red)
-            new Point(-85, -157) // LED 7 (red)
+            new Point(151, -24),  // LED 0 (red)
+            new Point(219, 46),   // LED 1 (red)
+            new Point(219, 152),  // LED 2 (red)
+            new Point(151, 221),  // LED 3 (red)
+            new Point(49, 221),   // LED 4 (red)
+            new Point(-23, 152),  // LED 5 (red)
+            new Point(-23, 46),   // LED 6 (red)
+            new Point(49, -24)    // LED 7 (red)
         };
 
         static LedDisplay()
@@ -123,18 +123,27 @@ namespace YALCY.ViewModels
             }
 
             if (imageSource == null) return;
+
             var bitmap = new Bitmap(AssetLoader.Open(imageSource));
+
+            // Calculate half the size of the image for centering
+            double halfWidth = bitmap.Size.Width / 2;
+            double halfHeight = bitmap.Size.Height / 2;
 
             // Draw each LED at the specified position if it is on
             for (int i = 0; i < LedStates.Length; i++)
             {
-                if (!LedStates[i]) continue;
-                if (ledPositions != null)
+                if (LedStates[i])
                 {
-                    context.DrawImage(bitmap, new Rect(ledPositions[i], new Size(bitmap.Size.Width, bitmap.Size.Height)));
+                    if (ledPositions != null)
+                    {
+                        var position = new Point(ledPositions[i].X - halfWidth, ledPositions[i].Y - halfHeight);
+                        context.DrawImage(bitmap, new Rect(position, new Size(bitmap.Size.Width, bitmap.Size.Height)));
+                    }
                 }
             }
         }
+
 
         private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
         {

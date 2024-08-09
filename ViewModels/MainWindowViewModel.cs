@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using ReactiveUI;
 using YALCY.Scripts.DMX;
@@ -84,8 +85,11 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         //InitializeHueCollections();
         //InitializeOpenRgbCollections();
 
+
+
         //Things actually start after this fully completes, called from App.axaml.cs
     }
+
 
     private void InitializeEnableSettings()
     {

@@ -26,6 +26,7 @@
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.1" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.1" />
+        <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.1.0" />
         <PackageReference Include="Haukcode.sACN" Version="2.0.19" />
         <PackageReference Include="HidSharp" Version="2.1.0" />
         <PackageReference Include="HueApi" Version="1.6.3" />
