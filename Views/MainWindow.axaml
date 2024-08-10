@@ -1,7 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:YALCY.ViewModels"
-        xmlns:reactiveUi="clr-namespace:ReactiveUI;assembly=ReactiveUI"
         x:Class="YALCY.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
@@ -289,6 +288,8 @@
                 <!-- Info -->
                 <TextBlock Text="Setup needed:"/>
                 <TextBlock Text="1) OpenRgb Server needs to be running!" Margin="5"/>
+                <TextBlock Text="2) Be sure your devices are in Direct mode" Margin="5"/>
+                <TextBlock Text="Keyboards will be the Stage kit. Everything in the tower will be the strobe. Everything else will be the fogger" Margin="5"/>
                 <!-- IP Address Input -->
                 <TextBlock Text="Enter OpenRGB Server IP" />
                 <TextBox Text="{Binding OpenRgbServerIp}" />
