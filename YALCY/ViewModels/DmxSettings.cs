@@ -86,12 +86,14 @@ public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
             this.RaiseAndSetIfChanged(ref _channel, value);
             // Safely access the MainViewModel instance
             var app = (App)Application.Current!;
+            //set previous channel value to 0
             if (app.MainViewModel != null)
             {
-                //set previous channel value to 0
+
                 foreach (var t in _channel)
                 {
                     app.MainViewModel.DmxTalker?.SetChannelToValue(t, 0);
+
                 }
 
                 //set the new channel value to the previous value

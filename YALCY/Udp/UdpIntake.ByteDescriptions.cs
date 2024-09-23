@@ -4,7 +4,14 @@ namespace YALCY.Udp;
 
 public partial class UdpIntake
 {
-    private static string GetVocalHarmonyByteDescription(byte byteValue)
+    public static Action<byte>? OnBeat { get; set; }
+    public static Action<byte>? OnKeyFrame { get; set; }
+    public static Action<byte>? OnDrum { get; set; }
+    public static Action<float>? OnVocalHarmony { get; set; }
+    public static Action<byte>? OnLightingCue { get; set; }
+    public static Action<bool>? OnFogState { get; set; }
+    public static Action<byte>? OnStrobeState { get; set; }
+    public static string GetVocalHarmonyByteDescription(float byteValue)
     {
         var vocalHarmonyDescription = byteValue switch
         {
@@ -75,21 +82,22 @@ public partial class UdpIntake
             _ => "Unknown"
 
         };
+        OnVocalHarmony?.Invoke(byteValue);
         return vocalHarmonyDescription;
     }
-    private static string GetPauseByteDescription(byte byteValue)
+    public static string GetPauseByteDescription(byte byteValue)
     {
         var pauseDescription = byteValue switch
         {
-            (int)PauseByte.Unpaused => "Unpaused",
-            (int)PauseByte.Paused => "Paused",
-            _ => "Unknown"
+            0 => "At menu",
+            1 => "Unpaused",
+            2 => "Paused",
         };
 
         return pauseDescription;
     }
 
-    private static string GetSongSectionByteDescription(byte byteValue)
+    public static string GetSongSectionByteDescription(byte byteValue)
     {
         var songSectionDescription = byteValue switch
         {
@@ -101,7 +109,7 @@ public partial class UdpIntake
         return songSectionDescription;
     }
 
-    private static string GetVenueSizeByteDescription(byte byteValue)
+    public static string GetVenueSizeByteDescription(byte byteValue)
     {
         var venueSizeDescription = byteValue switch
         {
@@ -113,18 +121,18 @@ public partial class UdpIntake
         return venueSizeDescription;
     }
 
-    private static string GetFogStateByteDescription(byte byteValue)
+    public static string GetFogStateByteDescription(bool byteValue)
     {
         var fogStateDescription = byteValue switch
         {
-            (int)FogStateByte.Off => "Off",
-            (int)FogStateByte.On => "On",
-            _ => "Unknown"
+            false => "Off",
+            true => "On",
         };
+        OnFogState?.Invoke(byteValue);
         return fogStateDescription;
     }
 
-    private static string GetDrumsByteDescription(byte byteValue)
+    public static string GetDrumsByteDescription(byte byteValue)
     {
         var result = "";
 
@@ -143,10 +151,10 @@ public partial class UdpIntake
         {
             result = DrumNotesByte.None.ToString();
         }
-
+        OnDrum?.Invoke(byteValue);
         return result;
     }
-    private static string GetInstrumentByteDescription(byte byteValue)
+    public static string GetInstrumentByteDescription(byte byteValue)
     {
         var result = "";
 
@@ -168,36 +176,35 @@ public partial class UdpIntake
 
         return result;
     }
-    private static string GetDatagramVersionByteDescription(byte byteValue)
+    public static string GetDatagramVersionByteDescription(byte byteValue)
     {
         return byteValue == (int)DatagramVersionByte.Version ? "Current Version" : "Unknown";
     }
-    private static string GetHeaderByteDescription(byte byteValue)
+    public static string GetHeaderByteDescription(uint byteValue)
     {
-        var headerDescription = byteValue switch
+        if (byteValue != PACKET_HEADER)
         {
-            (int)HeaderBytes.HeaderByte1 => "Y",
-            (int)HeaderBytes.HeaderByte2 => "A",
-            (int)HeaderBytes.HeaderByte3 => "R",
-            (int)HeaderBytes.HeaderByte4 => "G",
-            _ => "Wrong header byte!"
-        };
-        return headerDescription;
+            return "Wrong header byte!";
+        }
+
+        return "YARG";
     }
-    private static string GetBeatlineByteDescription(BeatByte byteValue)
+    public static string GetBeatlineByteDescription(byte byteValue)
     {
         var beatlineDescription = byteValue switch
         {
-            BeatByte.Off => "Off",
-            BeatByte.Measure => "Measure",
-            BeatByte.Strong => "Strong",
-            BeatByte.Weak => "Weak",
+            0 => "Measure",
+            1 => "Strong",
+            2 => "Weak",
+            3 => "Off",
             _ => "Unknown"
         };
 
+        OnBeat?.Invoke(byteValue);
+
         return beatlineDescription;
     }
-    private static string GetKeyFrameDescription(byte byteValue)
+    public static string GetKeyFrameDescription(byte byteValue)
     {
         var keyFrameDescription = byteValue switch
         {
@@ -207,23 +214,26 @@ public partial class UdpIntake
             (int)KeyFrameByte.KeyframeFirst => "First",
             _ => ""
         };
+
+        OnKeyFrame?.Invoke(byteValue);
         return keyFrameDescription;
     }
-    private static string GetStrobeByteDescription(byte byteValue)
+    public static string GetStrobeByteDescription(byte byteValue)
     {
         var strobeDescription = byteValue switch
         {
-            (int)StrobeSpeedByte.Off => "Off",
-            (int)StrobeSpeedByte.Slow => "Slow",
-            (int)StrobeSpeedByte.Medium => "Medium",
-            (int)StrobeSpeedByte.Fast => "Fast",
-            (int)StrobeSpeedByte.Fastest => "Fastest",
+            (byte)CueByte.Strobe_Off => "Off",
+            (byte)CueByte.Strobe_Slow => "Slow",
+            (byte)CueByte.Strobe_Medium => "Medium",
+            (byte)CueByte.Strobe_Fast => "Fast",
+            (byte)CueByte.Strobe_Fastest => "Fastest",
+
             _ => "Unknown"
         };
-
+        OnStrobeState?.Invoke(byteValue);
         return strobeDescription;
     }
-    private static string GetPlatformByteDescription(byte byteValue)
+    public static string GetPlatformByteDescription(byte byteValue)
     {
         var os = byteValue switch
         {
@@ -237,28 +247,28 @@ public partial class UdpIntake
         return os;
     }
 
-    private static string GetCueByteDescription(byte byteValue)
+    public static string GetCueByteDescription(byte byteValue)
     {
             int intValue = byteValue; // Cast byte to int
+            OnLightingCue?.Invoke(byteValue);
             return Enum.IsDefined(typeof(CueByte), intValue) ? ((CueByte)intValue).ToString() : "Unknown";
     }
-    private static string GetPostProcessingByteDescription(byte byteValue)
+    public static string GetPostProcessingByteDescription(byte byteValue)
     {
         int intValue = byteValue; // Cast byte to int
         return Enum.IsDefined(typeof(PostProcessingByte), intValue) ? ((PostProcessingByte)intValue).ToString() : "Unknown";
     }
-    private static string GetBonusEffectByteDescription(byte byteValue)
+    public static string GetBonusEffectByteDescription(bool byteValue)
     {
         var bonusEffectDescription = byteValue switch
         {
-            (int)BonusEffectByte.Off => "Off",
-            (int)BonusEffectByte.On => "Triggered!",
-            _ => "Unknown"
+            false => "Off",
+            true => "Triggered!",
         };
         return bonusEffectDescription;
     }
 
-    private static string GetSceneIndexByteDescription(byte byteValue)
+    public static string GetSceneIndexByteDescription(byte byteValue)
     {
         var sceneIndexDescription = byteValue switch
         {

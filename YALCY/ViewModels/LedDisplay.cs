@@ -167,14 +167,12 @@ namespace YALCY.ViewModels;
                         break;
                 }
 
-                if (updateLed)
+                if (!updateLed) return;
+                for (int i = 0; i < 8; i++)
                 {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        LedStates[i] = (parameter & (1 << i)) != 0;
-                    }
-                    InvalidateVisual();
+                    LedStates[i] = (parameter & (1 << i)) != 0;
                 }
+                InvalidateVisual();
             });
         }
     }

@@ -193,29 +193,25 @@ public class DmxTalker
     {
         if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute] != _bpmLastItemAdded)
         {
-            byteQueues[viewModel.BpmChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute]);
+            byteQueues[viewModel.BpmChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute]);
             _bpmLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute];
         }
 
         if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.LightingCue] != _cueChangeLastItemAdded)
         {
-            byteQueues[viewModel.CueChangeChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.LightingCue]);
+            byteQueues[viewModel.CueChangeChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.LightingCue]);
             _cueChangeLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.LightingCue];
         }
 
         if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Beat] != _beatLineLastItemAdded)
         {
-            byteQueues[viewModel.BeatLineChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Beat]);
+            byteQueues[viewModel.BeatLineChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Beat]);
             _beatLineLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Beat];
         }
 
         if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
         {
-            byteQueues[viewModel.BonusEffectChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BonusEffect]);
+            byteQueues[viewModel.BonusEffectChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BonusEffect]);
             _bonusEffectLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BonusEffect];
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using YALCY.Udp;
 using YALCY.Usb;
 
 namespace YALCY.Integrations.StageKit;
@@ -31,7 +32,7 @@ public class StageKitTalker
     //cues that are outide of songs
     public StageKitTalker()
     {
-        _cueDictionary.TryGetValue(Udp.UdpIntake.CueByte.NoCue, out var startCue);
+        _cueDictionary.TryGetValue(UdpIntake.CueByte.NoCue, out var startCue);
         _currentLightingCue = startCue;
         PreviousLightingCue = startCue;
     }
@@ -40,37 +41,37 @@ public class StageKitTalker
     //private static byte _currentFogState = (byte)UdpIntake.FogStateByte.Off;
 
     //this should be on song start as, venue calculations are done in the song start
-    private static readonly Dictionary<Udp.UdpIntake.CueByte, StageKitLightingCue> _cueDictionary = new()
+    private static readonly Dictionary<UdpIntake.CueByte, StageKitLightingCue> _cueDictionary = new()
     {
-        { Udp.UdpIntake.CueByte.NoCue, new NoCue() },
-        { Udp.UdpIntake.CueByte.Menu, new MenuLighting() },
-        { Udp.UdpIntake.CueByte.Score, new ScoreLighting() },
-        { Udp.UdpIntake.CueByte.WarmManual, new ManualWarm() },
-        { Udp.UdpIntake.CueByte.CoolManual, new ManualCool() },
-        { Udp.UdpIntake.CueByte.Dischord, new Dischord() },
-        { Udp.UdpIntake.CueByte.Stomp, new Stomp() },
-        { Udp.UdpIntake.CueByte.Default, new Default() },
-        { Udp.UdpIntake.CueByte.WarmLoop, new LoopWarm() },
-        { Udp.UdpIntake.CueByte.CoolLoop, new LoopCool() },
-        { Udp.UdpIntake.CueByte.BigRockEnding, new BigRockEnding() },
-        { Udp.UdpIntake.CueByte.Searchlights, new SearchLight() },
-        { Udp.UdpIntake.CueByte.Frenzy, new Frenzy() },
-        { Udp.UdpIntake.CueByte.Sweep, new Sweep() },
-        { Udp.UdpIntake.CueByte.Harmony, new Harmony() },
-        { Udp.UdpIntake.CueByte.FlareSlow, new FlareSlow() },
-        { Udp.UdpIntake.CueByte.FlareFast, new FlareFast() },
-        { Udp.UdpIntake.CueByte.SilhouettesSpotlight, new SilhouetteSpot() },
-        { Udp.UdpIntake.CueByte.Silhouettes, new Silhouettes() },
-        { Udp.UdpIntake.CueByte.BlackoutSpotlight, new Blackout() },
-        { Udp.UdpIntake.CueByte.BlackoutSlow, new Blackout() },
-        { Udp.UdpIntake.CueByte.BlackoutFast, new Blackout() },
-        { Udp.UdpIntake.CueByte.Intro, new Intro() }
+        { UdpIntake.CueByte.NoCue, new NoCue() },
+        { UdpIntake.CueByte.Menu, new MenuLighting() },
+        { UdpIntake.CueByte.Score, new ScoreLighting() },
+        { UdpIntake.CueByte.Warm_Manual, new ManualWarm() },
+        { UdpIntake.CueByte.Cool_Manual, new ManualCool() },
+        { UdpIntake.CueByte.Dischord, new Dischord() },
+        { UdpIntake.CueByte.Stomp, new Stomp() },
+        { UdpIntake.CueByte.Default, new Default() },
+        { UdpIntake.CueByte.Warm_Automatic, new LoopWarm() },
+        { UdpIntake.CueByte.Cool_Automatic, new LoopCool() },
+        { UdpIntake.CueByte.BigRockEnding, new BigRockEnding() },
+        { UdpIntake.CueByte.Searchlights, new SearchLight() },
+        { UdpIntake.CueByte.Frenzy, new Frenzy() },
+        { UdpIntake.CueByte.Sweep, new Sweep() },
+        { UdpIntake.CueByte.Harmony, new Harmony() },
+        { UdpIntake.CueByte.Flare_Slow, new FlareSlow() },
+        { UdpIntake.CueByte.Flare_Fast, new FlareFast() },
+        { UdpIntake.CueByte.Silhouettes_Spotlight, new SilhouetteSpot() },
+        { UdpIntake.CueByte.Silhouettes, new Silhouettes() },
+        { UdpIntake.CueByte.Blackout_Spotlight, new Blackout() },
+        { UdpIntake.CueByte.Blackout_Slow, new Blackout() },
+        { UdpIntake.CueByte.Blackout_Fast, new Blackout() },
+        { UdpIntake.CueByte.Intro, new Intro() }
     };
 
-    private static void CueChange(Udp.UdpIntake.CueByte cueByte)
+    private static void CueChange(byte cueByte)
     {
         // Try to get the new cue from the dictionary
-        if (!_cueDictionary.TryGetValue(cueByte, out var cue))
+        if (!_cueDictionary.TryGetValue((UdpIntake.CueByte)cueByte, out var cue))
         {
             Console.WriteLine($"Cue {cueByte} not found in dictionary.");
             return;
@@ -88,28 +89,26 @@ public class StageKitTalker
         _currentLightingCue.Enable();
     }
 
-
-    private static void StrobeChange(Udp.UdpIntake.StrobeSpeedByte activeStrobeSpeed)
+    private static void StrobeChange(byte activeStrobeSpeed)
     {
         var strobeSetting = activeStrobeSpeed switch
         {
-            Udp.UdpIntake.StrobeSpeedByte.Off => CommandId.StrobeOff,
-            Udp.UdpIntake.StrobeSpeedByte.Slow => CommandId.StrobeSlow,
-            Udp.UdpIntake.StrobeSpeedByte.Medium => CommandId.StrobeMedium,
-            Udp.UdpIntake.StrobeSpeedByte.Fast => CommandId.StrobeFast,
-            Udp.UdpIntake.StrobeSpeedByte.Fastest => CommandId.StrobeFastest,
+            (byte)UdpIntake.CueByte.Strobe_Off => CommandId.StrobeOff,
+            (byte)UdpIntake.CueByte.Strobe_Slow => CommandId.StrobeSlow,
+            (byte)UdpIntake.CueByte.Strobe_Medium => CommandId.StrobeMedium,
+            (byte)UdpIntake.CueByte.Strobe_Fast => CommandId.StrobeFast,
+            (byte)UdpIntake.CueByte.Strobe_Fastest => CommandId.StrobeFastest,
             _ => CommandId.StrobeOff
         };
         UsbDeviceMonitor.SendReport(strobeSetting, 0x00);
     }
 
-    private static void FogChange(Udp.UdpIntake.FogStateByte activeFogState)
+    private static void FogChange(bool activeFogState)
     {
         var fogSetting = activeFogState switch
         {
-            Udp.UdpIntake.FogStateByte.Off => CommandId.FogOff,
-            Udp.UdpIntake.FogStateByte.On => CommandId.FogOn,
-            _ => CommandId.FogOff
+            false => CommandId.FogOff,
+            true => CommandId.FogOn,
         };
         UsbDeviceMonitor.SendReport(fogSetting, 0x00);
     }
@@ -118,17 +117,18 @@ public class StageKitTalker
     {
         if (isEnabled)
         {
-            Udp.UdpIntake.OnLightingCue += CueChange;
-            Udp.UdpIntake.OnStrobeState += StrobeChange;
-            Udp.UdpIntake.OnFogState += FogChange;
+            UdpIntake.OnLightingCue += CueChange;
+            UdpIntake.OnStrobeState += StrobeChange;
+            UdpIntake.OnFogState += FogChange;
+
         }
         else
         {
-            Udp.UdpIntake.OnLightingCue -= CueChange;
-            Udp.UdpIntake.OnStrobeState -= StrobeChange;
-            Udp.UdpIntake.OnFogState -= FogChange;
+            UdpIntake.OnLightingCue -= CueChange;
+            UdpIntake.OnStrobeState -= StrobeChange;
+            UdpIntake.OnFogState -= FogChange;
 
-            CueChange(Udp.UdpIntake.CueByte.NoCue);
+            CueChange((byte)UdpIntake.CueByte.NoCue);
         }
     }
 }

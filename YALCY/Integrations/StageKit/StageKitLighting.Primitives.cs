@@ -93,15 +93,15 @@ namespace YALCY.Integrations.StageKit;
             }
         }
 
-        private void HandleBeatlineEvent(Udp.UdpIntake.BeatByte eventName)
+        private void HandleBeatlineEvent(byte eventName)
         {
             if (!_enabled)
             {
                 return;
             }
 
-            if (((_listenType & ListenTypes.MajorBeat) == 0 || eventName != Udp.UdpIntake.BeatByte.Measure) &&
-                ((_listenType & ListenTypes.MinorBeat) == 0 || eventName != Udp.UdpIntake.BeatByte.Strong))
+            if (((_listenType & ListenTypes.MajorBeat) == 0 || eventName != (byte)Udp.UdpIntake.BeatByte.Measure) &&
+                ((_listenType & ListenTypes.MinorBeat) == 0 || eventName != (byte)Udp.UdpIntake.BeatByte.Strong))
             {
                 return;
             }
@@ -109,14 +109,14 @@ namespace YALCY.Integrations.StageKit;
             ProcessEvent();
         }
 
-        private void HandleDrumEvent(Udp.UdpIntake.DrumNotesByte eventName)
+        private void HandleDrumEvent(byte eventName)
         {
             if (!_enabled)
             {
                 return;
             }
 
-            if ((_listenType & ListenTypes.RedFretDrums) == 0 || (eventName &  Udp.UdpIntake.DrumNotesByte.RedDrum) == 0)
+            if ((_listenType & ListenTypes.RedFretDrums) == 0 || (eventName &  (byte)Udp.UdpIntake.DrumNotesByte.RedDrum) == 0)
             {
                 return;
             }
@@ -124,14 +124,14 @@ namespace YALCY.Integrations.StageKit;
             ProcessEvent();
         }
 
-        public void HandleKeyFrameEvent(Udp.UdpIntake.KeyFrameByte eventName)
+        public void HandleKeyFrameEvent(byte eventName)
         {
             if (!_enabled)
             {
                 return;
             }
 
-            if ((_listenType & ListenTypes.Next) == 0 || eventName != Udp.UdpIntake.KeyFrameByte.KeyframeNext)
+            if ((_listenType & ListenTypes.Next) == 0 || eventName != (byte)Udp.UdpIntake.KeyFrameByte.KeyframeNext)
             {
                 return;
             }

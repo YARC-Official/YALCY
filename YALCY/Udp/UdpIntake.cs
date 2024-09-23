@@ -1,23 +1,101 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using ReactiveUI;
-using YALCY.ViewModels;
 
 namespace YALCY.Udp;
 
 public partial class UdpIntake : ReactiveObject
 {
-    public static byte[] Buffer = new byte[Enum.GetValues<ByteIndexName>().Length]; // The current data buffer
 
-    private static byte[]
-        _previousBuffer = new byte[Enum.GetValues<ByteIndexName>().Length]; // The previous data buffer
+
+
+    public Action<byte[]> PacketProcessed;
+
+    public interface IDatapacketMember
+    {
+        string Name { get; }
+        byte Index { get; }
+        string ValueDescription { get; }
+        object Value { get; }
+    }
+
+
+    public class DatapacketMember<T> : IDatapacketMember, INotifyPropertyChanged
+    {
+        private T _value;
+        private readonly Func<T, string> _descriptionFunc;
+        private readonly Action<T> _onValueChangedAction; // Added action for value change
+
+        public DatapacketMember(string name, byte byteNumber, Func<T, string> descriptionFunc)
+        {
+            Name = name;
+            Index = byteNumber;
+            _descriptionFunc = descriptionFunc;
+            ValueDescription = _descriptionFunc(default(T)); // Initialize with default description
+        }
+
+        public string Name { get; set; }
+        public byte Index { get; set; }
+        public string ValueDescription { get; private set; } // Made setter private to prevent external modification
+
+        public T Value
+        {
+            get => _value;
+            set
+            {
+                if (EqualityComparer<T>.Default.Equals(_value, value)) return;
+                _value = value;
+                ValueDescription = _descriptionFunc(value);
+                OnPropertyChanged(nameof(Value));
+                OnPropertyChanged(nameof(ValueDescription)); // Notify for ValueDescription as well
+            }
+        }
+
+        object IDatapacketMember.Value => Value; // Explicit implementation for the interface
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public DatapacketMember<uint> Header { get; private set; } = new ("Header", 0, GetHeaderByteDescription);
+    public DatapacketMember<byte> DatagramVersion { get; private set; } = new ("Datagram Version", 1, GetDatagramVersionByteDescription);
+    public DatapacketMember<byte> Platform { get; private set; } = new ("Platform", 2, GetPlatformByteDescription);
+    public DatapacketMember<byte> CurrentScene { get; private set; } = new ("scene", 3, GetSceneIndexByteDescription);
+    public DatapacketMember<byte> Paused { get; private set; } = new ("Paused", 4, GetPauseByteDescription);
+    public DatapacketMember<byte> Venue { get; private set; } = new ("Venue", 5, GetVenueSizeByteDescription);
+    public DatapacketMember<float> BeatsPerMinute { get; private set; } = new ("Beats per minute", 6, value => $"{value}");
+    public DatapacketMember<byte> CurrentSongSection { get; private set; } = new ("song section", 7, GetSongSectionByteDescription);
+    public DatapacketMember<byte> CurrentGuitarNotes { get; private set; } = new ("Guitar notes", 8, GetInstrumentByteDescription);
+    public DatapacketMember<byte> CurrentBassNotes { get; private set; } = new ("Bass notes", 9, GetInstrumentByteDescription);
+    public DatapacketMember<byte> CurrentDrumNotes { get; private set; } = new ("Drum notes", 10, GetDrumsByteDescription);
+    public DatapacketMember<byte> CurrentKeysNotes { get; private set; } = new ("Keys notes", 11, GetInstrumentByteDescription);
+    public DatapacketMember<float> CurrentVocalNote { get; private set; } = new ("Vocal note", 12, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony0Note { get; private set; } = new ("Harmony 0 note", 13, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony1Note { get; private set; } = new ("Harmony 1 note", 14, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony2Note { get; private set; } = new ("Harmony 2 note", 15, GetVocalHarmonyByteDescription);
+    public DatapacketMember<byte> LightingCue { get; private set; } = new ("Lighting cue", 16, GetCueByteDescription);
+    public DatapacketMember<byte> PostProcessing { get; private set; } = new ("Post processing", 17, GetPostProcessingByteDescription);
+    public DatapacketMember<bool> FogState { get; private set; } = new ("Fog state", 18, GetFogStateByteDescription);
+    public DatapacketMember<byte> StrobeState { get; private set; } = new ("Strobe state", 19, GetStrobeByteDescription);
+    public DatapacketMember<byte> Performer { get; private set; } = new ("Performer", 20, value => $"{value}");
+    public DatapacketMember<byte> Beat { get; private set; } = new ("Beat", 21, GetBeatlineByteDescription);
+    public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", 22, GetKeyFrameDescription);
+    public DatapacketMember<bool> BonusEffect { get; private set; } = new ("Bonus effect", 23, GetBonusEffectByteDescription);
+
+    public static byte[] Buffer = new byte[Enum.GetValues<ByteIndexName>().Length]; // The current data buffer
 
     private static UdpClient? _udpClient;
     private static CancellationTokenSource? _cancellationTokenSource;
-    public Action<byte[]> PacketProcessed;
 
     public async Task EnableUdpIntake(bool isEnabled)
     {
@@ -54,7 +132,8 @@ public partial class UdpIntake : ReactiveObject
                         var result = await _udpClient.ReceiveAsync().ConfigureAwait(false);
 
                         // Process packets in a separate task
-                        ProcessPacket(result.Buffer);
+                        //ProcessPacket(result.Buffer);
+                        DeserializePacket(result.Buffer);
                     }
                 }
                 catch (ObjectDisposedException)
@@ -77,90 +156,49 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
-    private void ProcessPacket(byte[] packet)
+    public void DeserializePacket(byte[] data)
     {
-        if (packet.Length == Enum.GetValues<ByteIndexName>().Length)
+        using (MemoryStream ms = new MemoryStream(data))
+        using (BinaryReader reader = new BinaryReader(ms))
         {
-            _previousBuffer = Buffer;
-            Buffer = packet;
-            for (int i = 0; i < Buffer.Length; i++)
+            Header.Value = reader.ReadUInt32();
+
+            // Check if the header is correct (replace `EXPECTED_HEADER_VALUE` with the actual expected value)
+            if (Header.Value != PACKET_HEADER) // Y A R G
             {
-                switch (i)
-                {
-                    case (int)ByteIndexName.Beat:
-                        HandleBeatByte((BeatByte)Buffer[i]);
-                        break;
-
-                    case (int)ByteIndexName.Keyframe:
-                        HandleKeyFrameCueEByte((KeyFrameByte)Buffer[i]);
-                        break;
-
-                    case (int)ByteIndexName.DrumsNotes:
-                        HandleDrumByte((DrumNotesByte)Buffer[i]);
-                        break;
-
-                    case (int)ByteIndexName.VocalsNote:
-                        HandleVocalHarmonyByte((VocalHarmonyBytes)Buffer[i]);
-                        break;
-
-                    case (int)ByteIndexName.LightingCue:
-                        HandleLightingCueByte((CueByte)Buffer[i]);
-                        break;
-
-                    case (int)ByteIndexName.FogState:
-                        HandleFogByte((FogStateByte)Buffer[i]);
-                        break;
-
-                    case (int)ByteIndexName.StrobeState:
-                        HandleStrobeByte((StrobeSpeedByte)Buffer[i]);
-                        break;
-
-                    default:
-                        // Console.WriteLine($"Unhandled byte at index {i}: {Buffer[i]}");
-                        break;
-                }
-
-                if (MainWindowViewModel.ByteIndexes == null) continue;
-                MainWindowViewModel.ByteIndexes[i].CurrentValue = Buffer[i];
-                MainWindowViewModel.ByteIndexes[i].ValueDescription = i switch
-                {
-                    (int)ByteIndexName.HeaderByte1 => GetHeaderByteDescription(Buffer[i]),
-                    (int)ByteIndexName.HeaderByte2 => GetHeaderByteDescription(Buffer[i]),
-                    (int)ByteIndexName.HeaderByte3 => GetHeaderByteDescription(Buffer[i]),
-                    (int)ByteIndexName.HeaderByte4 => GetHeaderByteDescription(Buffer[i]),
-                    (int)ByteIndexName.DatagramVersion => GetDatagramVersionByteDescription(Buffer[i]),
-                    (int)ByteIndexName.Platform => GetPlatformByteDescription(Buffer[i]),
-                    (int)ByteIndexName.CurrentScene => GetSceneIndexByteDescription(Buffer[i]),
-                    (int)ByteIndexName.PauseState => GetPauseByteDescription(Buffer[i]),
-                    (int)ByteIndexName.VenueSize => GetVenueSizeByteDescription(Buffer[i]),
-                    (int)ByteIndexName.BeatsPerMinute => "Beats per minute",
-                    (int)ByteIndexName.SongSection => GetSongSectionByteDescription(Buffer[i]),
-                    (int)ByteIndexName.GuitarNotes => GetInstrumentByteDescription(Buffer[i]),
-                    (int)ByteIndexName.BassNotes => GetInstrumentByteDescription(Buffer[i]),
-                    (int)ByteIndexName.DrumsNotes => GetDrumsByteDescription(Buffer[i]),
-                    (int)ByteIndexName.KeysNotes => GetInstrumentByteDescription(Buffer[i]),
-                    (int)ByteIndexName.VocalsNote => GetVocalHarmonyByteDescription(Buffer[i]),
-                    (int)ByteIndexName.Harmony0Note => GetVocalHarmonyByteDescription(Buffer[i]),
-                    (int)ByteIndexName.Harmony1Note => GetVocalHarmonyByteDescription(Buffer[i]),
-                    (int)ByteIndexName.Harmony2Note => GetVocalHarmonyByteDescription(Buffer[i]),
-                    (int)ByteIndexName.LightingCue => GetCueByteDescription(Buffer[i]),
-                    (int)ByteIndexName.PostProcessing => GetPostProcessingByteDescription(Buffer[i]),
-                    (int)ByteIndexName.FogState => GetFogStateByteDescription(Buffer[i]),
-                    (int)ByteIndexName.StrobeState => GetStrobeByteDescription(Buffer[i]),
-                    (int)ByteIndexName.Performer => "Not implemented yet",
-                    (int)ByteIndexName.Beat => GetBeatlineByteDescription((BeatByte)Buffer[i]),
-                    (int)ByteIndexName.Keyframe => GetKeyFrameDescription(Buffer[i]),
-                    (int)ByteIndexName.BonusEffect => GetBonusEffectByteDescription(Buffer[i]),
-                    _ => Buffer[i].ToString()
-                };
+                // If the header is incorrect, stop reading the packet and return null or handle it accordingly
+                Console.WriteLine("Invalid packet header.");
+                return;
             }
+            DatagramVersion.Value = reader.ReadByte();
+            Platform.Value = reader.ReadByte();
+            CurrentScene.Value = reader.ReadByte();
+            Paused.Value = reader.ReadByte();
+            Venue.Value = reader.ReadByte();
+            BeatsPerMinute.Value = reader.ReadSingle();
+            CurrentSongSection.Value = reader.ReadByte();
 
-            PacketProcessed?.Invoke(Buffer);
+            CurrentGuitarNotes.Value = reader.ReadByte();
+            CurrentBassNotes.Value = reader.ReadByte();
+            CurrentDrumNotes.Value = reader.ReadByte();
+            CurrentKeysNotes.Value = reader.ReadByte();
+
+            CurrentVocalNote.Value = reader.ReadSingle();
+            CurrentHarmony0Note.Value = reader.ReadSingle();
+            CurrentHarmony1Note.Value = reader.ReadSingle();
+            CurrentHarmony2Note.Value = reader.ReadSingle();
+
+            LightingCue.Value = reader.ReadByte();
+            PostProcessing.Value = reader.ReadByte();
+            FogState.Value = reader.ReadBoolean();
+            StrobeState.Value = reader.ReadByte();
+            Performer.Value = reader.ReadByte();
+            Beat.Value = reader.ReadByte();
+            Keyframe.Value = reader.ReadByte();
+            BonusEffect.Value = reader.ReadBoolean();
         }
-        else
-        {
-            Console.WriteLine($"Received packet of invalid length: {packet.Length} bytes");
-        }
+
+        PacketProcessed?.Invoke(Buffer);
     }
 
     private void StopUdpClient()
@@ -172,7 +210,7 @@ public partial class UdpIntake : ReactiveObject
             _udpClient?.Dispose();
             _udpClient = null;
 
-            ClearByteIndexes();
+            //        ClearByteIndexes();
         }
         catch (Exception ex)
         {
@@ -180,6 +218,7 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
+    /*
     private static void ClearByteIndexes()
     {
         foreach (var byteIndex in MainWindowViewModel.ByteIndexes)
@@ -188,4 +227,5 @@ public partial class UdpIntake : ReactiveObject
             byteIndex.ValueDescription = string.Empty;
         }
     }
+    */
 }

@@ -4,13 +4,12 @@ namespace YALCY.Udp;
 
 public partial class UdpIntake
 {
+    const uint PACKET_HEADER = 0x59415247; // YARG
+
      public enum ByteIndexName
     {
         //header
-        HeaderByte1,
-        HeaderByte2,
-        HeaderByte3,
-        HeaderByte4,
+        Header,
         //Tech info
         DatagramVersion,
         Platform,
@@ -43,15 +42,14 @@ public partial class UdpIntake
 
      public enum SongSectionByte
 	 {
-		 None,
-		 Verse,
-		 Chorus,
+		 None = 0,
+         Chorus = 2,
+		 Verse = 5,
 	 }
 
      public enum VocalHarmonyBytes
-     {
+     {   Unpitched = -1,
          None = 0,
-         Unpitched = 255,
          C6 = 84,
          B5 = 83,
          Bb5 = 82,
@@ -103,13 +101,6 @@ public partial class UdpIntake
          C2 = 36
      }
 
-    private enum HeaderBytes
-    {
-        HeaderByte1 = 0x59, // Y
-        HeaderByte2 = 0x41, // A
-        HeaderByte3 = 0x52, // R
-        HeaderByte4 = 0x47, // G
-    }
     private enum DatagramVersionByte
     {
         Version,
@@ -122,11 +113,6 @@ public partial class UdpIntake
         Linux,
         Mac,
     }
-    private enum BonusEffectByte
-    {
-        Off,
-        On,
-    }
     public enum BeatByte
     {
         Off,
@@ -136,26 +122,12 @@ public partial class UdpIntake
     }
     public enum KeyFrameByte
     {
-        Off,
-        KeyframeNext,
-        KeyframePrevious,
-        KeyframeFirst,
+        Off = 0,
+        KeyframeFirst = 27,
+        KeyframeNext = 28,
+        KeyframePrevious = 29,
     }
 
-    public enum StrobeSpeedByte
-    {
-        Off,
-        Slow,
-        Medium,
-        Fast,
-        Fastest,
-    }
-
-    private enum PauseByte
-    {
-        Unpaused,
-        Paused,
-    }
     public enum VenueSizeByte
     {
         NoVenue,
@@ -196,71 +168,91 @@ public partial class UdpIntake
 
     public enum CueByte
     {
-        NoCue = 0,
-        Menu = 10,
-        Score = 20,
-        Intro = 30,
-        CoolLoop = 60,
-        WarmLoop = 70,
-        CoolManual = 80,
-        WarmManual = 90,
-        Dischord = 100,
-        Stomp = 110,
-        Default = 120,
-        Harmony = 130,
-        Frenzy = 140,
-        Silhouettes = 150,
-        SilhouettesSpotlight = 160,
-        Searchlights = 170,
-        Sweep = 180,
-        BlackoutFast = 190,
-        BlackoutSlow = 200,
-        BlackoutSpotlight = 210,
-        FlareSlow = 220,
-        FlareFast = 230,
-        BigRockEnding = 240,
+        Default,
+        Dischord,
+        Chorus,
+        Cool_Manual,
+        Stomp,
+        Verse,
+        Warm_Manual,
+
+        // Automatic
+        BigRockEnding,
+        Blackout_Fast,
+        Blackout_Slow,
+        Blackout_Spotlight,
+        Cool_Automatic,
+        Flare_Fast,
+        Flare_Slow,
+        Frenzy,
+        Intro,
+        Harmony,
+        Silhouettes,
+        Silhouettes_Spotlight,
+        Searchlights,
+        Strobe_Fastest,
+        Strobe_Fast,
+        Strobe_Medium,
+        Strobe_Slow,
+        Strobe_Off,
+        Sweep,
+        Warm_Automatic,
+
+        // Keyframe events
+        Keyframe_First,
+        Keyframe_Next,
+        Keyframe_Previous,
+
+        //YARG internal
+        Menu,
+        Score,
+        NoCue,
     }
+
     private enum PostProcessingByte
     {
-        Default = 0,
-
         // Basic effects
-        Bloom = 4,
-        Bright = 14,
-        Contrast = 24,
-        Mirror = 34,
-        PhotoNegative = 44,
-        Posterize = 54,
+        Default,
+        Bloom,
+        Bright,
+        Contrast,
+        Posterize,
+        PhotoNegative,
+        Mirror,
 
         // Color filters/effects
-        BlackAndWhite = 64,
-        SepiaTone = 74,
-        SilverTone = 84,
-        ChoppyBlackAndWhite = 94,
-        PhotoNegativeRedAndBlack = 104,
-        PolarizedBlackAndWhite = 114,
-        PolarizedRedAndBlue = 124,
-        DesaturatedRed = 134,
-        DesaturatedBlue = 144,
-        ContrastRed = 154,
-        ContrastGreen = 164,
-        ContrastBlue = 174,
+        BlackAndWhite,
+        SepiaTone,
+        SilverTone,
+
+        Choppy_BlackAndWhite,
+        PhotoNegative_RedAndBlack,
+        Polarized_BlackAndWhite,
+        Polarized_RedAndBlue,
+
+        Desaturated_Blue,
+        Desaturated_Red,
+
+        Contrast_Red,
+        Contrast_Green,
+        Contrast_Blue,
 
         // Grainy
-        GrainyFilm = 184,
-        GrainyChromaticAbberation = 194,
+        Grainy_Film,
+        Grainy_ChromaticAbberation,
+
         // Scanlines
-        Scanlines = 204,
-        ScanlinesBlackAndWhite = 214,
-        ScanlinesBlue = 224,
-        ScanlinesSecurity = 234,
+        Scanlines,
+        Scanlines_BlackAndWhite,
+        Scanlines_Blue,
+        Scanlines_Security,
 
         // Trails
-        Trails = 244,
-        TrailsLong = 252,
-        TrailsDesaturated = 253,
-        TrailsFlickery = 254,
-        TrailsSpacey = 255,
+        Trails,
+        Trails_Long,
+        Trails_Desaturated,
+        Trails_Flickery,
+        Trails_Spacey,
     }
 
     private enum SceneIndexByte

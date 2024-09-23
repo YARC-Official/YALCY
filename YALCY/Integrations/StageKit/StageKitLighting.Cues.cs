@@ -565,10 +565,10 @@ namespace YALCY.Integrations.StageKit;
             }
         }
 
-        private void HandleVocalEvent(Udp.UdpIntake.VocalHarmonyBytes eventName)
+        private void HandleVocalEvent(float eventName)
         {
             //seems to active on vocal note end? More testing needing. Baffling.
-            if (eventName != Udp.UdpIntake.VocalHarmonyBytes.None) return;
+            if (eventName != (byte)Udp.UdpIntake.VocalHarmonyBytes.None) return;
             if (!_enableBlueLedVocals) return;
 
             if (_blueOn)
@@ -585,9 +585,9 @@ namespace YALCY.Integrations.StageKit;
             _enableBlueLedVocals = false;
         }
 
-        private void HandleBeatlineEvent(Udp.UdpIntake.BeatByte eventName)
+        private void HandleBeatlineEvent(byte eventName)
         {
-            if (eventName != Udp.UdpIntake.BeatByte.Measure || StageKitTalker.PreviousLightingCue is not Dischord) return;
+            if (eventName != (byte)Udp.UdpIntake.BeatByte.Measure || StageKitTalker.PreviousLightingCue is not Dischord) return;
             if (StageKitTalker.PreviousLightingCue is not Dischord) return;
             _enableBlueLedVocals = true;
         }
@@ -718,9 +718,9 @@ namespace YALCY.Integrations.StageKit;
             Udp.UdpIntake.OnKeyFrame -= HandleKeyFrameEvent;
         }
 
-        private void HandleKeyFrameEvent(Udp.UdpIntake.KeyFrameByte eventName)
+        private void HandleKeyFrameEvent(byte eventName)
         {
-            if (eventName != Udp.UdpIntake.KeyFrameByte.KeyframeNext) return;
+            if (eventName != (byte)Udp.UdpIntake.KeyFrameByte.KeyframeNext) return;
             if (_anythingOn)
             {
                 UsbDeviceMonitor.SendReport(Red, None);
@@ -824,9 +824,9 @@ namespace YALCY.Integrations.StageKit;
             Udp.UdpIntake.OnKeyFrame -= HandleKeyFrameEvent;
         }
 
-        private void HandleKeyFrameEvent(Udp.UdpIntake.KeyFrameByte eventName)
+        private void HandleKeyFrameEvent(byte eventName)
         {
-            if (eventName != Udp.UdpIntake.KeyFrameByte.KeyframeNext)
+            if (eventName != (byte)Udp.UdpIntake.KeyFrameByte.KeyframeNext)
             {
                 return;
             }
@@ -845,9 +845,9 @@ namespace YALCY.Integrations.StageKit;
             }
         }
 
-        private void HandleBeatlineEvent(Udp.UdpIntake.BeatByte eventName)
+        private void HandleBeatlineEvent(byte eventName)
         {
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large || eventName != Udp.UdpIntake.BeatByte.Measure) return;
+            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large || eventName != (byte)Udp.UdpIntake.BeatByte.Measure) return;
             if (_greenIsSpinning)
             {
                 _greenPattern.KillSelf();
