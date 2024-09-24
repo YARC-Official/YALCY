@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using YALCY.Udp;
 using YALCY.Usb;
 
 namespace YALCY.Integrations.StageKit;
@@ -45,7 +46,7 @@ namespace YALCY.Integrations.StageKit;
                     }
 
                     var stepsPerBeats = _patternList.Length * _cyclesPerBeat;
-                    var secondsPerBeat = 60f/ Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute];
+                    var secondsPerBeat = 60f / UdpIntake.BeatsPerMinute.Value;
                     await Task.Delay(TimeSpan.FromSeconds(  secondsPerBeat / stepsPerBeats   ), cancellationToken: _cancellationTokenSource.Token);
                 }
             });
