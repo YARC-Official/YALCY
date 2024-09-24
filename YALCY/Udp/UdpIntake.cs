@@ -72,7 +72,7 @@ public partial class UdpIntake : ReactiveObject
     public DatapacketMember<byte> Platform { get; private set; } = new ("Platform", 2, GetPlatformByteDescription);
     public DatapacketMember<byte> CurrentScene { get; private set; } = new ("scene", 3, GetSceneIndexByteDescription);
     public DatapacketMember<byte> Paused { get; private set; } = new ("Paused", 4, GetPauseByteDescription);
-    public DatapacketMember<byte> Venue { get; private set; } = new ("Venue", 5, GetVenueSizeByteDescription);
+    public static DatapacketMember<byte> Venue { get; private set; } = new ("Venue", 5, GetVenueSizeByteDescription);
     public static DatapacketMember<float> BeatsPerMinute { get; private set; } = new ("Beats per minute", 6, value => $"{value}");
     public DatapacketMember<byte> CurrentSongSection { get; private set; } = new ("song section", 7, GetSongSectionByteDescription);
     public DatapacketMember<byte> CurrentGuitarNotes { get; private set; } = new ("Guitar notes", 8, GetInstrumentByteDescription);

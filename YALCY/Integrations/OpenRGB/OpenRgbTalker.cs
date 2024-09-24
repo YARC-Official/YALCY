@@ -165,19 +165,19 @@ public class OpenRgbTalker
                     break;
 
                 case StageKitTalker.CommandId.StrobeSlow:
-                    StartStrobeEffect(1, UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.BeatsPerMinute]);
+                    StartStrobeEffect(1, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.StrobeMedium:
-                    StartStrobeEffect(2, UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.BeatsPerMinute]);
+                    StartStrobeEffect(2, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.StrobeFast:
-                    StartStrobeEffect(3, UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.BeatsPerMinute]);
+                    StartStrobeEffect(3, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.StrobeFastest:
-                    StartStrobeEffect(4, UdpIntake.Buffer[(int)UdpIntake.ByteIndexName.BeatsPerMinute]);
+                    StartStrobeEffect(4, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.DisableAll:
@@ -204,7 +204,7 @@ public class OpenRgbTalker
         }
     }
 
-    private void StartStrobeEffect(int speed, int bpm)
+    private void StartStrobeEffect(int speed, float bpm)
     {
         StopStrobeEffect();
         int interval;
@@ -334,7 +334,7 @@ public class OpenRgbTalker
         client.UpdateLeds(device.Index, colors);
     }
 
-    private int CalculateDelay(int noteValue, int bpm)
+    private int CalculateDelay(int noteValue, float bpm)
     {
         return (int)(60000.0 / bpm * 4 / noteValue);
     }

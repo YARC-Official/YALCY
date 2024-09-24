@@ -228,7 +228,7 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
                 UsbDeviceMonitor.SendReport(Blue, None);
                 UsbDeviceMonitor.SendReport(Green, None);
@@ -294,7 +294,7 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
                 UsbDeviceMonitor.SendReport(Yellow, None);
                 UsbDeviceMonitor.SendReport(Blue, None);
@@ -371,7 +371,7 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
                 UsbDeviceMonitor.SendReport(Green, None);
                 // 4 times a beats to control on and off because of the 2 different patterns on one color
@@ -447,7 +447,7 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
                 UsbDeviceMonitor.SendReport(Red, None);
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 0.5f)); //Set
@@ -697,7 +697,7 @@ namespace YALCY.Integrations.StageKit;
         {
             Udp.UdpIntake.OnKeyFrame += HandleKeyFrameEvent;
 
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
                 UsbDeviceMonitor.SendReport(Blue, All);
             }
@@ -730,7 +730,7 @@ namespace YALCY.Integrations.StageKit;
             }
             else
             {
-                if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+                if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
                 {
                     UsbDeviceMonitor.SendReport(Blue, All);
                 }
@@ -847,7 +847,7 @@ namespace YALCY.Integrations.StageKit;
 
         private void HandleBeatlineEvent(byte eventName)
         {
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large || eventName != (byte)Udp.UdpIntake.BeatByte.Measure) return;
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large || eventName != (byte)Udp.UdpIntake.BeatByte.Measure) return;
             if (_greenIsSpinning)
             {
                 _greenPattern.KillSelf();
@@ -881,7 +881,7 @@ namespace YALCY.Integrations.StageKit;
         {
             UsbDeviceMonitor.SendReport(Green, None);
 
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
                 CuePrimitives.Add(new ListenPattern(LargePatternList1, ListenTypes.Next));
             }
@@ -960,7 +960,7 @@ namespace YALCY.Integrations.StageKit;
         {
             UsbDeviceMonitor.SendReport(Green, None);
 
-            if (Udp.UdpIntake.Buffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] == (byte)Udp.UdpIntake.VenueSizeByte.Large)
+            if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
                 UsbDeviceMonitor.SendReport(Blue, None);
                 CuePrimitives.Add(new TimedPattern(LargePatternList1, 1f));
