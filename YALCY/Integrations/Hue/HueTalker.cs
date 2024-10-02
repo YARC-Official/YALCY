@@ -28,13 +28,14 @@ public class HueTalker : IDisposable
 
     public async Task EnableHue(bool isEnabled, string? bridgeIp)
     {
+        Console.WriteLine("EnableHue called.");
         // Access the MainViewModel instance
         var app = (App)Application.Current!;
         var mainViewModel = app.MainViewModel;
 
         if (isEnabled)
         {
-
+            Console.WriteLine("Enabling Hue.");
             var (isValid, statusMessage) = Helpers.IpValidator(bridgeIp);
 
             mainViewModel.HueIpStatus = statusMessage;
@@ -78,18 +79,19 @@ public class HueTalker : IDisposable
                 // Initialize the CancellationTokenSource for ongoing operations
                 _cancellationTokenSource = new CancellationTokenSource();
 
-                // Start auto-updating this entertainment group
-                await _client.AutoUpdateAsync(_streamingGroup, _cancellationTokenSource.Token, 50, onlySendDirtyStates: false);
-
                 // Create new base layer
                 _entArea = await _client.LocalHueApi.GetEntertainmentConfigurationAsync(group.Id);
 
                 mainViewModel.HueStreamingActiveStatus = (_entArea.Data.First().Status == EntertainmentConfigurationStatus.active ? "Streaming Active Status: Streaming is active" : "Streaming Active Status: Streaming is not active");
+
                 _baseEntLayer = _streamingGroup.GetNewLayer(isBaseLayer: true);
                 _effectLayer = _streamingGroup.GetNewLayer();
 
                 _baseEntLayer.SetState(_cancellationTokenSource.Token, new RGBColor("FFFFFF"), 1);
                 UsbDeviceMonitor.OnStageKitCommand += SendRequest;
+
+                // Start auto-updating this entertainment group
+                await _client.AutoUpdateAsync(_streamingGroup, _cancellationTokenSource.Token, 50, onlySendDirtyStates: false);
             }
             catch (UnauthorizedAccessException)
             {
@@ -117,6 +119,7 @@ public class HueTalker : IDisposable
         }
         else
         {
+            Console.WriteLine("Disabling Hue.");
             // Cancel any ongoing operations
             _cancellationTokenSource?.Cancel();
 
