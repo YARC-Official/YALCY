@@ -75,7 +75,7 @@ public class DmxTalker
             }
 
             //The three parts of the dmx output: stage kit channels, master dimmers, and the channels read from the udp packet
-            //UpdateMasterDimmers();
+            UpdateMasterDimmers();
             mainViewModel.UdpIntake.PacketProcessed += (packet) => UpdateDataPacket(packet, mainViewModel);
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
 
