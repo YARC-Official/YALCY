@@ -75,7 +75,7 @@ namespace Dmx.Net.Common
 
             lock (_writeBufferLock)
             {
-                writeBuffer[channel] = value;
+                writeBuffer[channel-1] = value;
             }
         }
 
