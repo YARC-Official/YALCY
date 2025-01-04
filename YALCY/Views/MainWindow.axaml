@@ -307,6 +307,16 @@
                           Content="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
                           IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
         </TabItem>
+        <TabItem Header="Serial">
+            <StackPanel Margin="5">
+                <ToggleButton ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
+                              Content="{Binding SerialEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
+                <TextBlock Text="The channel numbers set and used from the sAcn/dmx tab" Margin="5" />
+                <TextBlock Text="{Binding SerialMessage}" Margin="5" Foreground="Red" />
+            </StackPanel>
+        </TabItem>
+
         <TabItem Header="Hue">
             <StackPanel Margin="5">
                 <!-- Toggle Button -->
@@ -408,6 +418,33 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </StackPanel>
+        </TabItem>
+        <TabItem Header="Credits">
+            <TextBlock Margin="5">
+                <TextBlock.Inlines>
+                    <Run Text="Contributors:" />
+                    <LineBreak />
+                    <Run Text="Kadu" />
+                    <LineBreak />
+                    <Run Text="The Fat Bastid" />
+                    <LineBreak />
+                    <LineBreak />
+                    <Run Text="Special thanks to:" />
+                    <LineBreak />
+                    <Run Text="RPAL" />
+                    <LineBreak />
+                    <Run Text="RazQ" />
+                    <LineBreak />
+                    <Run Text="Alink2thepatrick" />
+                    <LineBreak />
+                    <Run Text="Nyxyxylyth" />
+                    <LineBreak />
+                    <Run Text="NevesPT" />
+                    <LineBreak />
+                    <Run Text="and, of course, everyone from the YARG mother-ship." />
+                </TextBlock.Inlines>
+            </TextBlock>
+
         </TabItem>
     </TabControl>
 </Window>

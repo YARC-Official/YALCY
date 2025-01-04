@@ -50,6 +50,7 @@ internal static class SettingsManager
     public static bool HueEnabledSettingIsEnabled { get; set; }
     public static bool StageKitEnabledSettingIsEnabled { get; set; }
     public static bool Rb3eEnabledSettingIsEnabled { get; set; }
+    public static bool SerialEnabledSettingIsEnabled { get; set; }
     public static bool OpenRgbEnabledSettingIsEnabled { get; set; }
     public static int BpmChannelSettingValue { get; private set; }
     public static int CueChangeChannelSettingValue { get; private set; }
@@ -100,6 +101,7 @@ internal static class SettingsManager
         settings.CurrentEnableSettings.Add(mainViewModel.StageKitEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.Rb3eEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.OpenRgbEnabledSetting);
+        settings.CurrentEnableSettings.Add(mainViewModel.SerialEnabledSetting);
 
         settings.CurrentSingleSettings.Add(mainViewModel.BpmChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.CueChangeChannelSetting);
@@ -177,6 +179,10 @@ internal static class SettingsManager
 
                     case "RB3E Enabled":
                         Rb3eEnabledSettingIsEnabled = enable.IsEnabled;
+                        break;
+
+                    case "Serial Enabled":
+                        SerialEnabledSettingIsEnabled = enable.IsEnabled;
                         break;
 
                     case "OpenRGB Enabled":
@@ -325,6 +331,7 @@ internal static class SettingsManager
             StageKitEnabledSettingIsEnabled = true;
             Rb3eEnabledSettingIsEnabled = true;
             OpenRgbEnabledSettingIsEnabled = true;
+            SerialEnabledSettingIsEnabled = true;
 
             BpmChannelSettingValue = 57;
             CueChangeChannelSettingValue = 58;

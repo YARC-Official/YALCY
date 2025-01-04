@@ -12,6 +12,7 @@ using YALCY.Integrations.DMX;
 using YALCY.Integrations.Hue;
 using YALCY.Integrations.OpenRGB;
 using YALCY.Integrations.RB3E;
+using YALCY.Integrations.Serial;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 
@@ -33,11 +34,13 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     public EnableSetting UdpEnableSetting { get; set; }
     public EnableSetting Rb3eEnabledSetting { get; set; }
     public EnableSetting OpenRgbEnabledSetting { get; set; }
+    public EnableSetting SerialEnabledSetting { get; set; }
     public readonly UsbDeviceMonitor UsbDeviceMonitor;
     public readonly HueTalker HueTalker;
     public readonly DmxTalker DmxTalker;
     public readonly StageKitTalker StageKitTalker;
     public readonly Rb3eTalker Rb3ETalker;
+    public readonly SerialTalker SerialTalker;
     public readonly Udp.UdpIntake UdpIntake;
     public OpenRgbTalker OpenRgbTalker { get; set; }
 
@@ -57,6 +60,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         UdpIntake = new Udp.UdpIntake();
         UsbDeviceMonitor = new UsbDeviceMonitor();
         OpenRgbTalker = new OpenRgbTalker();
+        SerialTalker = new SerialTalker();
 
         // Initialize EnableSettings using loaded settings
         InitializeEnableSettings();
@@ -132,6 +136,15 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             "Enable or disable a partial implementation of the RB3E udp protocol"
         );
 
+        SerialEnabledSetting = new EnableSetting(
+            "Serial Enabled",
+            SettingsManager.SerialEnabledSettingIsEnabled,
+            "YALCY is talking serial!",
+            "YALCY is NOT talking serial!",
+            async (isEnabled) => SerialTalker.EnableSerialTalker(isEnabled),
+            "Enable or disable output to a serial device"
+        );
+
         OpenRgbEnabledSetting = new EnableSetting(
             "OpenRGB Enabled",
             SettingsManager.OpenRgbEnabledSettingIsEnabled,
@@ -162,6 +175,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
         // Turn off the sACN/DMX talker
         DmxTalker.EnableDmxTalker(false);
+
+        // Turn off the Serial Talker
+        SerialTalker.EnableSerialTalker(false);
 
         // Turn off the StageKit
         StageKitTalker.EnableStageKitTalker(false);

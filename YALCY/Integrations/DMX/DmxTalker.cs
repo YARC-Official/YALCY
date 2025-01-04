@@ -59,8 +59,11 @@ public class DmxTalker
         {
             if (_sendClient != null) return;
 
-            _sendClient = new SACNClient(senderId: AcnSourceId, senderName: AcnSourceName,
-                localAddress: SACNCommon.GetFirstBindAddress().IPAddress);
+            _sendClient = new SACNClient(
+                senderId: AcnSourceId,
+                senderName: AcnSourceName,
+                localAddress: Haukcode.Network.Utils.GetFirstBindAddress().IPAddress
+                );
 
             // Access the MainViewModel instance
             app = (App)Application.Current!;
@@ -100,7 +103,7 @@ public class DmxTalker
             var mainViewModel = app.MainViewModel;
 
             // Force send final packet.
-            _sendClient.SendMulticast((ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
+            _sendClient.SendDmxData(null,(ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
 
             _sendClient.Dispose();
             _sendClient = null;
@@ -172,7 +175,7 @@ public class DmxTalker
         }
 
         // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
-        _sendClient?.SendMulticast((ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
+        _sendClient?.SendDmxData(null,(ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
     }
 
     public void UpdateMasterDimmers()

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -19,23 +19,24 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.2.0-beta2" />
-        <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.0-beta2" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.2.0-beta2" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.0-beta2" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.0-beta2" />
+        <PackageReference Include="Avalonia" Version="11.2.3" />
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.3" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.0-beta2" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.0-beta2" />
-        <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.1.0.4" />
-        <PackageReference Include="Haukcode.sACN" Version="2.0.19" />
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.3" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.3" />
+        <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.2.0.6" />
+        <PackageReference Include="Haukcode.sACN" Version="2.0.52" />
         <PackageReference Include="HidSharp" Version="2.1.0" />
-        <PackageReference Include="HueApi" Version="1.6.3" />
-        <PackageReference Include="HueApi.ColorConverters" Version="1.5.1" />
-        <PackageReference Include="HueApi.Entertainment" Version="1.5.1" />
+        <PackageReference Include="HueApi" Version="1.7.0" />
+        <PackageReference Include="HueApi.ColorConverters" Version="1.7.1" />
+        <PackageReference Include="HueApi.Entertainment" Version="1.7.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="OpenRGB.NET" Version="3.1.1" />
-        <PackageReference Include="System.Management" Version="9.0.0-rc.1.24431.7" />
+        <PackageReference Include="System.Management" Version="9.0.0" />
+		<PackageReference Include="DMX.NET" Version="1.0.0-alpha" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,5 +44,11 @@
       <Compile Remove="Integrations\DMX\DmxSettings.cs" />
       <Compile Remove="Source\SettingsManager.cs" />
       <Compile Remove="Source\ViewLocator.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="libs\FTD2XX.dll">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 </Project>
