@@ -13,6 +13,7 @@ YALCY is YARG's offical light controller for real world lighting effects. It cur
 |Phillips hue entertainment api| Working!|
 |RB3E datastream, partial, just the lighting data|Working!|
 |OpenRGB| Working!|
+|Serial| In testing|
 
 ## 📥 Downloading and Playing
 
@@ -42,3 +43,4 @@ Some libraries/assets are **packaged** with the source code have licenses that m
 |[HueApi](https://github.com/michielpost/Q42.HueApi)|MIT|Phillips Hue handling|
 |[Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json)|MIT|Settings saving and loading|
 |[OpenRGB.net](https://github.com/diogotr7/OpenRGB.NET)|MIT|OpenRGB handling|
+|[DMX.NET](https://github.com/Nyxyxylyth/DMX.NET)|MIT| USB to serial handling|
