@@ -427,6 +427,8 @@
                     <Run Text="Kadu" />
                     <LineBreak />
                     <Run Text="The Fat Bastid" />
+                    <LineBreak />                    
+                    <Run Text="Nyxyxylyth" />
                     <LineBreak />
                     <LineBreak />
                     <Run Text="Special thanks to:" />
@@ -436,8 +438,6 @@
                     <Run Text="RazQ" />
                     <LineBreak />
                     <Run Text="Alink2thepatrick" />
-                    <LineBreak />
-                    <Run Text="Nyxyxylyth" />
                     <LineBreak />
                     <Run Text="NevesPT" />
                     <LineBreak />
