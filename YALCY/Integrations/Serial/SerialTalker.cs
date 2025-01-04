@@ -77,7 +77,7 @@ public class SerialTalker: IDisposable
             case StageKitTalker.CommandId.YellowLeds:
                 for (int i = 0; i < 8; i++)
                 {
-                    if (mainViewModel.BlueChannels.Channel != null)
+                    if (mainViewModel.YellowChannels.Channel != null)
                     {
                         controller.SetChannel(mainViewModel.YellowChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
                     }
@@ -96,6 +96,8 @@ public class SerialTalker: IDisposable
 
                 break;
         }
+
+
     }
 
     private void Sender()
@@ -120,12 +122,21 @@ public class SerialTalker: IDisposable
         controller.SetChannel(mainViewModel.BonusEffectChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BonusEffect);
         controller.SetChannel(mainViewModel.CurrentSceneSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.CurrentScene);
 
+        for (int i = 0; i < 8; i++)
+        {
+            controller.SetChannel(mainViewModel.MasterDimmerSettings.Channel[i], (byte)mainViewModel.MasterDimmerValues.Channel[i]);
+        }
+
+        controller.WriteSafe();
     }
 
     public void Dispose()
     {
         UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
-        controller.Dispose();
+        if (controller != null)
+        {
+            controller.Dispose();
+        }
         _timer?.Stop();
         _timer?.Dispose();
     }
