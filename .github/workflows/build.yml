@@ -17,22 +17,19 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
-        working-directory: ./YALCY
+        run: dotnet restore YALCY/YALCY.csproj
 
       - name: Build
-        run: dotnet build --configuration Release
-        working-directory: ./YALCY
+        run: dotnet build --configuration Release YALCY/YALCY.csproj
 
       - name: Publish
-        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish
-        working-directory: ./YALCY
+        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
 
       - name: Upload Windows Binaries
         uses: actions/upload-artifact@v3
         with:
           name: windows-binaries
-          path: ./YALCY/publish
+          path: YALCY/publish
 
   build-linux:
     runs-on: ubuntu-latest
@@ -47,22 +44,19 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
-        working-directory: ./YALCY
+        run: dotnet restore YALCY/YALCY.csproj
 
       - name: Build
-        run: dotnet build --configuration Release
-        working-directory: ./YALCY
+        run: dotnet build --configuration Release YALCY/YALCY.csproj
 
       - name: Publish
-        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish
-        working-directory: ./YALCY
+        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
 
       - name: Upload Linux Binaries
         uses: actions/upload-artifact@v3
         with:
           name: linux-binaries
-          path: ./YALCY/publish
+          path: YALCY/publish
 
   build-macos:
     runs-on: macos-latest
@@ -77,19 +71,16 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
-        working-directory: ./YALCY
+        run: dotnet restore YALCY/YALCY.csproj
 
       - name: Build
-        run: dotnet build --configuration Release
-        working-directory: ./YALCY
+        run: dotnet build --configuration Release YALCY/YALCY.csproj
 
       - name: Publish
-        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish
-        working-directory: ./YALCY
+        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
 
       - name: Upload macOS Binaries
         uses: actions/upload-artifact@v3
         with:
           name: macos-binaries
-          path: ./YALCY/publish
+          path: YALCY/publish
