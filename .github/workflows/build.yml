@@ -28,10 +28,10 @@ jobs:
         run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish
         working-directory: ./YALCY
 
-      - name: Upload Windows Artifact
+      - name: Upload Windows Binaries
         uses: actions/upload-artifact@v3
         with:
-          name: windows-publish
+          name: windows-binaries
           path: ./YALCY/publish
 
   build-linux:
@@ -58,10 +58,10 @@ jobs:
         run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish
         working-directory: ./YALCY
 
-      - name: Upload Linux Artifact
+      - name: Upload Linux Binaries
         uses: actions/upload-artifact@v3
         with:
-          name: linux-publish
+          name: linux-binaries
           path: ./YALCY/publish
 
   build-macos:
@@ -88,8 +88,8 @@ jobs:
         run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish
         working-directory: ./YALCY
 
-      - name: Upload macOS Artifact
+      - name: Upload macOS Binaries
         uses: actions/upload-artifact@v3
         with:
-          name: macos-publish
+          name: macos-binaries
           path: ./YALCY/publish
