@@ -134,7 +134,7 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
             var app = (App)Application.Current!;
             if (app.MainViewModel != null)
             {
-                app.MainViewModel.DmxTalker?.UpdateMasterDimmers();
+                app.MainViewModel.DmxTalker.UpdateMasterDimmers();
             }
         }
     }

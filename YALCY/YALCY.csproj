@@ -36,7 +36,6 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="OpenRGB.NET" Version="3.1.1" />
         <PackageReference Include="System.Management" Version="9.0.0" />
-		<PackageReference Include="DMX.NET" Version="1.0.0-alpha" />
     </ItemGroup>
 
     <ItemGroup>
