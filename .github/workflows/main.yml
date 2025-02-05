@@ -29,7 +29,7 @@ jobs:
         working-directory: ./YALCY
 
       - name: Upload Windows Binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
           path: ./YALCY/publish
@@ -59,7 +59,7 @@ jobs:
         working-directory: ./YALCY
 
       - name: Upload Linux Binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-binaries
           path: ./YALCY/publish
@@ -89,7 +89,7 @@ jobs:
         working-directory: ./YALCY
 
       - name: Upload macOS Binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-binaries
           path: ./YALCY/publish
