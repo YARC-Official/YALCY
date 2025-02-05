@@ -93,3 +93,18 @@ jobs:
         with:
           name: macos-binaries
           path: ./YALCY/publish
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v1.0.0 # Replace with dynamic version if needed
+          release_name: "YALCY v1.0.0"
+          body: |
+            Automatically generated release.
+            Includes:
+            - Windows x64 binaries
+            - Linux x64 binaries
+            - macOS x64 binaries
+          draft: false
+          prerelease: false
