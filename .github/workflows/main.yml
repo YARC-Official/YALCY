@@ -117,12 +117,36 @@ jobs:
           name: macos-binaries
           path: ./macos
 
+      - name: Fetch all tags
+        run: git fetch --tags
+      
+      - name: Determine next version
+        id: next_version
+        run: |
+          # Get the latest tag or set default
+          latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+          echo "Latest tag: $latest_tag"
+          
+          # Extract major, minor, patch from the tag
+          IFS='.' read -r major minor patch <<<"${latest_tag//v/}"
+          
+          # Increment the patch version (customize this if needed)
+          new_patch=$((patch + 1))
+          next_version="v$major.$minor.$new_patch"
+          
+          echo "Next version: $next_version"
+          echo "next_version=$next_version" >> $GITHUB_ENV
+          echo "tag_name=$next_version" >> $GITHUB_ENV
+      
+      - name: Print next version
+        run: echo "Next tag version is ${{ env.next_version }}"
+  
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: v1.0.0 # Replace with dynamic version if needed
-          release_name: "YALCY v1.0.0"
+          tag_name: ${{ env.next_version }}
+          release_name: "YALCY ${{ env.next_version }}"
           body: |
             Automatically generated release.
             Includes:
