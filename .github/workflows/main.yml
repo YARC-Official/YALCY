@@ -94,6 +94,29 @@ jobs:
           name: macos-binaries
           path: ./YALCY/publish
 
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-linux, build-macos]
+
+    steps:
+      - name: Download Windows Binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-binaries
+          path: ./windows
+
+      - name: Download Linux Binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-binaries
+          path: ./linux
+
+      - name: Download macOS Binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-binaries
+          path: ./macos
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -109,4 +132,28 @@ jobs:
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Binaries to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./windows
+          asset_name: windows-x64-binaries.zip
+          asset_content_type: application/zip
+
+      - name: Upload Linux Binaries to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linux
+          asset_name: linux-x64-binaries.zip
+          asset_content_type: application/zip
+
+      - name: Upload macOS Binaries to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./macos
+          asset_name: macos-x64-binaries.zip
+          asset_content_type: application/zip
