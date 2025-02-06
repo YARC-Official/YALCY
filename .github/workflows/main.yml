@@ -99,27 +99,15 @@ jobs:
     needs: [build-windows, build-linux, build-macos]
 
     steps:
-      - name: Download Windows Binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-binaries
-          path: ./windows
+      # Ensure the repository is checked out
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Download Linux Binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-binaries
-          path: ./linux
-
-      - name: Download macOS Binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-binaries
-          path: ./macos
-
+      # Fetch all Git tags
       - name: Fetch all tags
         run: git fetch --tags
-      
+
+      # Determine the next version
       - name: Determine next version
         id: next_version
         run: |
@@ -127,20 +115,21 @@ jobs:
           latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
           echo "Latest tag: $latest_tag"
           
-          # Extract major, minor, patch from the tag
+          # Extract major, minor, and patch from the tag
           IFS='.' read -r major minor patch <<<"${latest_tag//v/}"
           
-          # Increment the patch version (customize this if needed)
+          # Increment the patch version
           new_patch=$((patch + 1))
           next_version="v$major.$minor.$new_patch"
           
           echo "Next version: $next_version"
           echo "next_version=$next_version" >> $GITHUB_ENV
-          echo "tag_name=$next_version" >> $GITHUB_ENV
-      
+
+      # Print the next version for debugging purposes
       - name: Print next version
         run: echo "Next tag version is ${{ env.next_version }}"
   
+      # Create the GitHub release
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -156,8 +145,9 @@ jobs:
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
+      # Upload Windows binaries to the release
       - name: Upload Windows Binaries to Release
         uses: actions/upload-release-asset@v1
         with:
@@ -166,6 +156,7 @@ jobs:
           asset_name: windows-x64-binaries.zip
           asset_content_type: application/zip
 
+      # Upload Linux binaries to the release
       - name: Upload Linux Binaries to Release
         uses: actions/upload-release-asset@v1
         with:
@@ -174,6 +165,7 @@ jobs:
           asset_name: linux-x64-binaries.zip
           asset_content_type: application/zip
 
+      # Upload macOS binaries to the release
       - name: Upload macOS Binaries to Release
         uses: actions/upload-release-asset@v1
         with:
