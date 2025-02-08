@@ -131,7 +131,7 @@ jobs:
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Debug Print upload URL from create-release
         run: echo "Upload URL ${{ steps.create_release.outputs.upload_url }}"
@@ -178,7 +178,7 @@ jobs:
           asset_name: windows-x64-binaries.zip
           asset_content_type: application/zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           
       - name: Upload Linux Binaries to Release
         uses: actions/upload-release-asset@v1
@@ -188,7 +188,7 @@ jobs:
           asset_name: linux-x64-binaries.tar.gz
           asset_content_type: application/gzip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
 
   create-dmg:
@@ -232,4 +232,4 @@ jobs:
           asset_name: macos-x64-binaries.dmg
           asset_content_type: application/x-apple-diskimage
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
