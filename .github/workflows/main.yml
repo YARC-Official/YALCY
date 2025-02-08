@@ -103,40 +103,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
-      - name: Debug Print upload URL
-        run: echo "Upload URL ${{ steps.create_release.outputs.upload_url }}"
-        
-      - name: Save upload URL for macOS release
-        run: echo "${{ steps.create_release.outputs.upload_url }}" > upload_url.txt
-
-      - name: Upload upload URL
-        uses: actions/upload-artifact@v4
-        with:
-          name: upload-url
-          path: upload_url.txt
-
-      - name: Download Windows Binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-binaries
-          path: ./windows
-
-      - name: Download Linux Binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-binaries
-          path: ./linux
-
-      - name: Zip Windows Binaries
-        run: |
-          cd ./windows
-          zip -r ../windows-x64-binaries.zip .
-
-      - name: Create Tarball for Linux Binaries
-        run: |
-          cd ./linux
-          tar -czvf ../linux-x64-binaries.tar.gz .
 
       - name: Fetch all tags
         run: git fetch --tags
@@ -167,6 +133,43 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
+      - name: Debug Print upload URL from create-release
+        run: echo "Upload URL ${{ steps.create_release.outputs.upload_url }}"
+
+      - name: Save upload URL for macOS release
+        run: echo "${{ steps.create_release.outputs.upload_url }}" > upload_url.txt
+
+      - name: Debug Print upload_url.txt contents
+        run: cat upload_url.txt || echo "upload_url.txt is missing or empty!"
+
+      - name: Upload upload URL
+        uses: actions/upload-artifact@v4
+        with:
+          name: upload-url
+          path: upload_url.txt
+
+      - name: Download Windows Binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-binaries
+          path: ./windows
+
+      - name: Download Linux Binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-binaries
+          path: ./linux
+
+      - name: Zip Windows Binaries
+        run: |
+          cd ./windows
+          zip -r ../windows-x64-binaries.zip .
+
+      - name: Create Tarball for Linux Binaries
+        run: |
+          cd ./linux
+          tar -czvf ../linux-x64-binaries.tar.gz .
+
       - name: Upload Windows Binaries to Release
         uses: actions/upload-release-asset@v1
         with:
@@ -186,6 +189,7 @@ jobs:
           asset_content_type: application/gzip
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
 
   create-dmg:
     runs-on: macos-latest
