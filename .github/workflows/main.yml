@@ -98,13 +98,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-windows, build-linux, build-macos]
 
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
+      - name: Debug Print upload URL
+        run: echo "Upload URL ${{ steps.create_release.outputs.upload_url }}"
+        
       - name: Save upload URL for macOS release
         run: echo "${{ steps.create_release.outputs.upload_url }}" > upload_url.txt
 
@@ -202,8 +204,17 @@ jobs:
           name: upload-url
           path: .
 
+      - name: Debug List files in workspace
+        run: ls -la
+
+      - name: Debug Print upload_url.txt
+        run: cat upload_url.txt || echo "upload_url.txt is missing or empty"
+
       - name: Read upload URL
         run: echo "UPLOAD_URL=$(cat upload_url.txt)" >> $GITHUB_ENV
+
+      - name: Debug Show stored UPLOAD_URL
+        run: echo "UPLOAD_URL=${{ env.UPLOAD_URL }}"
         
       - name: Create DMG for macOS Binaries
         run: |
