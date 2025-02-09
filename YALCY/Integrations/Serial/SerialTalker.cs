@@ -33,14 +33,14 @@ public class SerialTalker: IDisposable
             try
             {
                 controller.Open(0);
-                mainViewModel.SerialEnabledSetting.IsEnabled = true; // Enable the UI button
-                StartChecker(); // Start checking connection status
+               // mainViewModel.SerialEnabledSetting.IsEnabled = true; // Enable the UI button
+               // StartChecker(); // Start checking connection status
             }
             catch (Exception e)
             {
                 mainViewModel.SerialMessage = $"Error: {e.Message}";
-                mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
-                StartChecker(); // Start checking if a new device is plugged in
+                //mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
+             //   StartChecker(); // Start checking if a new device is plugged in
             }
 
             _timer = new Timer(TimeBetweenCalls * 1000);
@@ -49,7 +49,7 @@ public class SerialTalker: IDisposable
         }
         else
         {
-            mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
+          //  mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
             StopChecker();
             Dispose();
         }
