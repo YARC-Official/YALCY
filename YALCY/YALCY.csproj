@@ -46,7 +46,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="libs\FTD2XX.dll">
+      <None Update="FTD2XX.dll">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>

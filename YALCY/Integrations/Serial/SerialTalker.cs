@@ -1,7 +1,6 @@
 using System;
 using Avalonia;
 using Dmx.Net.Controllers;
-using Dmx.Net.Common;
 using System.Timers;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
@@ -17,6 +16,7 @@ public class SerialTalker: IDisposable
     private const float TargetFps = 44f;
     private const float TimeBetweenCalls = 1f / TargetFps;
     private static Timer? _timer;
+    private static Timer? _checkerTimer;
     private static App app = (App)Application.Current!;
     private static MainWindowViewModel mainViewModel = app.MainViewModel;
     private static bool SerialEnabled = false;
@@ -33,10 +33,14 @@ public class SerialTalker: IDisposable
             try
             {
                 controller.Open(0);
+                mainViewModel.SerialEnabledSetting.IsEnabled = true; // Enable the UI button
+                StartChecker(); // Start checking connection status
             }
             catch (Exception e)
             {
                 mainViewModel.SerialMessage = $"Error: {e.Message}";
+                mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
+                StartChecker(); // Start checking if a new device is plugged in
             }
 
             _timer = new Timer(TimeBetweenCalls * 1000);
@@ -45,7 +49,55 @@ public class SerialTalker: IDisposable
         }
         else
         {
+            mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
+            StopChecker();
             Dispose();
+        }
+    }
+
+    private void StartChecker()
+    {
+        if (_checkerTimer != null) return; // Prevent multiple timers from running
+
+        _checkerTimer = new Timer(3000); // Check every 3 seconds
+        _checkerTimer.Elapsed += CheckSerialStatus;
+        _checkerTimer.Start();
+    }
+
+    private void StopChecker()
+    {
+        _checkerTimer?.Stop();
+        _checkerTimer?.Dispose();
+        _checkerTimer = null;
+    }
+
+    private void CheckSerialStatus(object? sender, ElapsedEventArgs e)
+    {
+        try
+        {
+            if (!SerialEnabled)
+            {
+                return;
+            }
+
+            if (controller != null && !controller.IsOpen) // Only try to open if it's not open already
+            {
+                try
+                {
+                    controller.Open(0); // Reattempt to open if it's not open
+                    Console.WriteLine("Serial reconnected!");
+                    mainViewModel.SerialEnabledSetting.IsEnabled = true; // Enable UI button
+                    StopChecker(); // Stop checking once it's working again
+                }
+                catch
+                {
+                    // Do not log too often or reattempt too aggressively
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking serial status: {ex.Message}");
         }
     }
 
@@ -158,5 +210,9 @@ public class SerialTalker: IDisposable
         }
         _timer?.Stop();
         _timer?.Dispose();
+
+        SerialEnabled = false;
+        StopChecker();
+        _timer = null;
     }
 }
