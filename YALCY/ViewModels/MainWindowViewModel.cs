@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -6,6 +7,8 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using HidSharp;
+using HidSharp.Experimental;
 using OpenRGB.NET;
 using ReactiveUI;
 using YALCY.Integrations.DMX;
@@ -15,11 +18,13 @@ using YALCY.Integrations.RB3E;
 using YALCY.Integrations.Serial;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
+using Device = OpenRGB.NET.Device;
 
 namespace YALCY.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 {
+
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

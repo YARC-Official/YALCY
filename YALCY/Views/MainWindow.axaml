@@ -102,7 +102,7 @@
                               Grid.Row="0" Grid.Column="0" />
                 <!-- DataGrid -->
                 <DataGrid Grid.Row="1" Grid.Column="0" CanUserSortColumns="False"
-                          ItemsSource="{Binding UsbConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">
+                          ItemsSource="{Binding StageKitConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Friendly Name" Binding="{Binding ProductName}" />
                         <DataGridTextColumn Header="Instance ID" Binding="{Binding DevicePath}" />
@@ -316,6 +316,14 @@
                               IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
                 <TextBlock Text="The channel numbers set and used from the sAcn/dmx tab" Margin="5" />
                 <TextBlock Text="{Binding SerialMessage}" Margin="5" Foreground="Red" />
+                <!-- DataGrid -->
+                <DataGrid Grid.Row="1" Grid.Column="0" CanUserSortColumns="False" ItemsSource="{Binding SerialConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Name" Binding="{Binding FriendlyName}" />
+                        <DataGridTextColumn Header="Device Path" Binding="{Binding DevicePath}" />
+                        <DataGridTextColumn Header="File System Name" Binding="{Binding FileSystemName}" />
+                    </DataGrid.Columns>
+                </DataGrid>
             </StackPanel>
         </TabItem>
 

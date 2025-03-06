@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Dmx.Net.Controllers;
 using System.Timers;
+using HidSharp;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
@@ -25,7 +26,6 @@ public class SerialTalker: IDisposable
         SerialEnabled = isEnabled;
         if (SerialEnabled)
         {
-            Console.WriteLine("Serial Enable called.");
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
 
             controller = new OpenDmxController();
@@ -33,71 +33,21 @@ public class SerialTalker: IDisposable
             try
             {
                 controller.Open(0);
-               // mainViewModel.SerialEnabledSetting.IsEnabled = true; // Enable the UI button
-               // StartChecker(); // Start checking connection status
+                UsbDeviceMonitor.SerialDeviceAdded -= SerialDeviceAdded;  //disable the watchdog.
+
+                _timer = new Timer(TimeBetweenCalls * 1000);
+                _timer.Elapsed += (sender, e) => Sender();
+                _timer.Start();
             }
             catch (Exception e)
             {
                 mainViewModel.SerialMessage = $"Error: {e.Message}";
-                //mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
-             //   StartChecker(); // Start checking if a new device is plugged in
+                UsbDeviceMonitor.SerialDeviceAdded += SerialDeviceAdded;  //start the watchdog.
             }
-
-            _timer = new Timer(TimeBetweenCalls * 1000);
-            _timer.Elapsed += (sender, e) => Sender();
-            _timer.Start();
         }
         else
         {
-          //  mainViewModel.SerialEnabledSetting.IsEnabled = false; // Disable the button
-            StopChecker();
             Dispose();
-        }
-    }
-
-    private void StartChecker()
-    {
-        if (_checkerTimer != null) return; // Prevent multiple timers from running
-
-        _checkerTimer = new Timer(3000); // Check every 3 seconds
-        _checkerTimer.Elapsed += CheckSerialStatus;
-        _checkerTimer.Start();
-    }
-
-    private void StopChecker()
-    {
-        _checkerTimer?.Stop();
-        _checkerTimer?.Dispose();
-        _checkerTimer = null;
-    }
-
-    private void CheckSerialStatus(object? sender, ElapsedEventArgs e)
-    {
-        try
-        {
-            if (!SerialEnabled)
-            {
-                return;
-            }
-
-            if (controller != null && !controller.IsOpen) // Only try to open if it's not open already
-            {
-                try
-                {
-                    controller.Open(0); // Reattempt to open if it's not open
-                    Console.WriteLine("Serial reconnected!");
-                    mainViewModel.SerialEnabledSetting.IsEnabled = true; // Enable UI button
-                    StopChecker(); // Stop checking once it's working again
-                }
-                catch
-                {
-                    // Do not log too often or reattempt too aggressively
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error checking serial status: {ex.Message}");
         }
     }
 
@@ -170,35 +120,33 @@ public class SerialTalker: IDisposable
         {
             return;
         }
-        else
+
+        controller.SetChannel(mainViewModel.GuitarNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.GuitarNotes);
+        controller.SetChannel(mainViewModel.BassNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BassNotes);
+        controller.SetChannel(mainViewModel.DrumNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.DrumsNotes);
+        controller.SetChannel(mainViewModel.VocalsNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VocalsNote);
+        controller.SetChannel(mainViewModel.Harmony0NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony0Note);
+        controller.SetChannel(mainViewModel.Harmony1NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony1Note);
+        controller.SetChannel(mainViewModel.Harmony2NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony2Note);
+
+        controller.SetChannel(mainViewModel.BpmChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BeatsPerMinute);
+        controller.SetChannel(mainViewModel.KeyFrameChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Keyframe);
+        controller.SetChannel(mainViewModel.VenueSizeSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VenueSize);
+        controller.SetChannel(mainViewModel.CueChangeChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.LightingCue);
+        controller.SetChannel(mainViewModel.PostProcessingChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PostProcessing);
+        controller.SetChannel(mainViewModel.PauseStateSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PauseState);
+        controller.SetChannel(mainViewModel.BeatLineChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Beat);
+        controller.SetChannel(mainViewModel.CurrentPerformerSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Performer);
+        controller.SetChannel(mainViewModel.SongSectionSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.SongSection);
+        controller.SetChannel(mainViewModel.BonusEffectChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BonusEffect);
+        controller.SetChannel(mainViewModel.CurrentSceneSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.CurrentScene);
+
+        for (int i = 0; i < 8; i++)
         {
-            controller.SetChannel(mainViewModel.GuitarNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.GuitarNotes);
-            controller.SetChannel(mainViewModel.BassNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BassNotes);
-            controller.SetChannel(mainViewModel.DrumNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.DrumsNotes);
-            controller.SetChannel(mainViewModel.VocalsNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VocalsNote);
-            controller.SetChannel(mainViewModel.Harmony0NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony0Note);
-            controller.SetChannel(mainViewModel.Harmony1NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony1Note);
-            controller.SetChannel(mainViewModel.Harmony2NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony2Note);
-
-            controller.SetChannel(mainViewModel.BpmChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BeatsPerMinute);
-            controller.SetChannel(mainViewModel.KeyFrameChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Keyframe);
-            controller.SetChannel(mainViewModel.VenueSizeSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VenueSize);
-            controller.SetChannel(mainViewModel.CueChangeChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.LightingCue);
-            controller.SetChannel(mainViewModel.PostProcessingChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PostProcessing);
-            controller.SetChannel(mainViewModel.PauseStateSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PauseState);
-            controller.SetChannel(mainViewModel.BeatLineChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Beat);
-            controller.SetChannel(mainViewModel.CurrentPerformerSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Performer);
-            controller.SetChannel(mainViewModel.SongSectionSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.SongSection);
-            controller.SetChannel(mainViewModel.BonusEffectChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BonusEffect);
-            controller.SetChannel(mainViewModel.CurrentSceneSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.CurrentScene);
-
-            for (int i = 0; i < 8; i++)
-            {
-                controller.SetChannel(mainViewModel.MasterDimmerSettings.Channel[i], (byte)mainViewModel.MasterDimmerValues.Channel[i]);
-            }
-
-            controller.WriteSafe();
+            controller.SetChannel(mainViewModel.MasterDimmerSettings.Channel[i], (byte)mainViewModel.MasterDimmerValues.Channel[i]);
         }
+
+        controller.WriteSafe();
     }
 
     public void Dispose()
@@ -212,7 +160,12 @@ public class SerialTalker: IDisposable
         _timer?.Dispose();
 
         SerialEnabled = false;
-        StopChecker();
         _timer = null;
+    }
+
+    private void SerialDeviceAdded(SerialDevice device)
+    {
+        //When a serial device is added, will try to start again, if the state is enabled.
+        EnableSerialTalker(SettingsManager.SerialEnabledSettingIsEnabled);
     }
 }

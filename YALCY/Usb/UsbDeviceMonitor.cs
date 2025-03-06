@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Threading;
 using HidSharp;
+using HidSharp.Experimental;
 using YALCY.Integrations.StageKit;
 using YALCY.ViewModels;
 
@@ -11,60 +15,130 @@ namespace YALCY.Usb;
 
 public class UsbDeviceMonitor
 {
-    private static List<HidDevice> _connectedDevices = new();
-    private DeviceList _list = DeviceList.Local;
+    private DeviceList _list = DeviceList.Local; //complete device list
+
+    private static List<HidDevice> _perviousHidDevices = new();
+    private static List<SerialDevice> _perviousSerialDevices = new();
+    private static List<BleDevice> _perviousBLEDevices = new();
+
+    private static List<HidDevice> _connectedHidDevices = new();
+    private static List<SerialDevice> _connectedSerialDevices = new();
+    private static List<BleDevice> _connectedBLEDevices = new();
+
     private static List<int> _connectedControllerIndices = new(); // Store connected XInput controller indices
 
-    public event Action<HidDevice> DeviceInserted;
-    public event Action<HidDevice> DeviceRemoved;
+    public static Action<Device> DeviceInserted;
+    public static Action<Device> DeviceRemoved;
+    public static Action<SerialDevice> SerialDeviceAdded;
+
     public static event Action<StageKitTalker.CommandId, byte> OnStageKitCommand;
 
     public void StartUsbDeviceMonitor()
     {
+        // Access the MainViewModel instance, can't assume it was set in enable
+        var app = (App)Application.Current!;
+        var mainViewModel = app.MainViewModel;
+
         //visual list
-        DeviceInserted += MainWindowViewModel.OnDeviceInserted;
-        DeviceRemoved += MainWindowViewModel.OnDeviceRemoved;
+        DeviceInserted += mainViewModel.OnDeviceInserted;
+        DeviceRemoved += mainViewModel.OnDeviceRemoved;
 
         //actual device list
-        _list.Changed += (sender, e) => OnDeviceListChanged(e);
+        _list.Changed += (sender, e) => OnDeviceListChanged();
 
-        var hidDeviceList = _list.GetHidDevices().ToArray();
-        _connectedDevices.Clear();
-        foreach (var dev in hidDeviceList)
-        {
-            AddToList(dev);
-        }
-
-        UpdateConnectedXInputControllers(); // Detect connected XInput controllers
+        OnDeviceListChanged();
     }
 
     public void StopUsbDeviceMonitor()
     {
-        DeviceInserted -= MainWindowViewModel.OnDeviceInserted;
-        DeviceRemoved -= MainWindowViewModel.OnDeviceRemoved;
-        _connectedDevices.Clear();
+        // Access the MainViewModel instance, can't assume it was set in enable
+        var app = (App)Application.Current!;
+        var mainViewModel = app.MainViewModel;
+
+        DeviceInserted -= mainViewModel.OnDeviceInserted;
+        DeviceRemoved -= mainViewModel.OnDeviceRemoved;
+        _connectedHidDevices.Clear();
         _connectedControllerIndices.Clear(); // Clear XInput controllers
     }
 
-    private void OnDeviceListChanged(DeviceListChangedEventArgs e)
+    private void OnDeviceListChanged()
     {
-        // I thought DeviceListChangedEventsArgs would be useful to see if it was an add or remove event but not sure if
-        // that is true.
-        var hidDeviceList = DeviceList.Local.GetHidDevices().ToArray();
-        _connectedDevices.Clear();
-        Dispatcher.UIThread.InvokeAsync(MainWindowViewModel.ClearUsbConnectedDevicesVisualList);
-        foreach (var dev in hidDeviceList)
-        {
-            AddToList(dev);
-        }
-        UpdateConnectedXInputControllers(); // Update XInput controller list on device change
-    }
+        Console.WriteLine("Device list changed, waiting for update...");
 
-    private void AddToList(HidDevice dev)
-    {
-        if ((dev.VendorID != 0x1209 || dev.ProductID != 0x2882 || dev.ReleaseNumberBcd != 0x0900) && (dev.VendorID != 0x0E6F || dev.ProductID != 0x0103)) return;
-        _connectedDevices.Add(dev);
-        DeviceInserted?.Invoke(dev);
+        Dispatcher.UIThread.Post(async () =>
+        {
+            await Task.Delay(1000); // Give Windows time to update the device list
+
+            var newHidDevices = DeviceList.Local.GetHidDevices().ToList();
+            var newSerialDevices = DeviceList.Local.GetSerialDevices().ToList();
+            var newBleDevices = DeviceList.Local.GetBleDevices().ToList();
+
+            // Detect removed devices
+            foreach (var oldDev in _perviousSerialDevices)
+            {
+                if (!newSerialDevices.Any(dev => dev.DevicePath == oldDev.DevicePath))
+                {
+                    Console.WriteLine("Serial device removed");
+                    DeviceRemoved?.Invoke(oldDev);
+                }
+            }
+
+            foreach (var oldDev in _perviousHidDevices)
+            {
+                if (!newHidDevices.Any(dev => dev.DevicePath == oldDev.DevicePath))
+                {
+                    Console.WriteLine("HID device removed");
+                    DeviceRemoved?.Invoke(oldDev);
+                }
+            }
+
+            foreach (var oldDev in _perviousBLEDevices)
+            {
+                if (!newBleDevices.Any(dev => dev.DevicePath == oldDev.DevicePath))
+                {
+                    Console.WriteLine("BLE device removed");
+                    DeviceRemoved?.Invoke(oldDev);
+                }
+            }
+
+            // Detect added devices
+            foreach (var newDev in newSerialDevices)
+            {
+                if (!_perviousSerialDevices.Any(dev => dev.DevicePath == newDev.DevicePath))
+                {
+                    Console.WriteLine("Serial device added");
+                    SerialDeviceAdded?.Invoke(newDev); //this is mostly for the serial talker watch dog
+                    DeviceInserted?.Invoke(newDev);
+                }
+            }
+
+            foreach (var newDev in newHidDevices)
+            {
+                if (!_perviousHidDevices.Any(dev => dev.DevicePath == newDev.DevicePath))
+                {
+                    if ((newDev.VendorID != 0x1209 || newDev.ProductID != 0x2882 || newDev.ReleaseNumberBcd != 0x0900) && (newDev.VendorID != 0x0E6F || newDev.ProductID != 0x0103)) continue;
+                    Console.WriteLine("HID device added");
+                    DeviceInserted?.Invoke(newDev);
+                }
+            }
+
+            foreach (var newDev in newBleDevices)
+            {
+                if (!_perviousBLEDevices.Any(dev => dev.DevicePath == newDev.DevicePath))
+                {
+                    Console.WriteLine("BLE device added");
+                    DeviceInserted?.Invoke(newDev);
+                }
+            }
+
+            // Update the tracked device lists
+            _perviousHidDevices = newHidDevices;
+            _perviousSerialDevices = newSerialDevices;
+            _perviousBLEDevices = newBleDevices;
+
+            UpdateConnectedXInputControllers();
+
+        });
     }
 
     public static void SendReport(StageKitTalker.CommandId commandId, byte parameter)
@@ -76,7 +150,7 @@ public class UsbDeviceMonitor
             SetXInputVibration(controllerIndex, parameter, (byte)commandId);
         }
 
-        foreach (var device in _connectedDevices)
+        foreach (var device in _connectedHidDevices)
         {
             byte[] report;
             if (device.VendorID == 0x1209 && device.ProductID == 0x2882 && device.ReleaseNumberBcd == 0x0900) //santroller sage kit

@@ -1,30 +1,81 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
+using System.IO.Enumeration;
+using System.Linq;
 using Avalonia.Threading;
 using HidSharp;
+using HidSharp.Experimental;
+using ReactiveUI;
 
 namespace YALCY.ViewModels;
 
 public partial class MainWindowViewModel
 {
-    public static ObservableCollection<HidDevice>? UsbConnectedDevices { get; set; }
-
-    private static void InitializeUsbCollections()
+    private ObservableCollection<HidDevice> _stageKitConnectedDevices = new();
+    public ObservableCollection<HidDevice> StageKitConnectedDevices
     {
-        UsbConnectedDevices = new ObservableCollection<HidDevice>();
+        get => _stageKitConnectedDevices;
+        set => this.RaiseAndSetIfChanged(ref _stageKitConnectedDevices, value);
     }
 
-    public static void OnDeviceInserted(HidDevice device)
+    private ObservableCollection<SerialDeviceViewModel> _serialConnectedDevices = new();
+    public ObservableCollection<SerialDeviceViewModel> SerialConnectedDevices
     {
-        Dispatcher.UIThread.InvokeAsync(() => UsbConnectedDevices?.Add(device));
+        get => _serialConnectedDevices;
+        set => this.RaiseAndSetIfChanged(ref _serialConnectedDevices, value);
     }
 
-    public static void OnDeviceRemoved(HidDevice device)
+    private ObservableCollection<BleDevice> _bleConnectedDevices = new();
+    public ObservableCollection<BleDevice> BleConnectedDevices
     {
-        Dispatcher.UIThread.InvokeAsync(() => UsbConnectedDevices != null && UsbConnectedDevices.Remove(device));
+        get => _bleConnectedDevices;
+        set => this.RaiseAndSetIfChanged(ref _bleConnectedDevices, value);
     }
 
-    public static void ClearUsbConnectedDevicesVisualList()
+    private void InitializeUsbCollections()
     {
-        UsbConnectedDevices?.Clear();
+        StageKitConnectedDevices = new ObservableCollection<HidDevice>();
+        SerialConnectedDevices = new ObservableCollection<SerialDeviceViewModel>();
+        BleConnectedDevices = new ObservableCollection<BleDevice>();
+    }
+
+    public void OnDeviceInserted(Device device)
+    {
+        if (device is HidDevice hidDevice)
+        {
+            Dispatcher.UIThread.InvokeAsync(() => StageKitConnectedDevices?.Add(hidDevice));
+        }
+        else if (device is SerialDevice serialDevice)
+        {
+            Dispatcher.UIThread.InvokeAsync(() => SerialConnectedDevices?.Add(new SerialDeviceViewModel(serialDevice)));
+            //Dispatcher.UIThread.InvokeAsync(() => SerialConnectedDevices?.Add(serialDevice));
+        }
+        else if (device is BleDevice bleDevice)
+        {
+            Dispatcher.UIThread.InvokeAsync(() => BleConnectedDevices?.Add(bleDevice));
+        }
+    }
+
+    public void OnDeviceRemoved(Device device)
+    {
+        if (device is HidDevice hidDevice)
+        {
+            Dispatcher.UIThread.InvokeAsync(() => StageKitConnectedDevices != null && StageKitConnectedDevices.Remove(hidDevice));
+        }
+        else if (device is SerialDevice serialDevice)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                var toRemove = SerialConnectedDevices.FirstOrDefault(d => d.DevicePath == serialDevice.DevicePath);
+                if (toRemove != null)
+                {
+                    SerialConnectedDevices.Remove(toRemove);
+                }
+            });
+        }
+        else if (device is BleDevice bleDevice)
+        {
+            Dispatcher.UIThread.InvokeAsync(() => BleConnectedDevices != null && BleConnectedDevices.Remove(bleDevice));
+        }
     }
 }
