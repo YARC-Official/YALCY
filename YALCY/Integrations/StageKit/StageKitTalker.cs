@@ -120,7 +120,6 @@ public class StageKitTalker
             UdpIntake.OnLightingCue += CueChange;
             UdpIntake.OnStrobeState += StrobeChange;
             UdpIntake.OnFogState += FogChange;
-
         }
         else
         {

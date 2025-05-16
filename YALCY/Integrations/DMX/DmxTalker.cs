@@ -141,9 +141,9 @@ public class DmxTalker
             case StageKitTalker.CommandId.YellowLeds:
                 for (int i = 0; i < 8; i++)
                 {
-                    if (mainViewModel.BlueChannels.Channel != null)
+                    if (mainViewModel.YellowChannels.Channel != null)
                     {
-                        byteQueues[mainViewModel.BlueChannels.Channel[i] - 1]
+                        byteQueues[mainViewModel.YellowChannels.Channel[i] - 1]
                             .Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
                     }
                 }

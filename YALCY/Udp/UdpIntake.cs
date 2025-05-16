@@ -12,9 +12,6 @@ namespace YALCY.Udp;
 
 public partial class UdpIntake : ReactiveObject
 {
-
-
-
     public Action<byte[]> PacketProcessed;
 
     public interface IDatapacketMember

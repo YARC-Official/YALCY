@@ -78,9 +78,9 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            Udp.UdpIntake.OnBeat += HandleBeatlineEvent;
-            Udp.UdpIntake.OnKeyFrame += HandleKeyFrameEvent;
-            Udp.UdpIntake.OnDrum += HandleDrumEvent;
+            UdpIntake.OnBeat += HandleBeatlineEvent;
+            UdpIntake.OnKeyFrame += HandleKeyFrameEvent;
+            UdpIntake.OnDrum += HandleDrumEvent;
 
             _patternIndex = 0;
             _enabled = true;
