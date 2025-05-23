@@ -27,7 +27,7 @@ public partial class UdpIntake : ReactiveObject
     {
         private T _value;
         private readonly Func<T, string> _descriptionFunc;
-        private readonly Action<T> _onValueChangedAction; // Added action for value change
+        private readonly Action<T> _onValueChangedAction;
 
         public DatapacketMember(string name, byte byteNumber, Func<T, string> descriptionFunc)
         {
@@ -39,7 +39,7 @@ public partial class UdpIntake : ReactiveObject
 
         public string Name { get; set; }
         public byte Index { get; set; }
-        public string ValueDescription { get; private set; } // Made setter private to prevent external modification
+        public string ValueDescription { get; private set; }
 
         public T Value
         {
@@ -50,11 +50,11 @@ public partial class UdpIntake : ReactiveObject
                 _value = value;
                 ValueDescription = _descriptionFunc(value);
                 OnPropertyChanged(nameof(Value));
-                OnPropertyChanged(nameof(ValueDescription)); // Notify for ValueDescription as well
+                OnPropertyChanged(nameof(ValueDescription));
             }
         }
 
-        object IDatapacketMember.Value => Value; // Explicit implementation for the interface
+        object IDatapacketMember.Value => Value;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -129,7 +129,6 @@ public partial class UdpIntake : ReactiveObject
                         var result = await _udpClient.ReceiveAsync().ConfigureAwait(false);
 
                         // Process packets in a separate task
-                        //ProcessPacket(result.Buffer);
                         DeserializePacket(result.Buffer);
                     }
                 }

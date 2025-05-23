@@ -127,7 +127,7 @@ public class StageKitTalker
             UdpIntake.OnStrobeState -= StrobeChange;
             UdpIntake.OnFogState -= FogChange;
 
-            CueChange((byte)UdpIntake.CueByte.NoCue);
+          // CueChange((byte)UdpIntake.CueByte.NoCue); Don't do this, other protocols might still be on
         }
     }
 }
