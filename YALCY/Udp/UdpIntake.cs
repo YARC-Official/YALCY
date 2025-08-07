@@ -89,6 +89,8 @@ public partial class UdpIntake : ReactiveObject
     public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", 22, GetKeyFrameDescription);
     public DatapacketMember<bool> BonusEffect { get; private set; } = new ("Bonus effect", 23, GetBonusEffectByteDescription);
 
+    public DatapacketMember<bool> AutoGen { get; private set; } = new ("AutoGen track", 24, GetAutoGenByteDescription);
+
     public static byte[] Buffer = new byte[Enum.GetValues<ByteIndexName>().Length]; // The current data buffer
 
     private static UdpClient? _udpClient;
@@ -152,20 +154,29 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
-    public void DeserializePacket(byte[] data)
+ public void DeserializePacket(byte[] data)
+{
+    const int MIN_PACKET_SIZE = 41;
+
+    if (data.Length < MIN_PACKET_SIZE)
+    {
+        Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {MIN_PACKET_SIZE})");
+        return;
+    }
+
+    try
     {
         using (MemoryStream ms = new MemoryStream(data))
         using (BinaryReader reader = new BinaryReader(ms))
         {
             Header.Value = reader.ReadUInt32();
 
-            // Check if the header is correct (replace `EXPECTED_HEADER_VALUE` with the actual expected value)
-            if (Header.Value != PACKET_HEADER) // Y A R G
+            if (Header.Value != PACKET_HEADER)
             {
-                // If the header is incorrect, stop reading the packet and return null or handle it accordingly
-                Console.WriteLine("Invalid packet header.");
+                Console.WriteLine($"Invalid packet header: {Header.Value}");
                 return;
             }
+
             DatagramVersion.Value = reader.ReadByte();
             Platform.Value = reader.ReadByte();
             CurrentScene.Value = reader.ReadByte();
@@ -192,10 +203,21 @@ public partial class UdpIntake : ReactiveObject
             Beat.Value = reader.ReadByte();
             Keyframe.Value = reader.ReadByte();
             BonusEffect.Value = reader.ReadBoolean();
+
+            AutoGen.Value = reader.ReadBoolean();
         }
 
         PacketProcessed?.Invoke(Buffer);
     }
+    catch (EndOfStreamException ex)
+    {
+        Console.WriteLine($"Error reading UDP data (incomplete packet): {ex.Message}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error reading UDP data: {ex.Message}");
+    }
+}
 
     private void StopUdpClient()
     {

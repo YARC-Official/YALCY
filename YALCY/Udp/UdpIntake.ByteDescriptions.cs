@@ -261,6 +261,16 @@ public partial class UdpIntake
             OnLightingCue?.Invoke(byteValue);
             return Enum.IsDefined(typeof(CueByte), intValue) ? ((CueByte)intValue).ToString() : "Unknown";
     }
+
+    public static string GetAutoGenByteDescription(bool boolValue)
+    {
+        var AutoGenBDescription = boolValue switch
+        {
+            false => "Authored",
+            true => "Generated",
+        };
+        return AutoGenBDescription;
+    }
     public static string GetPostProcessingByteDescription(byte byteValue)
     {
         int intValue = byteValue; // Cast byte to int

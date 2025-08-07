@@ -56,6 +56,7 @@ public partial class MainWindowViewModel
         LightingMessageBools= new ObservableCollection<UdpIntake.DatapacketMember<bool>>();
         LightingMessageBools.Add(UdpIntake.BonusEffect);
         LightingMessageBools.Add(UdpIntake.FogState);
+        LightingMessageBools.Add(UdpIntake.AutoGen);
 
         LightingMessageFloats = new ObservableCollection<UdpIntake.DatapacketMember<float>>();
         LightingMessageFloats.Add(UdpIntake.BeatsPerMinute);
