@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             x:Class="YALCY.Views.Components.PersonCard"
+             mc:Ignorable="d">
+    
+    <Border Background="#3a3d4a" 
+            CornerRadius="12" 
+            Padding="20" 
+            BorderBrush="#4a4d5a" 
+            BorderThickness="1"
+            MinWidth="200"
+            MaxWidth="400">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Avatar Section -->
+            <Border Grid.Column="0" 
+                    Width="48" Height="48" 
+                    CornerRadius="24" 
+                    ClipToBounds="True"
+                    Margin="0,0,15,0">
+                <Grid>
+                    <Image x:Name="AvatarImage" 
+                           Width="48" Height="48" 
+                           Stretch="UniformToFill"/>
+                    
+                    <!-- Fallback Avatar (shown when no image) -->
+                    <TextBlock x:Name="FallbackAvatar" 
+                               Text="👤" 
+                               FontSize="24" 
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center"
+                               IsVisible="False"/>
+                </Grid>
+            </Border>
+            
+            <!-- Info Section -->
+            <StackPanel Grid.Column="1" 
+                        VerticalAlignment="Center">
+                <TextBlock x:Name="NameText" 
+                           FontSize="17" 
+                           FontWeight="SemiBold" 
+                           Foreground="White"
+                           TextWrapping="Wrap"/>
+                <TextBlock x:Name="RoleText" 
+                           FontSize="14" 
+                           Foreground="#B0B0B0" 
+                           Margin="0,2,0,0"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

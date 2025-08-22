@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
+using YALCY.Views.Components;
 
 namespace YALCY.Integrations.RB3E;
 
@@ -17,12 +18,14 @@ namespace YALCY.Integrations.RB3E;
             {
                 if (_sendClient != null) return;
                 UsbDeviceMonitor.OnStageKitCommand += SendPacket;
+                StatusFooter.UpdateStatus("RB3E", IntegrationStatus.Connected);
                 _sendClient = new UdpClient();
             }
             else
             {
                 if (_sendClient == null) return;
                 UsbDeviceMonitor.OnStageKitCommand -= SendPacket;
+                StatusFooter.UpdateStatus("RB3E", IntegrationStatus.Off);
                 SendPacket(StageKitTalker.CommandId.DisableAll, 0x00);
 
                 _sendClient.Dispose();

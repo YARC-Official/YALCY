@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             x:Class="YALCY.Views.Tabs.HueTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <StackPanel Margin="5">
+        <!-- Toggle Button -->
+        <ToggleButton ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
+                      Content="{Binding HueEnabledSetting.ToggleButtonContent}"
+                      IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
+        <!-- Text Box -->
+        <TextBlock Text="Setup needed:" Margin="5" />
+        <TextBlock Text="1) Verify that your Phillips Hue Hub Bridge has software version 1948086000 or higher"
+                   Margin="5" />
+        <TextBlock Text="2) Find and enter the IP address of your hub into the box." Margin="5" />
+        <TextBlock Text="3) Create an &quot;entertainment area&quot; in your phillips hue app and name it YARG"
+                   Margin="5" />
+        <TextBlock Text="4) Add 8 lights to the area. Less will work, but you won't see full effects."
+                   Margin="5" />
+        <TextBlock
+            Text="5) Link this program to your hub. Push the button on the hub FIRST, then click the register button"
+            Margin="5" />
+        <!-- IP Address Input -->
+        <TextBlock Text="Enter Hue Bridge IP" />
+        <TextBox Text="{Binding HueBridgeIp}" />
+        <!-- Register Button -->
+        <Button Content="Register with Hue Bridge" Command="{Binding RegisterHueBridgeCommand}" Margin="5" />
+        <TextBlock Text="{Binding HueIpStatus}" />
+        <TextBlock Text="{Binding HueRegisterStatus}" />
+        <TextBlock Text="{Binding HueStreamingClientStatus}" />
+        <TextBlock Text="{Binding HueEntertainmentGroupStatus} " />
+        <TextBlock Text="{Binding HueStreamingActiveStatus}" />
+        <!-- Error Output -->
+        <TextBlock Text="{Binding HueMessage}" Margin="5" Foreground="Red" />
+    </StackPanel>
+</UserControl>

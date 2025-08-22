@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             x:Class="YALCY.Views.Tabs.OpenRgbTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <StackPanel Margin="5">
+        <!-- Enable Button -->
+        <ToggleButton ToolTip.Tip="{Binding  OpenRgbEnabledSetting.ToolTip}"
+                      Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
+                      IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
+        <!-- Info -->
+        <TextBlock Text="Setup needed:" />
+        <TextBlock Text="1) OpenRgb Server needs to be running!" Margin="5" />
+        <TextBlock Text="2) Be sure your devices are in Direct mode" Margin="5" />
+        <!-- IP Address and Server port -->
+        <Grid Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="150" /> <!-- Width for the IP TextBox -->
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="150" /> <!-- Width for the Port NumericUpDown -->
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="OpenRGB Server IP: " VerticalAlignment="Center" Margin="0,0,10,0" Grid.Column="0" />
+            <TextBox Text="{Binding OpenRgbServerIp}" Grid.Column="1" />
+            <TextBlock Text="OpenRGB Server Port: " VerticalAlignment="Center" Margin="10,0,10,0"
+                       Grid.Column="2" />
+            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding OpenRgbServerPort, Mode=TwoWay}"
+                           Grid.Column="3" />
+            <Button Content="Connect to OpenRGB server" Command="{Binding ConnectToOpenRgbServerCommand}"
+                    Margin="10,0,0,0" Grid.Column="4" HorizontalAlignment="Right" />
+        </Grid>
+        <!-- Status Message -->
+        <TextBlock Text="{Binding OpenRgbStatus}" />
+        <!-- Data Grid -->
+        <DataGrid CanUserSortColumns="False" ItemsSource="{Binding DeviceCategories}"
+                  AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Category">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="Off" GroupName="{Binding Device.Index}" Margin="5,0"
+                                             IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+
+                                <RadioButton Content="LightPod" GroupName="{Binding Device.Index}" Margin="5,0"
+                                             IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+
+                                <RadioButton Content="Strobe" GroupName="{Binding Device.Index}" Margin="5,0"
+                                             IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}" />
+
+                                <RadioButton Content="Fogger" GroupName="{Binding Device.Index}" Margin="5,0"
+                                             IsChecked="{Binding Category, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=3}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Index" Binding="{Binding Device.Index}" />
+                <DataGridTextColumn Header="Type" Binding="{Binding Device.Type}" />
+                <DataGridTextColumn Header="Name" Binding="{Binding Device.Name}" />
+                <DataGridTextColumn Header="Vendor" Binding="{Binding Device.Vendor}" />
+                <DataGridTextColumn Header="Description" Binding="{Binding Device.Description}" />
+                <DataGridTextColumn Header="Version" Binding="{Binding Device.Version}" />
+                <DataGridTextColumn Header="Serial" Binding="{Binding Device.Serial}" />
+                <DataGridTextColumn Header="Location" Binding="{Binding Device.Location}" />
+                <DataGridTextColumn Header="Active Mode Index" Binding="{Binding Device.ActiveModeIndex}" />
+                <DataGridTextColumn Header="Modes" Binding="{Binding Device.Modes.Length}" />
+                <DataGridTextColumn Header="Zones" Binding="{Binding Device.Zones.Length}" />
+                <DataGridTextColumn Header="Leds" Binding="{Binding Device.Leds.Length}" />
+                <DataGridTextColumn Header="Colors" Binding="{Binding Device.Colors.Length}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </StackPanel>
+</UserControl>

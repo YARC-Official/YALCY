@@ -6,6 +6,7 @@ using Haukcode.sACN;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
+using YALCY.Views.Components;
 
 namespace YALCY.Integrations.DMX;
 
@@ -81,6 +82,7 @@ public class DmxTalker
             UpdateMasterDimmers();
             mainViewModel.UdpIntake.PacketProcessed += (packet) => UpdateDataPacket(packet, mainViewModel);
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            StatusFooter.UpdateStatus("DMX", IntegrationStatus.Connected);
 
             _timer = new Timer(TimeBetweenCalls * 1000);
             _timer.Elapsed += (sender, e) => Sender();
@@ -91,6 +93,7 @@ public class DmxTalker
             if (_sendClient == null) return;
 
             UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+            StatusFooter.UpdateStatus("DMX", IntegrationStatus.Off);
 
             _timer?.Stop();
             _timer?.Dispose();

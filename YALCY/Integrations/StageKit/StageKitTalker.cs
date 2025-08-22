@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using YALCY.Udp;
 using YALCY.Usb;
+using YALCY.Views.Components;
 
 namespace YALCY.Integrations.StageKit;
 
@@ -120,12 +121,14 @@ public class StageKitTalker
             UdpIntake.OnLightingCue += CueChange;
             UdpIntake.OnStrobeState += StrobeChange;
             UdpIntake.OnFogState += FogChange;
+            StatusFooter.UpdateStatus("StageKit", IntegrationStatus.Connected);
         }
         else
         {
             UdpIntake.OnLightingCue -= CueChange;
             UdpIntake.OnStrobeState -= StrobeChange;
             UdpIntake.OnFogState -= FogChange;
+            StatusFooter.UpdateStatus("StageKit", IntegrationStatus.Off);
 
           // CueChange((byte)UdpIntake.CueByte.NoCue); Don't do this, other protocols might still be on
         }
