@@ -11,11 +11,11 @@
         <!-- Toggle Button -->
         <ToggleButton ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}" Content="{Binding UdpEnableSetting.ToggleButtonContent}" IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}" Grid.Row="0" Grid.Column="0" Margin="5" Grid.ColumnSpan="2" />
 
-        <!-- Detach Visualizer Button
+        <!-- Detach Visualizer Button -->
         <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Margin="5" HorizontalAlignment="Right" Spacing="10">
             <ToggleButton x:Name="StrobeVisualizerButton" Content="Strobe Visualizer" Click="OnStrobeVisualizerClicked" />
             <ToggleButton x:Name="DetachVisualizerButton" Content="Detach LED Visualizer" Click="OnDetachVisualizerClicked" />
-        </StackPanel> -->
+        </StackPanel> 
 
         <!-- Port Configuration -->
         <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="0" Margin="5">

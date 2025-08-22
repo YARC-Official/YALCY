@@ -36,6 +36,25 @@
                 "${workspaceFolder}/YALCY.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish-and-run",
+            "dependsOrder": "sequence",
+            "dependsOn": ["publish-release"],
+            "windows": {
+                "command": "cmd",
+                "args": ["/c", "start", "YALCY.exe"]
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/publish"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
         }
     ]
 }

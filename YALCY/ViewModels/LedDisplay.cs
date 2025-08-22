@@ -17,52 +17,53 @@ namespace YALCY.ViewModels;
         public static readonly StyledProperty<int> ColorProperty = AvaloniaProperty.Register<LedDisplay, int>(nameof(Color));
 
         //Yeah, harded coded positions... I know, I know... I'll fix it later.
+        // Normalized LED positions (0-200 coordinate system, centered at 100,100)
         private readonly Point[] _blueLedPositions = new Point[]
         {
-            new Point(100, 32),   // LED 0
-            new Point(130, 67),   // LED 1
-            new Point(166, 98),   // LED 2
-            new Point(130, 128),  // LED 3
-            new Point(100, 164),  // LED 4
-            new Point(70, 128),   // LED 5
-            new Point(33, 98),    // LED 6
-            new Point(70, 67),    // LED 7
+            new Point(100, 32),   // LED 0 - Top
+            new Point(130, 67),   // LED 1 - Top Right
+            new Point(166, 98),   // LED 2 - Right
+            new Point(130, 128),  // LED 3 - Bottom Right
+            new Point(100, 164),  // LED 4 - Bottom
+            new Point(70, 128),   // LED 5 - Bottom Left
+            new Point(33, 98),    // LED 6 - Left
+            new Point(70, 67),    // LED 7 - Top Left
         };
 
         private readonly Point[] _greenLedPositions = new Point[]
         {
-            new Point(134, 11),   // LED 0 (green)
-            new Point(187, 65),   // LED 1 (green)
-            new Point(187, 133),  // LED 2 (green)
-            new Point(134, 186),  // LED 3 (green)
-            new Point(65, 186),   // LED 4 (green)
-            new Point(12, 133),   // LED 5 (green)
-            new Point(12, 65),    // LED 6 (green)
-            new Point(65, 11)     // LED 7 (green)
+            new Point(134, 11),   // LED 0 (green) - Outer Top
+            new Point(187, 65),   // LED 1 (green) - Outer Top Right
+            new Point(187, 133),  // LED 2 (green) - Outer Bottom Right
+            new Point(134, 186),  // LED 3 (green) - Outer Bottom
+            new Point(65, 186),   // LED 4 (green) - Outer Bottom Left
+            new Point(12, 133),   // LED 5 (green) - Outer Bottom Left
+            new Point(12, 65),    // LED 6 (green) - Outer Top Left
+            new Point(65, 11)     // LED 7 (green) - Outer Top
         };
 
         private readonly Point[] _yellowLedPositions = new Point[]
         {
-            new Point(100, -32),  // LED 0 (yellow)
-            new Point(192, 9),    // LED 1 (yellow)
-            new Point(230, 98),   // LED 2 (yellow)
-            new Point(192, 189),  // LED 3 (yellow)
-            new Point(100, 229),  // LED 4 (yellow)
-            new Point(10, 189),   // LED 5 (yellow)
-            new Point(-31, 98),   // LED 6 (yellow)
-            new Point(10, 9)      // LED 7 (yellow)
+            new Point(100, -32),  // LED 0 (yellow) - Far Top
+            new Point(192, 9),    // LED 1 (yellow) - Far Top Right
+            new Point(230, 98),   // LED 2 (yellow) - Far Right
+            new Point(192, 189),  // LED 3 (yellow) - Far Bottom Right
+            new Point(100, 229),  // LED 4 (yellow) - Far Bottom
+            new Point(10, 189),   // LED 5 (yellow) - Far Bottom Left
+            new Point(-31, 98),   // LED 6 (yellow) - Far Left
+            new Point(10, 9)      // LED 7 (yellow) - Far Top Left
         };
 
         private readonly Point[] _redLedPositions = new Point[]
         {
-            new Point(151, -24),  // LED 0 (red)
-            new Point(219, 46),   // LED 1 (red)
-            new Point(219, 152),  // LED 2 (red)
-            new Point(151, 221),  // LED 3 (red)
-            new Point(49, 221),   // LED 4 (red)
-            new Point(-23, 152),  // LED 5 (red)
-            new Point(-23, 46),   // LED 6 (red)
-            new Point(49, -24)    // LED 7 (red)
+            new Point(151, -24),  // LED 0 (red) - Farthest Top
+            new Point(219, 46),   // LED 1 (red) - Farthest Top Right
+            new Point(219, 152),  // LED 2 (red) - Farthest Right
+            new Point(151, 221),  // LED 3 (red) - Farthest Bottom Right
+            new Point(49, 221),   // LED 4 (red) - Farthest Bottom
+            new Point(-23, 152),  // LED 5 (red) - Farthest Bottom Left
+            new Point(-23, 46),   // LED 6 (red) - Farthest Left
+            new Point(49, -24)    // LED 7 (red) - Farthest Top Left
         };
 
         static LedDisplay()

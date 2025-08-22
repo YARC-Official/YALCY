@@ -6,16 +6,16 @@
              x:Class="YALCY.Views.Components.LedVisualizerPanel"
              mc:Ignorable="d">
     
-    <!-- LED Visualization Panel -->
+    <!-- LED Visualization Panel que ocupa todo o espaço disponível -->
     <Viewbox Stretch="Uniform">
         <Canvas x:Name="CanvasContainer" Width="320" Height="320">
             <Image x:Name="CenteredImage" Source="/Resources/StageKit/LedBackground.png" Stretch="Uniform" />
 
             <!-- Adjust the position and size of the LedDisplay elements -->
-            <vm:LedDisplay Color="0" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="62" Canvas.Left="62" />
-            <vm:LedDisplay Color="1" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="62" Canvas.Left="62" />
-            <vm:LedDisplay Color="2" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="62" Canvas.Left="62" />
-            <vm:LedDisplay Color="3" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="62" Canvas.Left="62" />
+            <vm:LedDisplay Color="0" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
+            <vm:LedDisplay Color="1" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
+            <vm:LedDisplay Color="2" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
+            <vm:LedDisplay Color="3" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
         </Canvas>
     </Viewbox>
     
