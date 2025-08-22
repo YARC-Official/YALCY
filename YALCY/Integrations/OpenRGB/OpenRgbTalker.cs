@@ -11,6 +11,7 @@ using YALCY.Udp;
 using YALCY.Usb;
 using YALCY.ViewModels;
 using Device = OpenRGB.NET.Device;
+using YALCY.Views.Components;
 
 namespace YALCY.Integrations.OpenRGB;
 
@@ -82,10 +83,12 @@ public class OpenRgbTalker
             }
 
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Connected);
         }
         catch (Exception ex)
         {
             mainViewModel.OpenRgbStatus = $"OpenRGB status: {ex.Message}";
+            StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Error);
         }
     }
 
@@ -93,10 +96,12 @@ public class OpenRgbTalker
     {
         if (isEnabled)
         {
+            StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Connecting);
             await ConnectToOpenRgbServerAsync(serverIP, serverPort);
         }
         else
         {
+            StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Off);
             await cts.CancelAsync();
             try
             {

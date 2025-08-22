@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             x:Class="YALCY.Views.Tabs.SerialTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <StackPanel Margin="5">
+        <ToggleButton ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
+                      Content="{Binding SerialEnabledSetting.ToggleButtonContent}"
+                      IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
+        <TextBlock Text="The channel numbers set and used from the sAcn/dmx tab" Margin="5" />
+        <TextBlock Text="{Binding SerialMessage}" Margin="5" Foreground="Red" />
+        <!-- DataGrid -->
+        <DataGrid Grid.Row="1" Grid.Column="0" CanUserSortColumns="False" ItemsSource="{Binding SerialConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" Binding="{Binding FriendlyName}" />
+                <DataGridTextColumn Header="Device Path" Binding="{Binding DevicePath}" />
+                <DataGridTextColumn Header="File System Name" Binding="{Binding FileSystemName}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </StackPanel>
+</UserControl>

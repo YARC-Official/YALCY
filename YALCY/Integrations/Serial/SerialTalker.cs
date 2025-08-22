@@ -6,6 +6,7 @@ using HidSharp;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
+using YALCY.Views.Components;
 
 namespace YALCY.Integrations.Serial;
 
@@ -27,6 +28,7 @@ public class SerialTalker: IDisposable
         if (SerialEnabled)
         {
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            StatusFooter.UpdateStatus("Serial", IntegrationStatus.Connected);
 
             controller = new OpenDmxController();
 
@@ -42,6 +44,7 @@ public class SerialTalker: IDisposable
             catch (Exception e)
             {
                 mainViewModel.SerialMessage = $"Error: {e.Message}";
+                StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error);
                 UsbDeviceMonitor.SerialDeviceAdded += SerialDeviceAdded;  //start the watchdog.
             }
         }
@@ -152,6 +155,7 @@ public class SerialTalker: IDisposable
     public void Dispose()
     {
         UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        StatusFooter.UpdateStatus("Serial", IntegrationStatus.Off);
         if (controller != null)
         {
             controller.Dispose();

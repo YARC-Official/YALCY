@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:app="clr-namespace:YALCY"
+             x:Class="YALCY.Views.Components.StatusFooter"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+
+    <Border Background="#1A1A1A" Padding="20,10,20,10" BorderBrush="#333333" BorderThickness="0,1,0,0">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            
+            <!-- Left side - Status indicators -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20" HorizontalAlignment="Left">
+                
+                <!-- YARG UDP -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="UdpStatusEllipse" />
+                    <TextBlock Text="YARG UDP" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                
+                <!-- Stage Kit -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="StageKitStatusEllipse" />
+                    <TextBlock Text="Stage Kit" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                
+                <!-- DMX/sACN -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="DmxStatusEllipse" />
+                    <TextBlock Text="DMX/sACN" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                
+                <!-- RB3E -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="Rb3eStatusEllipse" />
+                    <TextBlock Text="RB3E" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                
+                <!-- Serial -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="SerialStatusEllipse" />
+                    <TextBlock Text="Serial" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                
+                <!-- Hue -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="HueStatusEllipse" />
+                    <TextBlock Text="Hue" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                
+                <!-- OpenRGB -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="OpenRgbStatusEllipse" />
+                    <TextBlock Text="OpenRGB" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                
+            </StackPanel>
+            
+            <!-- Right side - App name and version -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
+                <TextBlock Text="YALCY" Foreground="White" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Source={x:Static app:App.Version}, StringFormat=' v{0}'}" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+            </StackPanel>
+            
+        </Grid>
+    </Border>
+</UserControl>

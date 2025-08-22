@@ -14,6 +14,7 @@ using HueApi.Models.Exceptions;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
+using YALCY.Views.Components;
 
 namespace YALCY.Integrations.Hue;
 
@@ -36,6 +37,7 @@ public class HueTalker : IDisposable
         if (isEnabled)
         {
             Console.WriteLine("Enabling Hue.");
+            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Connecting);
             var (isValid, statusMessage) = Helpers.IpValidator(bridgeIp);
 
             mainViewModel.HueIpStatus = statusMessage;
@@ -90,11 +92,14 @@ public class HueTalker : IDisposable
                 _baseEntLayer.SetState(_cancellationTokenSource.Token, new RGBColor("FFFFFF"), 1);
                 UsbDeviceMonitor.OnStageKitCommand += SendRequest;
 
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Connected);
+
                 // Start auto-updating this entertainment group
                 await _client.AutoUpdateAsync(_streamingGroup, _cancellationTokenSource.Token, 50, onlySendDirtyStates: false);
             }
             catch (UnauthorizedAccessException)
             {
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
                 mainViewModel.HueStreamingClientStatus = $"Streaming Client Status: Streaming Client not created. Unauthorized access. Remember to push the link button on the bridge before registering!";
 
                 // Reset the HueAuthResult in case it's invalid
@@ -104,16 +109,19 @@ public class HueTalker : IDisposable
             }
             catch (NullReferenceException)
             {
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
                 mainViewModel.HueStreamingClientStatus = "Streaming client status: Initialize streaming client failed: YALCY probably isn't registered with the bridge. Try registering again and remember to push the link button on the bridge first!";
                 mainViewModel.HueEntertainmentGroupStatus = "Entertainment Group Status: Can't get entertainment group without a streaming client!";
                 mainViewModel.HueStreamingActiveStatus = "Streaming is not active";
             }
             catch (HueEntertainmentException)
             {
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
                 mainViewModel.HueEntertainmentGroupStatus = "Entertainment Group Status: No Entertainment Group found. Create one in your Phillips Hue app and name it YARG.";
             }
             catch (Exception ex)
             {
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
                 mainViewModel.HueMessage = $"Error: {ex.Message}";
             }
         }
@@ -125,6 +133,7 @@ public class HueTalker : IDisposable
 
             // Remove event handlers
             UsbDeviceMonitor.OnStageKitCommand -= SendRequest;
+            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Off);
 
             // Dispose of the client and cancellation token
             _cancellationTokenSource?.Dispose();
@@ -160,10 +169,12 @@ public class HueTalker : IDisposable
             catch (LinkButtonNotPressedException ex)
             {
                 mainViewModel.HueRegisterStatus = $"Registering Status: Link button not pressed exception: {ex.Message}";
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
             }
             catch (Exception ex)
             {
                 mainViewModel.HueRegisterStatus = $"Registering Status: Probably wrong bridge IP address: {ex.Message}";
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
             }
         }
         else
@@ -191,12 +202,14 @@ public class HueTalker : IDisposable
         {
             var mainViewModel = ((App)Application.Current!).MainViewModel;
             mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Operation timed out.";
+            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
             return null;
         }
         catch (Exception e)
         {
             var mainViewModel = ((App)Application.Current!).MainViewModel;
             mainViewModel.HueStreamingClientStatus = $"Streaming Client Status: Error - {e.Message}";
+            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
             return null;
         }
     }

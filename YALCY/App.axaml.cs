@@ -3,12 +3,26 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using YALCY.ViewModels;
 using YALCY.Views;
+using System.Reflection;
 
 namespace YALCY;
 
 public class App : Application
 {
     public MainWindowViewModel MainViewModel { get; private set; }
+
+    public static string Version
+    {
+        get
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            if (version != null)
+            {
+                    return $"{version.Major}.{version.Minor}.{version.Build}";
+            }
+            return "1.0.0";
+        }
+    }
 
     public override void Initialize()
     {

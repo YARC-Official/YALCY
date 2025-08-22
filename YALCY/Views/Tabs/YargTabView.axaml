@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
+             x:Class="YALCY.Views.Tabs.YargTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <Grid x:Name="MainGrid" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,*">
+        <!-- Toggle Button -->
+        <ToggleButton ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}" Content="{Binding UdpEnableSetting.ToggleButtonContent}" IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}" Grid.Row="0" Grid.Column="0" Margin="5" Grid.ColumnSpan="2" />
+
+        <!-- Detach Visualizer Button -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Margin="5" HorizontalAlignment="Right" Spacing="10">
+            <ToggleButton x:Name="StrobeVisualizerButton" Content="Strobe Visualizer" Click="OnStrobeVisualizerClicked" />
+            <ToggleButton x:Name="DetachVisualizerButton" Content="Detach LED Visualizer" Click="OnDetachVisualizerClicked" />
+        </StackPanel> 
+
+        <!-- Port Configuration -->
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="0" Margin="5">
+            <TextBlock Text="Listening Port:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding UdpListenPort, Mode=TwoWay}" MinWidth="80" />
+        </StackPanel>
+
+        <!-- DataGrid with internal scroll -->
+        <DataGrid x:Name="MainDataGrid" Grid.Row="3" Grid.Column="0" Margin="5" BorderThickness="1" BorderBrush="Gray" GridLinesVisibility="All" CanUserResizeColumns="False" CanUserSortColumns="False" ItemsSource="{Binding CombinedCollection}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                <DataGridTextColumn Header="Byte" Binding="{Binding Index}" Width="*"/>
+                <DataGridTextColumn Header="Current Value" Binding="{Binding Value}" Width="*"/>
+                <DataGridTextColumn Header="Value Description" Binding="{Binding ValueDescription}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- LED Visualization Panel (will be dynamically managed) -->
+        <components:LedVisualizerPanel x:Name="LedVisualizer" Grid.Row="3" Margin="20" Grid.Column="1" Width="320" Height="320" />
+    </Grid>
+</UserControl>

@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using ReactiveUI;
+using YALCY.Views.Components;
 
 namespace YALCY.Udp;
 
@@ -95,6 +96,10 @@ public partial class UdpIntake : ReactiveObject
 
     private static UdpClient? _udpClient;
     private static CancellationTokenSource? _cancellationTokenSource;
+    private static DateTime _lastPacketReceived = DateTime.MinValue;
+    private static Timer? _healthCheckTimer;
+    private const int HEALTH_CHECK_INTERVAL_MS = 1000; // Verifica a cada 1 segundo
+    private const int PACKET_TIMEOUT_MS = 3000; // Timeout de 3 segundos
 
     public async Task EnableUdpIntake(bool isEnabled)
     {
@@ -103,6 +108,7 @@ public partial class UdpIntake : ReactiveObject
 
         if (isEnabled)
         {
+            StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connecting);
             if (_udpClient != null)
             {
                 Console.WriteLine("UDP client already running.");
@@ -114,10 +120,15 @@ public partial class UdpIntake : ReactiveObject
                 Console.WriteLine($"Starting UDP client on port {mainViewModel.UdpListenPort}");
                 _udpClient = new UdpClient(mainViewModel.UdpListenPort);
                 _udpClient.Client.ReceiveBufferSize = 8192; // Increase buffer size
+                
+                // Inicializa o timer de verificação de saúde da conexão
+                _lastPacketReceived = DateTime.Now;
+                _healthCheckTimer = new Timer(HealthCheckCallback, null, HEALTH_CHECK_INTERVAL_MS, HEALTH_CHECK_INTERVAL_MS);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error initializing UDP client: {ex.Message}");
+                StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
                 return;
             }
 
@@ -130,6 +141,9 @@ public partial class UdpIntake : ReactiveObject
                     {
                         var result = await _udpClient.ReceiveAsync().ConfigureAwait(false);
 
+                        // Atualiza o timestamp do último pacote recebido
+                        _lastPacketReceived = DateTime.Now;
+
                         // Process packets in a separate task
                         DeserializePacket(result.Buffer);
                     }
@@ -137,6 +151,7 @@ public partial class UdpIntake : ReactiveObject
                 catch (ObjectDisposedException)
                 {
                     Console.WriteLine("UdpClient has been disposed.");
+                    StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
                 {
@@ -145,6 +160,7 @@ public partial class UdpIntake : ReactiveObject
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error receiving UDP data: {ex.Message}");
+                    StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
                 }
             }, _cancellationTokenSource.Token);
         }
@@ -208,31 +224,63 @@ public partial class UdpIntake : ReactiveObject
         }
 
         PacketProcessed?.Invoke(Buffer);
+        StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connected);
     }
     catch (EndOfStreamException ex)
     {
         Console.WriteLine($"Error reading UDP data (incomplete packet): {ex.Message}");
+        StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error reading UDP data: {ex.Message}");
+        StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
     }
 }
+
+    /// <summary>
+    /// Callback do timer que verifica se dados foram recebidos nos últimos 3 segundos
+    /// Se não houver dados recentes, marca o status como Error
+    /// </summary>
+    private static void HealthCheckCallback(object? state)
+    {
+        try
+        {
+            if (_udpClient != null && !_cancellationTokenSource?.Token.IsCancellationRequested == true)
+            {
+                var timeSinceLastPacket = DateTime.Now - _lastPacketReceived;
+                
+                if (timeSinceLastPacket.TotalMilliseconds > PACKET_TIMEOUT_MS)
+                {
+                    // Não recebeu dados nos últimos 3 segundos - marca como erro
+                    StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
+                    Console.WriteLine($"UDP health check failed: No data received for {timeSinceLastPacket.TotalMilliseconds:F0}ms");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in UDP health check: {ex.Message}");
+        }
+    }
 
     private void StopUdpClient()
     {
         try
         {
             _cancellationTokenSource?.Cancel();
+            _healthCheckTimer?.Dispose();
+            _healthCheckTimer = null;
             _udpClient?.Close();
             _udpClient?.Dispose();
             _udpClient = null;
-
+            StatusFooter.UpdateStatus("UDP", IntegrationStatus.Off);
             //        ClearByteIndexes();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error stopping UDP client: {ex.Message}");
+            StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
         }
     }
 

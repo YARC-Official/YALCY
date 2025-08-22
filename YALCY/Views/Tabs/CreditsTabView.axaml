@@ -1,0 +1,147 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
+             x:Class="YALCY.Views.Tabs.CreditsTabView"
+             mc:Ignorable="d">
+    
+    <ScrollViewer>
+        <StackPanel Margin="25" Spacing="30">
+            
+            <!-- Header with subtle gradient -->
+            <Border CornerRadius="16" 
+                    Padding="35" 
+                    Margin="0,0,0,10"
+                    Background="#2a2d3a"
+                    BorderBrush="#3a3d4a"
+                    BorderThickness="1">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="🎉" 
+                               FontSize="42" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,0,0,15"/>
+                    <TextBlock Text="YALCY Credits" 
+                               FontSize="26" 
+                               FontWeight="Bold" 
+                               Foreground="White" 
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Made with ❤️ by the community" 
+                               FontSize="15" 
+                               Foreground="#B0B0B0" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Core Contributors Section -->
+            <Border Background="#2a2d3a" 
+                    CornerRadius="16" 
+                    Padding="30" 
+                    BorderBrush="#3a3d4a" 
+                    BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" 
+                                HorizontalAlignment="Center" 
+                                Margin="0,0,0,25">
+                        <TextBlock Text="Core Contributors" 
+                                   FontSize="20" 
+                                   FontWeight="Bold" 
+                                   Foreground="White"/>
+                    </StackPanel>
+                    
+                    <UniformGrid Columns="2" Margin="10,0,0,0">
+                        <!-- The Fat Bastid -->
+                        <components:PersonCard  DisplayName="The Fat Bastid" 
+                                                Role="Developer" 
+                                                GitHubUsername="TheFatBastid"
+                                                Margin="0,0,7,15"/>
+
+                         <!-- Kadu -->
+                         <components:PersonCard DisplayName="Kadu" 
+                                                Role="Designer" 
+                                                GitHubUsername="kaduwaengertner"
+                                                Margin="7,0,0,15"/>
+                         
+                        
+                         <!-- Nyxyxylyth -->
+                         <components:PersonCard DisplayName="Nyxyxylyth" 
+                                                Role="Developer" 
+                                                GitHubUsername="Nyxyxylyth"
+                                                Margin="0,0,7,0"/>
+
+                        <!-- NevesPT -->
+                        <components:PersonCard  DisplayName="NevesPT" 
+                                                Role="Developer"
+                                                GitHubUsername="nevespt"
+                                                Margin="7,0,0,0"/>
+                     </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Special Thanks Section -->
+            <Border Background="#2a2d3a" 
+                    CornerRadius="16" 
+                    Padding="30" 
+                    BorderBrush="#3a3d4a" 
+                    BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" 
+                                HorizontalAlignment="Center" 
+                                Margin="0,0,0,25">
+                        <TextBlock Text="Special Thanks" 
+                                   FontSize="20" 
+                                   FontWeight="Bold" 
+                                   Foreground="White"/>
+                    </StackPanel>
+                    
+                    <UniformGrid Columns="2" Margin="10,0,0,0">
+                            <!-- RPAL -->
+                           <components:PersonCard DisplayName="RPAL" 
+                                                  Role="Community Member"
+                                                  Margin="0,0,7,15"/>
+                           
+                           <!-- RazQ -->
+                           <components:PersonCard DisplayName="RazQ" 
+                                                  Role="Community Member"
+                                                  Margin="7,0,0,15"/>
+                           
+                           <!-- Alink2thepatrick -->
+                           <components:PersonCard DisplayName="Alink2thepatrick" 
+                                                  Role="Community Member"
+                                                  Margin="0,0,7,0"/>
+                           
+                           <!-- YARG -->
+                           <components:PersonCard DisplayName="YARG Team" 
+                                                  Role="and, of course, everyone from the YARG mother-ship"
+                                                  GitHubUsername="YARC-Official"
+                                                  Margin="7,0,0,0"/>
+                           
+                       </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Footer -->
+            <Border Background="#1a1d2a" 
+                    CornerRadius="16" 
+                    Padding="30" 
+                    BorderBrush="#2a2d3a" 
+                    BorderThickness="1">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="♫" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="Thank you for using YALCY!" 
+                               FontSize="17" 
+                               FontWeight="SemiBold" 
+                               Foreground="White" 
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Keep rocking and keep the music alive!" 
+                               FontSize="15" 
+                               Foreground="#B0B0B0" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+            
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -3,15 +3,52 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:YALCY.ViewModels"
+        xmlns:tabs="clr-namespace:YALCY.Views.Tabs"
+        xmlns:components="clr-namespace:YALCY.Views.Components"
         x:Class="YALCY.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
 
         Icon="/Resources/avalonia-logo.ico"
         Title="YALCY - Yet Another Lighting Controller for YARG"
-        Width="1800" Height="1080"
+        Width="1200" Height="800"
+        MinWidth="700" MinHeight="670"
+        WindowStartupLocation="CenterOwner"
         mc:Ignorable="d">
 
     <Window.Styles>
+        <Style Selector="TabControl">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Background="{TemplateBinding Background}"
+                            HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalAlignment}">
+                        <DockPanel>
+                            <ScrollViewer DockPanel.Dock="{TemplateBinding TabStripPlacement}" 
+                                          HorizontalAlignment="Stretch"
+                                          HorizontalScrollBarVisibility="Auto">
+                                <ItemsPresenter Name="PART_ItemsPresenter"
+                                              ItemsPanel="{TemplateBinding ItemsPanel}" />
+                            </ScrollViewer>
+                            <ContentPresenter Name="PART_SelectedContentHost"
+                                            Margin="{TemplateBinding Padding}"
+                                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                            Content="{TemplateBinding SelectedContent}"
+                                            ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="ItemsPanel">
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </Setter>
+        </Style>
+        
         <Style Selector="TabControl">
             <Setter Property="BorderBrush" Value="Transparent" /> <!-- Remove the border brush -->
             <Setter Property="BorderThickness" Value="0" /> <!-- Set the border thickness to 0 -->
@@ -48,413 +85,37 @@
             <Setter Property="BorderBrush" Value="#45D8FE" /> <!-- Border color -->
         </Style>
     </Window.Styles>
-    <TabControl Margin="5">
-        <TabItem Header="YARG">
-            <Grid ColumnDefinitions="0.5*,1*" RowDefinitions="Auto,Auto,*">
-                <!-- Toggle Button -->
-                <ToggleButton ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}"
-                              Content="{Binding UdpEnableSetting.ToggleButtonContent}"
-                              IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}" Grid.Row="0"
-                              Grid.Column="0" Margin="5" Grid.ColumnSpan="2" />
-                <!-- Port Configuration -->
-                <TextBlock Text="Listening Port:" Grid.Row="1" Grid.Column="0" Margin="5" VerticalAlignment="Center" />
-                <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding UdpListenPort, Mode=TwoWay}" Grid.Row="1"
-                               Grid.Column="0" Margin="5" HorizontalAlignment="Right" />
-
-                <!-- DataGrid inside a ScrollViewer -->
-                <ScrollViewer Grid.Row="2" Grid.Column="0">
-                    <DataGrid Margin="5" BorderThickness="1" BorderBrush="Gray" GridLinesVisibility="All"
-                              CanUserResizeColumns="False" CanUserSortColumns="False"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              ItemsSource="{Binding CombinedCollection}">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
-                            <DataGridTextColumn Header="Byte" Binding="{Binding Index}" Width="*" />
-                            <DataGridTextColumn Header="Current Value" Binding="{Binding Value}" Width="*" />
-                            <DataGridTextColumn Header="Value Description" Binding="{Binding ValueDescription}" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </ScrollViewer>
-
-                <!-- LED Visualization Panel -->
-                <Canvas x:Name="CanvasContainer" Grid.Row="2" Grid.Column="1" Width="200" Height="200"
-                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <!-- TextBox positioned above the image -->
-                    <TextBox x:Name="TextOverlay" Width="180" Canvas.Left="10" Canvas.Top="-100"
-                             HorizontalAlignment="Center" VerticalAlignment="Top" Text="Stage Kit Visualizer"
-                             Background="Transparent" Foreground="White" FontSize="16" TextAlignment="Center"
-                             BorderBrush="Transparent" />
-                    <Image x:Name="CenteredImage" Source="/Resources/StageKit/LedBackground.png" Stretch="None" />
-                    <vm:LedDisplay Color="0" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <vm:LedDisplay Color="1" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <vm:LedDisplay Color="2" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <vm:LedDisplay Color="3" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Canvas>
-            </Grid>
-        </TabItem>
-        <TabItem Header="Stage Kit">
-            <Grid RowDefinitions="Auto,*">
-                <!-- Toggle Button -->
-                <ToggleButton ToolTip.Tip="{Binding StageKitEnabledSetting.ToolTip}"
-                              Content="{Binding StageKitEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding StageKitEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5"
-                              Grid.Row="0" Grid.Column="0" />
-                <!-- DataGrid -->
-                <DataGrid Grid.Row="1" Grid.Column="0" CanUserSortColumns="False"
-                          ItemsSource="{Binding StageKitConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Friendly Name" Binding="{Binding ProductName}" />
-                        <DataGridTextColumn Header="Instance ID" Binding="{Binding DevicePath}" />
-                        <DataGridTextColumn Header="Vendor ID" Binding="{Binding VendorID}" />
-                        <DataGridTextColumn Header="Product ID" Binding="{Binding ProductID}" />
-                        <DataGridTextColumn Header="Revision" Binding="{Binding ReleaseNumberBcd}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Grid>
-        </TabItem>
-        <TabItem Header="DMX/SACN">
-            <ScrollViewer>
-                <StackPanel Margin="10">
-                    <!-- Toggle Button -->
-                    <ToggleButton ToolTip.Tip="{Binding DmxEnabledSetting.ToolTip}"
-                                  Content="{Binding DmxEnabledSetting.ToggleButtonContent}"
-                                  IsChecked="{Binding DmxEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-                    <!-- Master Settings Group -->
-                    <Border BorderBrush="White" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,10">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding MasterDimmerSettingsContainer}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <UniformGrid Columns="9">
-                                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="5" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[0], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[1], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[2], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[3], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[4], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[5], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[6], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[7], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                        </UniformGrid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                    <!-- Color Channel Settings Group -->
-                    <Border BorderBrush="White" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,10">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding ColorChannelSettingsContainer}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <UniformGrid Columns="9">
-                                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="5" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[0], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[1], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[2], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[3], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[4], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[5], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[6], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[7], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                        </UniformGrid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                    <!-- Effects Channel (fog/strobe) Settings Group -->
-                    <Border BorderBrush="White" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,10">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding EffectsChannelSettingsContainer}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <UniformGrid Columns="9">
-                                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="5" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[0], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[1], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[2], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[3], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[4], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[5], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[6], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Channel[7], Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                        </UniformGrid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                    <!-- Instrument NoteS Group -->
-                    <Border BorderBrush="White" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,10">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding InstrumentNoteSettingsContainer}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <UniformGrid Columns="2">
-                                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="5" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Value, Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                        </UniformGrid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                    <!-- Advanced Settings Group -->
-                    <Border BorderBrush="White" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,10">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding AdvancedSettingsContainer}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <UniformGrid Columns="2">
-                                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="5" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Value, Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                        </UniformGrid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                    <!-- Broadcast Settings Group -->
-                    <Border BorderBrush="White" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,10">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding BroadcastSettingsContainer}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <UniformGrid Columns="2">
-                                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="5" />
-                                            <NumericUpDown Minimum="1" Maximum="512"
-                                                           Value="{Binding Value, Mode=TwoWay}" Margin="5"
-                                                           HorizontalAlignment="Center" FormatString="F0" />
-                                        </UniformGrid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-        <TabItem Header="RB3E">
-            <!-- Toggle Button -->
-            <ToggleButton ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
-                          Content="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
-                          IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-        </TabItem>
-        <TabItem Header="Serial">
-            <StackPanel Margin="5">
-                <ToggleButton ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
-                              Content="{Binding SerialEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-                <TextBlock Text="The channel numbers set and used from the sAcn/dmx tab" Margin="5" />
-                <TextBlock Text="{Binding SerialMessage}" Margin="5" Foreground="Red" />
-                <!-- DataGrid -->
-                <DataGrid Grid.Row="1" Grid.Column="0" CanUserSortColumns="False" ItemsSource="{Binding SerialConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Name" Binding="{Binding FriendlyName}" />
-                        <DataGridTextColumn Header="Device Path" Binding="{Binding DevicePath}" />
-                        <DataGridTextColumn Header="File System Name" Binding="{Binding FileSystemName}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </StackPanel>
-        </TabItem>
-
-        <TabItem Header="Hue">
-            <StackPanel Margin="5">
-                <!-- Toggle Button -->
-                <ToggleButton ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
-                              Content="{Binding HueEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-                <!-- Text Box -->
-                <TextBlock Text="Setup needed:" Margin="5" />
-                <TextBlock Text="1) Verify that your Phillips Hue Hub Bridge has software version 1948086000 or higher"
-                           Margin="5" />
-                <TextBlock Text="2) Find and enter the IP address of your hub into the box." Margin="5" />
-                <TextBlock Text="3) Create an &quot;entertainment area&quot; in your phillips hue app and name it YARG"
-                           Margin="5" />
-                <TextBlock Text="4) Add 8 lights to the area. Less will work, but you won't see full effects."
-                           Margin="5" />
-                <TextBlock
-                    Text="5) Link this program to your hub. Push the button on the hub FIRST, then click the register button"
-                    Margin="5" />
-                <!-- IP Address Input -->
-                <TextBlock Text="Enter Hue Bridge IP" />
-                <TextBox Text="{Binding HueBridgeIp}" />
-                <!-- Register Button -->
-                <Button Content="Register with Hue Bridge" Command="{Binding RegisterHueBridgeCommand}" Margin="5" />
-                <TextBlock Text="{Binding HueIpStatus}" />
-                <TextBlock Text="{Binding HueRegisterStatus}" />
-                <TextBlock Text="{Binding HueStreamingClientStatus}" />
-                <TextBlock Text="{Binding HueEntertainmentGroupStatus} " />
-                <TextBlock Text="{Binding HueStreamingActiveStatus}" />
-                <!-- Error Output -->
-                <TextBlock Text="{Binding HueMessage}" Margin="5" Foreground="Red" />
-            </StackPanel>
-        </TabItem>
-        <TabItem Header="openRGB">
-            <StackPanel Margin="5">
-                <!-- Enable Button -->
-                <ToggleButton ToolTip.Tip="{Binding  OpenRgbEnabledSetting.ToolTip}"
-                              Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-                <!-- Info -->
-                <TextBlock Text="Setup needed:" />
-                <TextBlock Text="1) OpenRgb Server needs to be running!" Margin="5" />
-                <TextBlock Text="2) Be sure your devices are in Direct mode" Margin="5" />
-                <!-- IP Address and Server port -->
-                <Grid Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="150" /> <!-- Width for the IP TextBox -->
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="150" /> <!-- Width for the Port NumericUpDown -->
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="OpenRGB Server IP: " VerticalAlignment="Center" Margin="0,0,10,0" Grid.Column="0" />
-                    <TextBox Text="{Binding OpenRgbServerIp}" Grid.Column="1" />
-                    <TextBlock Text="OpenRGB Server Port: " VerticalAlignment="Center" Margin="10,0,10,0"
-                               Grid.Column="2" />
-                    <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding OpenRgbServerPort, Mode=TwoWay}"
-                                   Grid.Column="3" />
-                    <Button Content="Connect to OpenRGB server" Command="{Binding ConnectToOpenRgbServerCommand}"
-                            Margin="10,0,0,0" Grid.Column="4" HorizontalAlignment="Right" />
-                </Grid>
-                <!-- Status Message -->
-                <TextBlock Text="{Binding OpenRgbStatus}" />
-                <!-- Data Grid -->
-                <DataGrid CanUserSortColumns="False" ItemsSource="{Binding DeviceCategories}"
-                          AutoGenerateColumns="False" IsReadOnly="True">
-                    <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Category">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <RadioButton Content="Off" GroupName="{Binding Device.Index}" Margin="5,0"
-                                                     IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
-
-                                        <RadioButton Content="LightPod" GroupName="{Binding Device.Index}" Margin="5,0"
-                                                     IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
-
-                                        <RadioButton Content="Strobe" GroupName="{Binding Device.Index}" Margin="5,0"
-                                                     IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}" />
-
-                                        <RadioButton Content="Fogger" GroupName="{Binding Device.Index}" Margin="5,0"
-                                                     IsChecked="{Binding Category, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=3}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Index" Binding="{Binding Device.Index}" />
-                        <DataGridTextColumn Header="Type" Binding="{Binding Device.Type}" />
-                        <DataGridTextColumn Header="Name" Binding="{Binding Device.Name}" />
-                        <DataGridTextColumn Header="Vendor" Binding="{Binding Device.Vendor}" />
-                        <DataGridTextColumn Header="Description" Binding="{Binding Device.Description}" />
-                        <DataGridTextColumn Header="Version" Binding="{Binding Device.Version}" />
-                        <DataGridTextColumn Header="Serial" Binding="{Binding Device.Serial}" />
-                        <DataGridTextColumn Header="Location" Binding="{Binding Device.Location}" />
-                        <DataGridTextColumn Header="Active Mode Index" Binding="{Binding Device.ActiveModeIndex}" />
-                        <DataGridTextColumn Header="Modes" Binding="{Binding Device.Modes.Length}" />
-                        <DataGridTextColumn Header="Zones" Binding="{Binding Device.Zones.Length}" />
-                        <DataGridTextColumn Header="Leds" Binding="{Binding Device.Leds.Length}" />
-                        <DataGridTextColumn Header="Colors" Binding="{Binding Device.Colors.Length}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </StackPanel>
-        </TabItem>
-        <TabItem Header="Credits">
-            <TextBlock Margin="5">
-                <TextBlock.Inlines>
-                    <Run Text="Contributors:" />
-                    <LineBreak />
-                    <Run Text="Kadu" />
-                    <LineBreak />
-                    <Run Text="The Fat Bastid" />
-                    <LineBreak />                    
-                    <Run Text="Nyxyxylyth" />
-                    <LineBreak />
-                    <LineBreak />
-                    <Run Text="Special thanks to:" />
-                    <LineBreak />
-                    <Run Text="RPAL" />
-                    <LineBreak />
-                    <Run Text="RazQ" />
-                    <LineBreak />
-                    <Run Text="Alink2thepatrick" />
-                    <LineBreak />
-                    <Run Text="NevesPT" />
-                    <LineBreak />
-                    <Run Text="and, of course, everyone from the YARG mother-ship." />
-                </TextBlock.Inlines>
-            </TextBlock>
-
-        </TabItem>
-    </TabControl>
+    
+    <Grid RowDefinitions="*,Auto">
+        <!-- Main content area -->
+        <TabControl Grid.Row="0" Margin="5" TabStripPlacement="Top">
+            <TabItem Header="YARG">
+                <tabs:YargTabView />
+            </TabItem>
+            <TabItem Header="Stage Kit">
+                <tabs:StageKitTabView />
+            </TabItem>
+            <TabItem Header="DMX/SACN">
+                <tabs:DmxSacnTabView />
+            </TabItem>
+            <TabItem Header="RB3E">
+                <tabs:Rb3eTabView />
+            </TabItem>
+            <TabItem Header="Serial">
+                <tabs:SerialTabView />
+            </TabItem>
+            <TabItem Header="Hue">
+                <tabs:HueTabView />
+            </TabItem>
+            <TabItem Header="openRGB">
+                <tabs:OpenRgbTabView />
+            </TabItem>
+            <TabItem Header="Credits">
+                <tabs:CreditsTabView />
+            </TabItem>
+        </TabControl>
+        
+        <!-- Status Footer -->
+        <components:StatusFooter Grid.Row="1" />
+    </Grid>
 </Window>
