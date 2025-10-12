@@ -156,10 +156,10 @@ public partial class MainWindowViewModel
     public ObservableCollection<DmxSingleSetting> InstrumentNoteSettingsContainer { get; set; }
     public ObservableCollection<DmxSingleSetting> BroadcastSettingsContainer { get; set; }
 
-    public DmxDimmerChannelSetting MasterDimmerSettings = new("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50);
+    public DmxDimmerChannelSetting MasterDimmerSettings = new("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106);
 
     public DmxDimmerValueSetting MasterDimmerValues =
-        new("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255);
+        new("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255);
 
     public DmxChannelSetting StrobeChannels = new("Strobe Channels", 7, 14, 21, 28, 35, 42, 49, 56);
     public DmxChannelSetting FogChannels = new("Fog Channels", 6, 13, 20, 27, 34, 41, 48, 55);

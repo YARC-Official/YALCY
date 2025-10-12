@@ -10,7 +10,7 @@
 
         Icon="/Resources/avalonia-logo.ico"
         Title="YALCY - Yet Another Lighting Controller for YARG"
-        Width="1200" Height="800"
+        Width="1700" Height="800"
         MinWidth="700" MinHeight="670"
         WindowStartupLocation="CenterOwner"
         mc:Ignorable="d">

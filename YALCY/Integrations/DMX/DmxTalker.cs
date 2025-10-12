@@ -117,6 +117,96 @@ public class DmxTalker
     {
         switch (commandId)
         {
+            case StageKitTalker.CommandId.FogOn:
+                if (mainViewModel.FogChannels.Channel != null)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if (mainViewModel.FogChannels.Channel[i] > 0)
+                        {
+                            byteQueues[mainViewModel.FogChannels.Channel[i] - 1].Enqueue(255);
+                        }
+                    }
+                }
+                break;
+
+            case StageKitTalker.CommandId.FogOff:
+                if (mainViewModel.FogChannels.Channel != null)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if (mainViewModel.FogChannels.Channel[i] > 0)
+                        {
+                            byteQueues[mainViewModel.FogChannels.Channel[i] - 1].Enqueue(0);
+                        }
+                    }
+                }
+                break;
+
+            case StageKitTalker.CommandId.DisableAll:
+                for (int i = 0; i < 8; i++)
+                {
+                    byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(0);
+                    byteQueues[mainViewModel.FogChannels.Channel[i] - 1].Enqueue(0);
+                    byteQueues[mainViewModel.BlueChannels.Channel[i] - 1].Enqueue(0);
+                    byteQueues[mainViewModel.GreenChannels.Channel[i] - 1].Enqueue(0);
+                    byteQueues[mainViewModel.YellowChannels.Channel[i] - 1].Enqueue(0);
+                    byteQueues[mainViewModel.RedChannels.Channel[i] - 1].Enqueue(0);
+                }
+                break;
+
+
+            case StageKitTalker.CommandId.StrobeOff:
+                for (int i = 0; i < 8; i++)
+                {
+                    if (mainViewModel.StrobeChannels.Channel != null)
+                    {
+                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(0);
+                    }
+                }
+                break;
+
+            case StageKitTalker.CommandId.StrobeSlow:
+                for (int i = 0; i < 8; i++)
+                {
+                    if (mainViewModel.StrobeChannels.Channel != null)
+                    {
+                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(64);
+                    }
+                }
+                break;
+
+            case StageKitTalker.CommandId.StrobeMedium:
+                for (int i = 0; i < 8; i++)
+                {
+                    if (mainViewModel.StrobeChannels.Channel != null)
+                    {
+                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(127);
+                    }
+                }
+                break;
+
+            case StageKitTalker.CommandId.StrobeFast:
+                for (int i = 0; i < 8; i++)
+                {
+                    if (mainViewModel.StrobeChannels.Channel != null)
+                    {
+                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(191);
+                    }
+                }
+                break;
+
+            case StageKitTalker.CommandId.StrobeFastest:
+                for (int i = 0; i < 8; i++)
+                {
+                    if (mainViewModel.StrobeChannels.Channel != null)
+                    {
+                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(255);
+                    }
+                }
+                break;
+
+
             case StageKitTalker.CommandId.BlueLeds:
                 for (int i = 0; i < 8; i++)
                 {

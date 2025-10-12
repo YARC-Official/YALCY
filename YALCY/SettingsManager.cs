@@ -355,8 +355,8 @@ internal static class SettingsManager
 
             BroadcastUniverseSettingValue = 1;
 
-            MasterDimmerSettingsChannel = new[] { 1, 8, 15, 22, 29, 36, 43, 50 };
-            MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255 };
+            MasterDimmerSettingsChannel = new[] { 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106 };
+            MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
             FogChannelsChannel = new[] { 6, 13, 20, 27, 34, 41, 48, 55 };
             StrobeChannelsChannel = new[] { 7, 14, 21, 28, 35, 42, 49, 56 };
             RedChannelsChannel = new[] { 2, 9, 16, 23, 30, 37, 44, 51 };

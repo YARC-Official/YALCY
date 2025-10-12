@@ -18,7 +18,7 @@
                     <ItemsControl ItemsSource="{Binding MasterDimmerSettingsContainer}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <UniformGrid Columns="9">
+                                <WrapPanel Orientation="Horizontal">
                                     <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Margin="5" />
                                     <NumericUpDown Minimum="1" Maximum="512"
                                                    Value="{Binding Channel[0], Mode=TwoWay}" Margin="5"
@@ -44,7 +44,31 @@
                                     <NumericUpDown Minimum="1" Maximum="512"
                                                    Value="{Binding Channel[7], Mode=TwoWay}" Margin="5"
                                                    HorizontalAlignment="Center" FormatString="F0" />
-                                </UniformGrid>
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[8], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[9], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[10], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[11], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[12], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[13], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[14], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                    <NumericUpDown Minimum="1" Maximum="512"
+                                                   Value="{Binding Channel[15], Mode=TwoWay}" Margin="5"
+                                                   HorizontalAlignment="Center" FormatString="F0" />
+                                </WrapPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
