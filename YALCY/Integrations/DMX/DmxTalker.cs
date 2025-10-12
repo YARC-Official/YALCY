@@ -4,6 +4,7 @@ using System.Timers;
 using Avalonia;
 using Haukcode.sACN;
 using YALCY.Integrations.StageKit;
+using YALCY.Udp;
 using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
@@ -115,146 +116,102 @@ public class DmxTalker
 
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
+        // Helper: enqueue value to a whole channel group
+        void EnqueueToChannels(DmxChannelSetting group, byte value)
+        {
+            if (group.Channel == null) return;
+
+            for (int i = 0; i < 8; i++)
+            {
+                int ch = group.Channel[i];
+                if (ch > 0)
+                    byteQueues[ch - 1].Enqueue(value);
+            }
+        }
+
+        // Helper: enqueue LED pattern based on parameter bitmask
+        void EnqueueLeds(DmxChannelSetting group)
+        {
+            if (group.Channel == null) return;
+
+            for (int i = 0; i < 8; i++)
+            {
+                int ch = group.Channel[i];
+                if (ch > 0)
+                    byteQueues[ch - 1].Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
+            }
+        }
+
+        // Helper: handle all strobe speed modes
+        void HandleStrobe(int multiplier)
+        {
+            var bpm = UdpIntake.BeatsPerMinute.Value;
+            byte value = (byte)StrobeDmxFromBpm(bpm, multiplier);
+            EnqueueToChannels(mainViewModel.StrobeChannels, value);
+        }
+
         switch (commandId)
         {
             case StageKitTalker.CommandId.FogOn:
-                if (mainViewModel.FogChannels.Channel != null)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if (mainViewModel.FogChannels.Channel[i] > 0)
-                        {
-                            byteQueues[mainViewModel.FogChannels.Channel[i] - 1].Enqueue(255);
-                        }
-                    }
-                }
+                EnqueueToChannels(mainViewModel.FogChannels, 255);
                 break;
 
             case StageKitTalker.CommandId.FogOff:
-                if (mainViewModel.FogChannels.Channel != null)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if (mainViewModel.FogChannels.Channel[i] > 0)
-                        {
-                            byteQueues[mainViewModel.FogChannels.Channel[i] - 1].Enqueue(0);
-                        }
-                    }
-                }
+                EnqueueToChannels(mainViewModel.FogChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.DisableAll:
-                for (int i = 0; i < 8; i++)
-                {
-                    byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(0);
-                    byteQueues[mainViewModel.FogChannels.Channel[i] - 1].Enqueue(0);
-                    byteQueues[mainViewModel.BlueChannels.Channel[i] - 1].Enqueue(0);
-                    byteQueues[mainViewModel.GreenChannels.Channel[i] - 1].Enqueue(0);
-                    byteQueues[mainViewModel.YellowChannels.Channel[i] - 1].Enqueue(0);
-                    byteQueues[mainViewModel.RedChannels.Channel[i] - 1].Enqueue(0);
-                }
+                EnqueueToChannels(mainViewModel.StrobeChannels, 0);
+                EnqueueToChannels(mainViewModel.FogChannels, 0);
+                EnqueueToChannels(mainViewModel.BlueChannels, 0);
+                EnqueueToChannels(mainViewModel.GreenChannels, 0);
+                EnqueueToChannels(mainViewModel.YellowChannels, 0);
+                EnqueueToChannels(mainViewModel.RedChannels, 0);
                 break;
 
-
             case StageKitTalker.CommandId.StrobeOff:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.StrobeChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(0);
-                    }
-                }
+                EnqueueToChannels(mainViewModel.StrobeChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeSlow:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.StrobeChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(64);
-                    }
-                }
+                HandleStrobe(4);
                 break;
 
             case StageKitTalker.CommandId.StrobeMedium:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.StrobeChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(127);
-                    }
-                }
+                HandleStrobe(6);
                 break;
 
             case StageKitTalker.CommandId.StrobeFast:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.StrobeChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(191);
-                    }
-                }
+                HandleStrobe(8);
                 break;
 
             case StageKitTalker.CommandId.StrobeFastest:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.StrobeChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.StrobeChannels.Channel[i] - 1].Enqueue(255);
-                    }
-                }
+                HandleStrobe(10);
                 break;
 
-
             case StageKitTalker.CommandId.BlueLeds:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.BlueChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.BlueChannels.Channel[i] - 1]
-                            .Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
-                    }
-                }
-
+                EnqueueLeds(mainViewModel.BlueChannels);
                 break;
 
             case StageKitTalker.CommandId.GreenLeds:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.GreenChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.GreenChannels.Channel[i] - 1]
-                            .Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
-                    }
-                }
-
+                EnqueueLeds(mainViewModel.GreenChannels);
                 break;
 
             case StageKitTalker.CommandId.YellowLeds:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.YellowChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.YellowChannels.Channel[i] - 1]
-                            .Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
-                    }
-                }
-
+                EnqueueLeds(mainViewModel.YellowChannels);
                 break;
 
             case StageKitTalker.CommandId.RedLeds:
-                for (int i = 0; i < 8; i++)
-                {
-                    if (mainViewModel.RedChannels.Channel != null)
-                    {
-                        byteQueues[mainViewModel.RedChannels.Channel[i] - 1]
-                            .Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
-                    }
-                }
-
+                EnqueueLeds(mainViewModel.RedChannels);
                 break;
         }
+    }
+    private byte StrobeDmxFromBpm(float bpm, int speed) {
+        var f = bpm * speed / 60.0;
+        if (f <= 0) return 0;
+        if (f > 25.0) f = 25.0;
+        var dmx = (byte)Math.Round((f / 25.0) * 255.0);
+        return dmx;
     }
 
     private void Sender()
