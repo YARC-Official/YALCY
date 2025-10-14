@@ -176,17 +176,18 @@ public partial class MainWindowViewModel
     public DmxSingleSetting DrumNoteChannelSetting = new("Drum Note Channel", 61);
     public DmxSingleSetting GuitarNoteChannelSetting = new("Guitar Note Channel", 63);
     public DmxSingleSetting BassNoteChannelSetting = new("Bass Note Channel", 64);
-    public DmxSingleSetting CurrentPerformerSetting = new("Current Performer", 65);
-    public DmxSingleSetting KeysNoteChannelSetting = new("Keys Note Channel", 66);
-    public DmxSingleSetting VocalsNoteChannelSetting = new("Vocals Note Channel", 67);
-    public DmxSingleSetting Harmony0NoteChannelSetting = new("Harmony 0 Note Channel", 68);
-    public DmxSingleSetting Harmony1NoteChannelSetting = new("Harmony 1 Note Channel", 69);
-    public DmxSingleSetting Harmony2NoteChannelSetting = new("Harmony 2 Note Channel", 70);
+    public DmxSingleSetting CurrentSpotlightSetting = new("Current Spotlight", 65);
+    public DmxSingleSetting CurrentSingalongSetting = new("Current Singalong", 66);
+    public DmxSingleSetting KeysNoteChannelSetting = new("Keys Note Channel", 67);
+    public DmxSingleSetting VocalsNoteChannelSetting = new("Vocals Note Channel", 68);
+    public DmxSingleSetting Harmony0NoteChannelSetting = new("Harmony 0 Note Channel", 69);
+    public DmxSingleSetting Harmony1NoteChannelSetting = new("Harmony 1 Note Channel", 70);
+    public DmxSingleSetting Harmony2NoteChannelSetting = new("Harmony 2 Note Channel", 71);
     public DmxSingleSetting BroadcastUniverseSetting = new("Broadcast Universe", 1);
-    public DmxSingleSetting CurrentSceneSetting = new("Current Scene", 71);
-    public DmxSingleSetting VenueSizeSetting = new("Venue Size", 72);
-    public DmxSingleSetting PauseStateSetting = new("Pause State", 73);
-    public DmxSingleSetting SongSectionSetting = new("Song Section", 74);
+    public DmxSingleSetting CurrentSceneSetting = new("Current Scene", 72);
+    public DmxSingleSetting VenueSizeSetting = new("Venue Size", 73);
+    public DmxSingleSetting PauseStateSetting = new("Pause State", 74);
+    public DmxSingleSetting SongSectionSetting = new("Song Section", 75);
 
     private void FeedInDmxSettings()
     {
@@ -204,7 +205,8 @@ public partial class MainWindowViewModel
         Harmony0NoteChannelSetting.Value = SettingsManager.Harmony0NoteChannelSettingValue;
         Harmony1NoteChannelSetting.Value = SettingsManager.Harmony1NoteChannelSettingValue;
         Harmony2NoteChannelSetting.Value = SettingsManager.Harmony2NoteChannelSettingValue;
-        CurrentPerformerSetting.Value = SettingsManager.CurrentPerformerSettingValue;
+        CurrentSpotlightSetting.Value = SettingsManager.CurrentSpotlightSettingValue;
+        CurrentSingalongSetting.Value = SettingsManager.CurrentSingalongSettingValue;
         CurrentSceneSetting.Value = SettingsManager.CurrentSceneSettingValue;
         VenueSizeSetting.Value = SettingsManager.VenueSizeSettingValue;
         PauseStateSetting.Value = SettingsManager.PauseStateSettingValue;
@@ -264,7 +266,8 @@ public partial class MainWindowViewModel
             BonusEffectChannelSetting,
             KeyFrameChannelSetting,
             PostProcessingChannelSetting,
-            CurrentPerformerSetting,
+            CurrentSingalongSetting,
+            CurrentSpotlightSetting,
             CurrentSceneSetting,
             VenueSizeSetting,
             PauseStateSetting,

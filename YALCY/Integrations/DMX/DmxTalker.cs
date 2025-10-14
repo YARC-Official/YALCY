@@ -32,7 +32,7 @@ public class DmxTalker
 
     private static Timer? _timer;
 
-    private byte _bpmLastItemAdded = 0;
+    private float _bpmLastItemAdded = 0;
     private byte _cueChangeLastItemAdded = 0;
     private byte _beatLineLastItemAdded = 0;
     private byte _bonusEffectLastItemAdded = 0;
@@ -41,12 +41,13 @@ public class DmxTalker
     private byte _postProcessingLastItemAdded = 0;
     private byte _guitarNoteLastItemAdded = 0;
     private byte _bassNoteLastItemAdded = 0;
-    private byte _currentPerformerLastItemAdded = 0;
+    private byte _currentSingalongLastItemAdded = 0;
+    private byte _currentSpotlightLastItemAdded = 0;
     private byte _keysNoteLastItemAdded = 0;
-    private byte _vocalsNoteLastItemAdded = 0;
-    private byte _harmony0NoteLastItemAdded = 0;
-    private byte _harmony1NoteLastItemAdded = 0;
-    private byte _harmony2NoteLastItemAdded = 0;
+    private float _vocalsNoteLastItemAdded = 0;
+    private float _harmony0NoteLastItemAdded = 0;
+    private float _harmony1NoteLastItemAdded = 0;
+    private float _harmony2NoteLastItemAdded = 0;
     private byte _currentSceneLastItemAdded = 0;
     private byte _venueSizeLastItemAdded = 0;
     private byte _pauseStateLastItemAdded = 0;
@@ -244,133 +245,148 @@ public class DmxTalker
 
     private void UpdateDataPacket(byte[] udpBuffer, MainWindowViewModel viewModel)
     {
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute] != _bpmLastItemAdded)
+        if (udpBuffer == null || udpBuffer.Length < UdpIntake.MIN_PACKET_SIZE)
         {
-            byteQueues[viewModel.BpmChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute]);
-            _bpmLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BeatsPerMinute];
+            Console.WriteLine($"Invalid UDP buffer length: {udpBuffer?.Length ?? 0}");
+            return;
+        }
+        // Let's deal with floats first. They all get cast from float to byte (0-255). If more precision needed, consider adding another byte channel.
+        float bpm = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.BeatsPerMinute);
+        float vocalsNote = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.VocalsNote);
+        float harmony0Note = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.Harmony0Note);
+        float harmony1Note = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.Harmony1Note);
+        float harmony2Note = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.Harmony2Note);
+
+        if (bpm != _bpmLastItemAdded)
+        {
+            byteQueues[viewModel.BpmChannelSetting.Value - 1].Enqueue((byte)bpm);
+            _bpmLastItemAdded = bpm;
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.LightingCue] != _cueChangeLastItemAdded)
+        if (vocalsNote != _vocalsNoteLastItemAdded)
         {
-            byteQueues[viewModel.CueChangeChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.LightingCue]);
-            _cueChangeLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.LightingCue];
+            byteQueues[viewModel.VocalsNoteChannelSetting.Value - 1].Enqueue((byte)vocalsNote);
+            _vocalsNoteLastItemAdded = vocalsNote;
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Beat] != _beatLineLastItemAdded)
+        if (harmony0Note != _harmony0NoteLastItemAdded)
         {
-            byteQueues[viewModel.BeatLineChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Beat]);
-            _beatLineLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Beat];
+            byteQueues[viewModel.Harmony0NoteChannelSetting.Value - 1].Enqueue((byte)harmony0Note);
+            _harmony0NoteLastItemAdded = harmony0Note;
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
+        if (harmony1Note != _harmony1NoteLastItemAdded)
         {
-            byteQueues[viewModel.BonusEffectChannelSetting.Value - 1].Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BonusEffect]);
-            _bonusEffectLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BonusEffect];
+            byteQueues[viewModel.Harmony1NoteChannelSetting.Value - 1].Enqueue((byte)harmony1Note);
+            _harmony1NoteLastItemAdded = harmony1Note;
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Keyframe] != _keyFrameLastItemAdded)
+        if (harmony2Note != _harmony2NoteLastItemAdded)
+        {
+            byteQueues[viewModel.Harmony2NoteChannelSetting.Value - 1].Enqueue((byte)harmony2Note);
+            _harmony2NoteLastItemAdded = harmony2Note;
+        }
+
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.LightingCue] != _cueChangeLastItemAdded)
+        {
+            byteQueues[viewModel.CueChangeChannelSetting.Value - 1].Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.LightingCue]);
+            _cueChangeLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.LightingCue];
+        }
+
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.Beat] != _beatLineLastItemAdded)
+        {
+            byteQueues[viewModel.BeatLineChannelSetting.Value - 1].Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Beat]);
+            _beatLineLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Beat];
+        }
+
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
+        {
+            byteQueues[viewModel.BonusEffectChannelSetting.Value - 1].Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect]);
+            _bonusEffectLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect];
+        }
+
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe] != _keyFrameLastItemAdded)
         {
             byteQueues[viewModel.KeyFrameChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Keyframe]);
-            _keyFrameLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Keyframe];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe]);
+            _keyFrameLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.DrumsNotes] != _drumNoteLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes] != _drumNoteLastItemAdded)
         {
             byteQueues[viewModel.DrumNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.DrumsNotes]);
-            _drumNoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.DrumsNotes];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes]);
+            _drumNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.PostProcessing] != _postProcessingLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing] != _postProcessingLastItemAdded)
         {
             byteQueues[viewModel.PostProcessingChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.PostProcessing]);
-            _postProcessingLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.PostProcessing];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing]);
+            _postProcessingLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.GuitarNotes] != _guitarNoteLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes] != _guitarNoteLastItemAdded)
         {
             byteQueues[viewModel.GuitarNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.GuitarNotes]);
-            _guitarNoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.GuitarNotes];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes]);
+            _guitarNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BassNotes] != _bassNoteLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes] != _bassNoteLastItemAdded)
         {
             byteQueues[viewModel.BassNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BassNotes]);
-            _bassNoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.BassNotes];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes]);
+            _bassNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Performer] != _currentPerformerLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.Singalong] != _currentSingalongLastItemAdded)
         {
-            byteQueues[viewModel.CurrentPerformerSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Performer]);
-            _currentPerformerLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Performer];
+            byteQueues[viewModel.CurrentSingalongSetting.Value - 1]
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Singalong]);
+            _currentSingalongLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Singalong];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.KeysNotes] != _keysNoteLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight] != _currentSpotlightLastItemAdded)
+        {
+            byteQueues[viewModel.CurrentSpotlightSetting.Value - 1]
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight]);
+            _currentSpotlightLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight];
+        }
+
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes] != _keysNoteLastItemAdded)
         {
             byteQueues[viewModel.KeysNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.KeysNotes]);
-            _keysNoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.KeysNotes];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes]);
+            _keysNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.VocalsNote] != _vocalsNoteLastItemAdded)
-        {
-            byteQueues[viewModel.VocalsNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.VocalsNote]);
-            _vocalsNoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.VocalsNote];
-        }
-
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony0Note] != _harmony0NoteLastItemAdded)
-        {
-            byteQueues[viewModel.Harmony0NoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony0Note]);
-            _harmony0NoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony0Note];
-        }
-
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony1Note] != _harmony1NoteLastItemAdded)
-        {
-            byteQueues[viewModel.Harmony1NoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony1Note]);
-            _harmony1NoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony1Note];
-        }
-
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony2Note] != _harmony2NoteLastItemAdded)
-        {
-            byteQueues[viewModel.Harmony2NoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony2Note]);
-            _harmony2NoteLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.Harmony2Note];
-        }
-
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.CurrentScene] != _currentSceneLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene] != _currentSceneLastItemAdded)
         {
             byteQueues[viewModel.CurrentSceneSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.CurrentScene]);
-            _currentSceneLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.CurrentScene];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene]);
+            _currentSceneLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize] != _venueSizeLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.VenueSize] != _venueSizeLastItemAdded)
         {
             byteQueues[viewModel.VenueSizeSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize]);
-            _venueSizeLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.VenueSize];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.VenueSize]);
+            _venueSizeLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.VenueSize];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.PauseState] != _pauseStateLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.PauseState] != _pauseStateLastItemAdded)
         {
             byteQueues[viewModel.PauseStateSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.PauseState]);
-            _pauseStateLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.PauseState];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.PauseState]);
+            _pauseStateLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.PauseState];
         }
 
-        if (udpBuffer[(int)Udp.UdpIntake.ByteIndexName.SongSection] != _songSectionLastItemAdded)
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.SongSection] != _songSectionLastItemAdded)
         {
             byteQueues[viewModel.SongSectionSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)Udp.UdpIntake.ByteIndexName.SongSection]);
-            _songSectionLastItemAdded = udpBuffer[(int)Udp.UdpIntake.ByteIndexName.SongSection];
+                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.SongSection]);
+            _songSectionLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.SongSection];
         }
     }
 }

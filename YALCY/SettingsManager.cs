@@ -70,7 +70,8 @@ internal static class SettingsManager
     public static int VenueSizeSettingValue { get; private set; }
     public static int PauseStateSettingValue { get; private set; }
     public static int SongSectionSettingValue { get; private set; }
-    public static int CurrentPerformerSettingValue { get; private set; }
+    public static int CurrentSpotlightSettingValue { get; private set; }
+    public static int CurrentSingalongSettingValue { get; private set; }
     public static int BroadcastUniverseSettingValue { get; private set; }
     public static int[]? MasterDimmerSettingsChannel { get; private set; }
     public static int[]? MasterDimmerValuesChannel { get; private set; }
@@ -112,7 +113,8 @@ internal static class SettingsManager
         settings.CurrentSingleSettings.Add(mainViewModel.DrumNoteChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.GuitarNoteChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.BassNoteChannelSetting);
-        settings.CurrentSingleSettings.Add(mainViewModel.CurrentPerformerSetting);
+        settings.CurrentSingleSettings.Add(mainViewModel.CurrentSpotlightSetting);
+        settings.CurrentSingleSettings.Add(mainViewModel.CurrentSingalongSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.KeysNoteChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.VocalsNoteChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.Harmony0NoteChannelSetting);
@@ -268,9 +270,14 @@ internal static class SettingsManager
                         SongSectionSettingValue = single.Value;
                         break;
 
-                    case "Current Performer":
-                        CurrentPerformerSettingValue = single.Value;
+                    case "Current Spotlight":
+                        CurrentSpotlightSettingValue = single.Value;
                         break;
+
+                    case "Current Singalong":
+                        CurrentSingalongSettingValue = single.Value;
+                        break;
+
                     case "Broadcast Universe":
                         BroadcastUniverseSettingValue = single.Value;
                         break;
@@ -342,16 +349,17 @@ internal static class SettingsManager
             PostProcessingChannelSettingValue = 63;
             GuitarNoteChannelSettingValue = 64;
             BassNoteChannelSettingValue = 65;
-            CurrentPerformerSettingValue = 66;
-            KeysNoteChannelSettingValue = 67;
-            VocalsNoteChannelSettingValue = 68;
-            Harmony0NoteChannelSettingValue = 69;
-            Harmony1NoteChannelSettingValue = 70;
-            Harmony2NoteChannelSettingValue = 71;
-            CurrentSceneSettingValue = 72;
-            VenueSizeSettingValue = 73;
-            PauseStateSettingValue = 74;
-            SongSectionSettingValue = 75;
+            CurrentSpotlightSettingValue = 66;
+            CurrentSingalongSettingValue = 67;
+            KeysNoteChannelSettingValue = 68;
+            VocalsNoteChannelSettingValue = 69;
+            Harmony0NoteChannelSettingValue = 70;
+            Harmony1NoteChannelSettingValue = 71;
+            Harmony2NoteChannelSettingValue = 72;
+            CurrentSceneSettingValue = 73;
+            VenueSizeSettingValue = 74;
+            PauseStateSettingValue = 75;
+            SongSectionSettingValue = 76;
 
             BroadcastUniverseSettingValue = 1;
 

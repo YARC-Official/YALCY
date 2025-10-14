@@ -6,38 +6,40 @@ public partial class UdpIntake
 {
     const uint PACKET_HEADER = 0x59415247; // YARG
 
-     public enum ByteIndexName
+    public enum ByteIndexName
     {
-        //header
-        Header,
-        //Tech info
-        DatagramVersion,
-        Platform,
+        //Header
+        Header = 0,
+        //tech info
+        DatagramVersion = 4,
+        Platform = 5,
         //game info
-        CurrentScene,
-        PauseState,
-        VenueSize,
+        CurrentScene = 6,
+        PauseState = 7,
+        VenueSize = 8,
         //song info
-        BeatsPerMinute,
-        SongSection,
+        BeatsPerMinute = 9,
+        SongSection = 13,
         //instruments
-        GuitarNotes,
-        BassNotes,
-        DrumsNotes,
-        KeysNotes,
-        VocalsNote,
-        Harmony0Note,
-        Harmony1Note,
-        Harmony2Note,
+        GuitarNotes = 14,
+        BassNotes = 15,
+        DrumsNotes = 16,
+        KeysNotes = 17,
+        VocalsNote = 18,
+        Harmony0Note = 22,
+        Harmony1Note = 26,
+        Harmony2Note = 30,
         // Lighting information
-        LightingCue,
-        PostProcessing,
-        FogState,
-        StrobeState,
-        Performer,
-        Beat,
-        Keyframe,
-        BonusEffect,
+        LightingCue = 34,
+        PostProcessing = 35,
+        FogState = 36,
+        StrobeState = 37,
+        Beat = 38,
+        Keyframe = 39,
+        BonusEffect = 40,
+        AutoGen = 41,
+        Spotlight = 42,
+        Singalong = 43,
     }
 
      public enum SongSectionByte

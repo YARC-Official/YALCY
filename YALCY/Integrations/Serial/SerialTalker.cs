@@ -139,7 +139,8 @@ public class SerialTalker: IDisposable
         controller.SetChannel(mainViewModel.PostProcessingChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PostProcessing);
         controller.SetChannel(mainViewModel.PauseStateSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PauseState);
         controller.SetChannel(mainViewModel.BeatLineChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Beat);
-        controller.SetChannel(mainViewModel.CurrentPerformerSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Performer);
+        controller.SetChannel(mainViewModel.CurrentSingalongSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Singalong);
+        controller.SetChannel(mainViewModel.CurrentSpotlightSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Spotlight);
         controller.SetChannel(mainViewModel.SongSectionSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.SongSection);
         controller.SetChannel(mainViewModel.BonusEffectChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BonusEffect);
         controller.SetChannel(mainViewModel.CurrentSceneSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.CurrentScene);

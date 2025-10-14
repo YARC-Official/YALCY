@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace YALCY.Udp;
 
 public partial class UdpIntake : ReactiveObject
 {
+    public const int MIN_PACKET_SIZE = 44;
     public Action<byte[]> PacketProcessed;
 
     public interface IDatapacketMember
@@ -65,34 +67,32 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
-    public DatapacketMember<uint> Header { get; private set; } = new ("Header", 0, GetHeaderByteDescription);
-    public DatapacketMember<byte> DatagramVersion { get; private set; } = new ("Datagram Version", 1, GetDatagramVersionByteDescription);
-    public DatapacketMember<byte> Platform { get; private set; } = new ("Platform", 2, GetPlatformByteDescription);
-    public DatapacketMember<byte> CurrentScene { get; private set; } = new ("scene", 3, GetSceneIndexByteDescription);
-    public DatapacketMember<byte> Paused { get; private set; } = new ("Paused", 4, GetPauseByteDescription);
-    public static DatapacketMember<byte> Venue { get; private set; } = new ("Venue", 5, GetVenueSizeByteDescription);
-    public static DatapacketMember<float> BeatsPerMinute { get; private set; } = new ("Beats per minute", 6, value => $"{value}");
-    public DatapacketMember<byte> CurrentSongSection { get; private set; } = new ("song section", 7, GetSongSectionByteDescription);
-    public DatapacketMember<byte> CurrentGuitarNotes { get; private set; } = new ("Guitar notes", 8, GetInstrumentByteDescription);
-    public DatapacketMember<byte> CurrentBassNotes { get; private set; } = new ("Bass notes", 9, GetInstrumentByteDescription);
-    public DatapacketMember<byte> CurrentDrumNotes { get; private set; } = new ("Drum notes", 10, GetDrumsByteDescription);
-    public DatapacketMember<byte> CurrentKeysNotes { get; private set; } = new ("Keys notes", 11, GetInstrumentByteDescription);
-    public DatapacketMember<float> CurrentVocalNote { get; private set; } = new ("Vocal note", 12, GetVocalHarmonyByteDescription);
-    public DatapacketMember<float> CurrentHarmony0Note { get; private set; } = new ("Harmony 0 note", 13, GetVocalHarmonyByteDescription);
-    public DatapacketMember<float> CurrentHarmony1Note { get; private set; } = new ("Harmony 1 note", 14, GetVocalHarmonyByteDescription);
-    public DatapacketMember<float> CurrentHarmony2Note { get; private set; } = new ("Harmony 2 note", 15, GetVocalHarmonyByteDescription);
-    public DatapacketMember<byte> LightingCue { get; private set; } = new ("Lighting cue", 16, GetCueByteDescription);
-    public DatapacketMember<byte> PostProcessing { get; private set; } = new ("Post processing", 17, GetPostProcessingByteDescription);
-    public DatapacketMember<bool> FogState { get; private set; } = new ("Fog state", 18, GetFogStateByteDescription);
-    public DatapacketMember<byte> StrobeState { get; private set; } = new ("Strobe state", 19, GetStrobeByteDescription);
-    public DatapacketMember<byte> Beat { get; private set; } = new ("Beat", 20, GetBeatlineByteDescription);
-    public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", 21, GetKeyFrameDescription);
-    public DatapacketMember<bool> BonusEffect { get; private set; } = new ("Bonus effect", 22, GetBonusEffectByteDescription);
-    public DatapacketMember<bool> AutoGen { get; private set; } = new ("AutoGen track", 23, GetAutoGenByteDescription);
-    public DatapacketMember<byte> Spotlight { get; private set; } = new ("Spotlight", 24, GetPerformerDescription);
-    public DatapacketMember<byte> Singalong { get; private set; } = new ("Singalong", 25, GetPerformerDescription);
-
-    public static byte[] Buffer = new byte[Enum.GetValues<ByteIndexName>().Length]; // The current data buffer
+    public DatapacketMember<uint> Header { get; private set; } = new ("Header", (byte)ByteIndexName.Header, GetHeaderByteDescription);
+    public DatapacketMember<byte> DatagramVersion { get; private set; } = new ("Datagram Version", (byte)ByteIndexName.DatagramVersion, GetDatagramVersionByteDescription);
+    public DatapacketMember<byte> Platform { get; private set; } = new ("Platform", (byte)ByteIndexName.Platform, GetPlatformByteDescription);
+    public DatapacketMember<byte> CurrentScene { get; private set; } = new ("scene", (byte)ByteIndexName.CurrentScene, GetSceneIndexByteDescription);
+    public DatapacketMember<byte> Paused { get; private set; } = new ("Paused", (byte)ByteIndexName.PauseState, GetPauseByteDescription);
+    public static DatapacketMember<byte> Venue { get; private set; } = new ("Venue", (byte)ByteIndexName.VenueSize, GetVenueSizeByteDescription);
+    public static DatapacketMember<float> BeatsPerMinute { get; private set; } = new ("Beats per minute", (byte)ByteIndexName.BeatsPerMinute, value => $"{value}");
+    public DatapacketMember<byte> CurrentSongSection { get; private set; } = new ("song section", (byte)ByteIndexName.SongSection, GetSongSectionByteDescription);
+    public DatapacketMember<byte> CurrentGuitarNotes { get; private set; } = new ("Guitar notes", (byte)ByteIndexName.GuitarNotes, GetInstrumentByteDescription);
+    public DatapacketMember<byte> CurrentBassNotes { get; private set; } = new ("Bass notes", (byte)ByteIndexName.BassNotes, GetInstrumentByteDescription);
+    public DatapacketMember<byte> CurrentDrumNotes { get; private set; } = new ("Drum notes", (byte)ByteIndexName.DrumsNotes, GetDrumsByteDescription);
+    public DatapacketMember<byte> CurrentKeysNotes { get; private set; } = new ("Keys notes", (byte)ByteIndexName.KeysNotes, GetInstrumentByteDescription);
+    public DatapacketMember<float> CurrentVocalNote { get; private set; } = new ("Vocal note", (byte)ByteIndexName.VocalsNote, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony0Note { get; private set; } = new ("Harmony 0 note", (byte)ByteIndexName.Harmony0Note, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony1Note { get; private set; } = new ("Harmony 1 note", (byte)ByteIndexName.Harmony1Note, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony2Note { get; private set; } = new ("Harmony 2 note", (byte)ByteIndexName.Harmony2Note, GetVocalHarmonyByteDescription);
+    public DatapacketMember<byte> LightingCue { get; private set; } = new ("Lighting cue", (byte)ByteIndexName.LightingCue, GetCueByteDescription);
+    public DatapacketMember<byte> PostProcessing { get; private set; } = new ("Post processing", (byte)ByteIndexName.PostProcessing, GetPostProcessingByteDescription);
+    public DatapacketMember<bool> FogState { get; private set; } = new ("Fog state", (byte)ByteIndexName.FogState, GetFogStateByteDescription);
+    public DatapacketMember<byte> StrobeState { get; private set; } = new ("Strobe state", (byte)ByteIndexName.StrobeState, GetStrobeByteDescription);
+    public DatapacketMember<byte> Beat { get; private set; } = new ("Beat", (byte)ByteIndexName.Beat, GetBeatlineByteDescription);
+    public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", (byte)ByteIndexName.Keyframe, GetKeyFrameDescription);
+    public DatapacketMember<bool> BonusEffect { get; private set; } = new ("Bonus effect", (byte)ByteIndexName.BonusEffect, GetBonusEffectByteDescription);
+    public DatapacketMember<bool> AutoGen { get; private set; } = new ("AutoGen track", (byte)ByteIndexName.AutoGen, GetAutoGenByteDescription);
+    public DatapacketMember<byte> Spotlight { get; private set; } = new ("Spotlight", (byte)ByteIndexName.Spotlight, GetPerformerDescription);
+    public DatapacketMember<byte> Singalong { get; private set; } = new ("Singalong", (byte)ByteIndexName.Singalong, GetPerformerDescription);
 
     private static UdpClient? _udpClient;
     private static CancellationTokenSource? _cancellationTokenSource;
@@ -172,8 +172,6 @@ public partial class UdpIntake : ReactiveObject
 
  public void DeserializePacket(byte[] data)
 {
-    const int MIN_PACKET_SIZE = 44;
-
     if (data.Length < MIN_PACKET_SIZE)
     {
         Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {MIN_PACKET_SIZE})");
@@ -193,38 +191,37 @@ public partial class UdpIntake : ReactiveObject
                 return;
             }
 
-            DatagramVersion.Value = reader.ReadByte(); //5
-            Platform.Value = reader.ReadByte(); //6
-            CurrentScene.Value = reader.ReadByte(); //7
-            Paused.Value = reader.ReadByte(); //8
-            Venue.Value = reader.ReadByte(); //9
-            BeatsPerMinute.Value = reader.ReadSingle(); //10-13
-            CurrentSongSection.Value = reader.ReadByte(); //14
+            DatagramVersion.Value = reader.ReadByte(); // 5
+            Platform.Value = reader.ReadByte(); // 6
+            CurrentScene.Value = reader.ReadByte(); // 7
+            Paused.Value = reader.ReadByte(); // 8
+            Venue.Value = reader.ReadByte(); // 9
+            BeatsPerMinute.Value = reader.ReadSingle(); // 10-13
+            CurrentSongSection.Value = reader.ReadByte(); // 14
 
-            CurrentGuitarNotes.Value = reader.ReadByte(); //15
-            CurrentBassNotes.Value = reader.ReadByte(); //16
-            CurrentDrumNotes.Value = reader.ReadByte(); //17
-            CurrentKeysNotes.Value = reader.ReadByte(); //18
+            CurrentGuitarNotes.Value = reader.ReadByte(); // 15
+            CurrentBassNotes.Value = reader.ReadByte(); // 16
+            CurrentDrumNotes.Value = reader.ReadByte(); // 17
+            CurrentKeysNotes.Value = reader.ReadByte(); // 18
 
-            CurrentVocalNote.Value = reader.ReadSingle(); //19-22
-            CurrentHarmony0Note.Value = reader.ReadSingle(); //23-26
-            CurrentHarmony1Note.Value = reader.ReadSingle(); //27-30
-            CurrentHarmony2Note.Value = reader.ReadSingle(); //31-34
+            CurrentVocalNote.Value = reader.ReadSingle(); // 19-22
+            CurrentHarmony0Note.Value = reader.ReadSingle(); // 23-26
+            CurrentHarmony1Note.Value = reader.ReadSingle(); // 27-30
+            CurrentHarmony2Note.Value = reader.ReadSingle(); // 31-34
 
-            LightingCue.Value = reader.ReadByte(); //35
-            PostProcessing.Value = reader.ReadByte(); //36
-            FogState.Value = reader.ReadBoolean(); //37
-            StrobeState.Value = reader.ReadByte(); //38
-            Beat.Value = reader.ReadByte(); //39
-            Keyframe.Value = reader.ReadByte(); //40
-            BonusEffect.Value = reader.ReadBoolean(); //41
+            LightingCue.Value = reader.ReadByte(); // 35
+            PostProcessing.Value = reader.ReadByte(); // 36
+            FogState.Value = reader.ReadBoolean(); // 37
+            StrobeState.Value = reader.ReadByte(); // 38
+            Beat.Value = reader.ReadByte(); // 39
+            Keyframe.Value = reader.ReadByte(); // 40
+            BonusEffect.Value = reader.ReadBoolean(); // 41
 
-            AutoGen.Value = reader.ReadBoolean(); //42
-            Spotlight.Value = reader.ReadByte(); //43
-            Singalong.Value = reader.ReadByte(); //44
+            AutoGen.Value = reader.ReadBoolean(); // 42
+            Spotlight.Value = reader.ReadByte(); // 43
+            Singalong.Value = reader.ReadByte(); // 44
         }
-
-        PacketProcessed?.Invoke(Buffer);
+        PacketProcessed?.Invoke(data);
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connected);
     }
     catch (EndOfStreamException ex)
@@ -235,6 +232,7 @@ public partial class UdpIntake : ReactiveObject
     catch (Exception ex)
     {
         Console.WriteLine($"Error reading UDP data: {ex.Message}");
+        Console.WriteLine($"Data length={data.Length}");
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
     }
 }
