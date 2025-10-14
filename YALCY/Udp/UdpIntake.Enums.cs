@@ -166,6 +166,17 @@ public partial class UdpIntake
         GreenCymbal = 1 << 7,
     }
 
+    public enum PerformerByte
+    {
+        None = 0,
+
+        Guitar   = 1 << 0,
+        Bass     = 1 << 1,
+        Drums    = 1 << 2,
+        Vocals   = 1 << 3,
+        Keyboard = 1 << 4,
+    }
+
     public enum CueByte
     {
         Default,

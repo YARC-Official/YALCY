@@ -262,6 +262,29 @@ public partial class UdpIntake
             return Enum.IsDefined(typeof(CueByte), intValue) ? ((CueByte)intValue).ToString() : "Unknown";
     }
 
+    public static string GetPerformerDescription(byte byteValue)
+    {
+        var result = "";
+
+        foreach (PerformerByte note in Enum.GetValues<PerformerByte>())
+        {
+            if (note == PerformerByte.None || (byteValue & (byte)note) == 0) continue;
+            if (result != "")
+            {
+                result += ", ";
+            }
+            result += note.ToString();
+        }
+
+        // If no bits are set, it means "None"
+        if (string.IsNullOrEmpty(result))
+        {
+            result = PerformerByte.None.ToString();
+        }
+        OnDrum?.Invoke(byteValue);
+        return result;
+    }
+
     public static string GetAutoGenByteDescription(bool boolValue)
     {
         var AutoGenBDescription = boolValue switch

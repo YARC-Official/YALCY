@@ -85,12 +85,12 @@ public partial class UdpIntake : ReactiveObject
     public DatapacketMember<byte> PostProcessing { get; private set; } = new ("Post processing", 17, GetPostProcessingByteDescription);
     public DatapacketMember<bool> FogState { get; private set; } = new ("Fog state", 18, GetFogStateByteDescription);
     public DatapacketMember<byte> StrobeState { get; private set; } = new ("Strobe state", 19, GetStrobeByteDescription);
-    public DatapacketMember<byte> Performer { get; private set; } = new ("Performer", 20, value => $"{value}");
-    public DatapacketMember<byte> Beat { get; private set; } = new ("Beat", 21, GetBeatlineByteDescription);
-    public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", 22, GetKeyFrameDescription);
-    public DatapacketMember<bool> BonusEffect { get; private set; } = new ("Bonus effect", 23, GetBonusEffectByteDescription);
-
-    public DatapacketMember<bool> AutoGen { get; private set; } = new ("AutoGen track", 24, GetAutoGenByteDescription);
+    public DatapacketMember<byte> Beat { get; private set; } = new ("Beat", 20, GetBeatlineByteDescription);
+    public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", 21, GetKeyFrameDescription);
+    public DatapacketMember<bool> BonusEffect { get; private set; } = new ("Bonus effect", 22, GetBonusEffectByteDescription);
+    public DatapacketMember<bool> AutoGen { get; private set; } = new ("AutoGen track", 23, GetAutoGenByteDescription);
+    public DatapacketMember<byte> Spotlight { get; private set; } = new ("Spotlight", 24, GetPerformerDescription);
+    public DatapacketMember<byte> Singalong { get; private set; } = new ("Singalong", 25, GetPerformerDescription);
 
     public static byte[] Buffer = new byte[Enum.GetValues<ByteIndexName>().Length]; // The current data buffer
 
@@ -172,7 +172,7 @@ public partial class UdpIntake : ReactiveObject
 
  public void DeserializePacket(byte[] data)
 {
-    const int MIN_PACKET_SIZE = 41;
+    const int MIN_PACKET_SIZE = 44;
 
     if (data.Length < MIN_PACKET_SIZE)
     {
@@ -185,7 +185,7 @@ public partial class UdpIntake : ReactiveObject
         using (MemoryStream ms = new MemoryStream(data))
         using (BinaryReader reader = new BinaryReader(ms))
         {
-            Header.Value = reader.ReadUInt32();
+            Header.Value = reader.ReadUInt32(); // byte count: 4
 
             if (Header.Value != PACKET_HEADER)
             {
@@ -193,34 +193,35 @@ public partial class UdpIntake : ReactiveObject
                 return;
             }
 
-            DatagramVersion.Value = reader.ReadByte();
-            Platform.Value = reader.ReadByte();
-            CurrentScene.Value = reader.ReadByte();
-            Paused.Value = reader.ReadByte();
-            Venue.Value = reader.ReadByte();
-            BeatsPerMinute.Value = reader.ReadSingle();
-            CurrentSongSection.Value = reader.ReadByte();
+            DatagramVersion.Value = reader.ReadByte(); //5
+            Platform.Value = reader.ReadByte(); //6
+            CurrentScene.Value = reader.ReadByte(); //7
+            Paused.Value = reader.ReadByte(); //8
+            Venue.Value = reader.ReadByte(); //9
+            BeatsPerMinute.Value = reader.ReadSingle(); //10-13
+            CurrentSongSection.Value = reader.ReadByte(); //14
 
-            CurrentGuitarNotes.Value = reader.ReadByte();
-            CurrentBassNotes.Value = reader.ReadByte();
-            CurrentDrumNotes.Value = reader.ReadByte();
-            CurrentKeysNotes.Value = reader.ReadByte();
+            CurrentGuitarNotes.Value = reader.ReadByte(); //15
+            CurrentBassNotes.Value = reader.ReadByte(); //16
+            CurrentDrumNotes.Value = reader.ReadByte(); //17
+            CurrentKeysNotes.Value = reader.ReadByte(); //18
 
-            CurrentVocalNote.Value = reader.ReadSingle();
-            CurrentHarmony0Note.Value = reader.ReadSingle();
-            CurrentHarmony1Note.Value = reader.ReadSingle();
-            CurrentHarmony2Note.Value = reader.ReadSingle();
+            CurrentVocalNote.Value = reader.ReadSingle(); //19-22
+            CurrentHarmony0Note.Value = reader.ReadSingle(); //23-26
+            CurrentHarmony1Note.Value = reader.ReadSingle(); //27-30
+            CurrentHarmony2Note.Value = reader.ReadSingle(); //31-34
 
-            LightingCue.Value = reader.ReadByte();
-            PostProcessing.Value = reader.ReadByte();
-            FogState.Value = reader.ReadBoolean();
-            StrobeState.Value = reader.ReadByte();
-            Performer.Value = reader.ReadByte();
-            Beat.Value = reader.ReadByte();
-            Keyframe.Value = reader.ReadByte();
-            BonusEffect.Value = reader.ReadBoolean();
+            LightingCue.Value = reader.ReadByte(); //35
+            PostProcessing.Value = reader.ReadByte(); //36
+            FogState.Value = reader.ReadBoolean(); //37
+            StrobeState.Value = reader.ReadByte(); //38
+            Beat.Value = reader.ReadByte(); //39
+            Keyframe.Value = reader.ReadByte(); //40
+            BonusEffect.Value = reader.ReadBoolean(); //41
 
-            AutoGen.Value = reader.ReadBoolean();
+            AutoGen.Value = reader.ReadBoolean(); //42
+            Spotlight.Value = reader.ReadByte(); //43
+            Singalong.Value = reader.ReadByte(); //44
         }
 
         PacketProcessed?.Invoke(Buffer);

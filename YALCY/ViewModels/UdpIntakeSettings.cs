@@ -49,9 +49,10 @@ public partial class MainWindowViewModel
         LightingMessageBytes.Add(UdpIntake.LightingCue);
         LightingMessageBytes.Add(UdpIntake.PostProcessing);
         LightingMessageBytes.Add(UdpIntake.StrobeState);
-        LightingMessageBytes.Add(UdpIntake.Performer);
         LightingMessageBytes.Add(UdpIntake.Beat);
         LightingMessageBytes.Add(UdpIntake.Keyframe);
+        LightingMessageBytes.Add(UdpIntake.Spotlight);
+        LightingMessageBytes.Add(UdpIntake.Singalong);
 
         LightingMessageBools= new ObservableCollection<UdpIntake.DatapacketMember<bool>>();
         LightingMessageBools.Add(UdpIntake.BonusEffect);
