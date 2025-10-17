@@ -35,9 +35,9 @@ internal static class SettingsManager
         CurrentChannelSettings = new List<DmxChannelSetting>(),
         CurrentSingleSettings = new List<DmxSingleSetting>(),
         CurrentMasterDimmerChannelSettings =
-            new DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50),
+            new DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106),
         CurrentMasterDimmerValueChannelSettings =
-            new DmxDimmerValueSetting("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255),
+            new DmxDimmerValueSetting("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255),
         HueAuthResult = new RegisterEntertainmentResult(),
         HueBridgeIP = "",
         UdpListenPort = 0,

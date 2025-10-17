@@ -52,7 +52,7 @@ public class DmxTalker
     private byte _venueSizeLastItemAdded = 0;
     private byte _pauseStateLastItemAdded = 0;
     private byte _songSectionLastItemAdded = 0;
-
+    private bool _bonusEffectLocked = false;
     App app;
     MainWindowViewModel mainViewModel;
 
@@ -299,10 +299,40 @@ public class DmxTalker
             _beatLineLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Beat];
         }
 
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
+        if (!_bonusEffectLocked && udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
         {
-            byteQueues[viewModel.BonusEffectChannelSetting.Value - 1].Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect]);
-            _bonusEffectLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect];
+            var newValue = udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect];
+            _bonusEffectLastItemAdded = newValue;
+
+            var channel = viewModel.BonusEffectChannelSetting.Value - 1;
+
+            if (newValue == 1)
+            {
+                _bonusEffectLocked = true;
+
+                // Immediately turn on
+                byteQueues[channel].Enqueue(255);
+
+                // Compute beat duration in milliseconds
+                float curbpm = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.BeatsPerMinute);
+                double beatDurationMs = (curbpm > 0 ? 60000.0 / bpm : 500) * 4;
+
+                // Schedule turn-off and unlock
+                var timer = new Timer(beatDurationMs);
+                timer.AutoReset = false;
+                timer.Elapsed += (s, e) =>
+                {
+                    byteQueues[channel].Enqueue(0);
+                    _bonusEffectLocked = false;
+                    timer.Dispose();
+                };
+                timer.Start();
+            }
+            else
+            {
+                // If explicitly off and not locked (e.g., at song start or stop)
+                byteQueues[channel].Enqueue(0);
+            }
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe] != _keyFrameLastItemAdded)
