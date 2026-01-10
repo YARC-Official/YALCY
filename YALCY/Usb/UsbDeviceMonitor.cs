@@ -136,7 +136,9 @@ public class UsbDeviceMonitor
             _perviousSerialDevices = newSerialDevices;
             _perviousBLEDevices = newBleDevices;
 
+#if !UNITY_STANDALONE_LINUX && !UNITY_EDITOR_LINUX
             UpdateConnectedXInputControllers();
+#endif
 
         });
     }
@@ -145,10 +147,12 @@ public class UsbDeviceMonitor
     {
         OnStageKitCommand?.Invoke(commandId, parameter);
 
+#if !UNITY_STANDALONE_LINUX && !UNITY_EDITOR_LINUX
         foreach (var controllerIndex in _connectedControllerIndices) // Only vibrate connected controllers
         {
             SetXInputVibration(controllerIndex, parameter, (byte)commandId);
         }
+#endif
 
         foreach (var device in _connectedHidDevices)
         {
@@ -167,7 +171,7 @@ public class UsbDeviceMonitor
             }
         }
     }
-
+#if !UNITY_STANDALONE_LINUX && !UNITY_EDITOR_LINUX
     private void UpdateConnectedXInputControllers()
     {
         _connectedControllerIndices.Clear();
@@ -193,7 +197,7 @@ public class UsbDeviceMonitor
         };
         XInputSetState(controllerIndex, ref vibration);
     }
-
+    
     [DllImport("XInput1_4.dll", EntryPoint = "XInputSetState")]
     private static extern int XInputSetState(int dwUserIndex, ref XINPUT_VIBRATION pVibration);
 
@@ -225,4 +229,5 @@ public class UsbDeviceMonitor
         public ushort wLeftMotorSpeed;
         public ushort wRightMotorSpeed;
     }
+#endif
 }
