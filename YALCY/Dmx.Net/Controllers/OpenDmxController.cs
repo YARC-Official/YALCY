@@ -14,7 +14,11 @@ namespace Dmx.Net.Controllers
     {
         public new bool IsOpen => _handle != IntPtr.Zero;
 
-        private const string DllName = $"FTD2XX";
+#if WINDOWS
+        private const string DllName = "ftd2xx.dll";
+#elif LINUX
+        private const string DllName = "libftd2xx.so";
+#endif
 
         #region INTEROP
 
