@@ -13,8 +13,19 @@
 		<LangVersion>default</LangVersion>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$([MSBuild]::IsOsPlatform('Windows'))">
+        <DefineConstants>WINDOWS</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOsPlatform('Linux'))">
+        <DefineConstants>LINUX</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOsPlatform('OSX'))">
+        <DefineConstants>MACOS</DefineConstants>
+    </PropertyGroup>
+
     <ItemGroup>
-        <Folder Include="Models\"/>
 		<AvaloniaResource Include="Resources\**"/>
 		<Folder Include="Source\" />
     </ItemGroup>

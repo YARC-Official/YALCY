@@ -1,6 +1,4 @@
-﻿#define WINDOWS //quick and dirty way to limit XInput to windows only
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
