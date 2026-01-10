@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define WINDOWS //quick and dirty way to limit XInput to windows only
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -136,7 +138,7 @@ public class UsbDeviceMonitor
             _perviousSerialDevices = newSerialDevices;
             _perviousBLEDevices = newBleDevices;
 
-#if !UNITY_STANDALONE_LINUX && !UNITY_EDITOR_LINUX
+#if WINDOWS
             UpdateConnectedXInputControllers();
 #endif
 
@@ -147,7 +149,7 @@ public class UsbDeviceMonitor
     {
         OnStageKitCommand?.Invoke(commandId, parameter);
 
-#if !UNITY_STANDALONE_LINUX && !UNITY_EDITOR_LINUX
+#if WINDOWS
         foreach (var controllerIndex in _connectedControllerIndices) // Only vibrate connected controllers
         {
             SetXInputVibration(controllerIndex, parameter, (byte)commandId);
@@ -171,9 +173,10 @@ public class UsbDeviceMonitor
             }
         }
     }
-#if !UNITY_STANDALONE_LINUX && !UNITY_EDITOR_LINUX
+#if WINDOWS
     private void UpdateConnectedXInputControllers()
     {
+        Console.WriteLine("Updating connected XInput controllers...");
         _connectedControllerIndices.Clear();
 
         for (int i = 0; i < 4; i++) // Check up to 4 controllers
@@ -197,7 +200,7 @@ public class UsbDeviceMonitor
         };
         XInputSetState(controllerIndex, ref vibration);
     }
-    
+
     [DllImport("XInput1_4.dll", EntryPoint = "XInputSetState")]
     private static extern int XInputSetState(int dwUserIndex, ref XINPUT_VIBRATION pVibration);
 
