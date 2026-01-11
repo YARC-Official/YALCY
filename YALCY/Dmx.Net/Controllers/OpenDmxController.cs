@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 #if LINUX || MACOS
+using System.Threading;
 using System.IO.Ports;
 #endif
 
