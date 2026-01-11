@@ -147,7 +147,7 @@ namespace Dmx.Net.Controllers
             if (IsOpen && !IsDisposed)
             {
 
-#if LINUX
+#if LINUX || MACOS
                 if (_serialPort == null)
                 {
                     throw new IOException("Serial port is not open.");
