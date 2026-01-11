@@ -24,8 +24,6 @@ namespace Dmx.Net.Controllers
 
 #if WINDOWS
         private const string DllName = "ftd2xx.dll";
-#endif
-
 
         #region INTEROP
 
@@ -69,6 +67,7 @@ namespace Dmx.Net.Controllers
         private static extern Status FT_GetDeviceInfoDetail(uint index, ref uint flags, ref DeviceType chiptype, ref uint id, ref uint locid, byte[] serialnumber, byte[] description, ref IntPtr ftHandle);
 
         #endregion
+#endif
 
         private IntPtr _handle = IntPtr.Zero;
 #if LINUX || MACOS
