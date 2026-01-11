@@ -53,6 +53,10 @@ public class DmxTalker
     private byte _pauseStateLastItemAdded = 0;
     private byte _songSectionLastItemAdded = 0;
     private bool _bonusEffectLocked = false;
+
+    //so we know what to unsubscribe later
+    private Action<byte[]>? _packetProcessedHandler;
+    private UdpIntake _udpIntake;
     App app;
     MainWindowViewModel mainViewModel;
 
@@ -78,15 +82,22 @@ public class DmxTalker
 
             byteQueues = new ConcurrentQueue<byte>[UniverseSize];
 
+
+
+
+
             // Initialize each ConcurrentQueue in the array
             for (int i = 0; i < UniverseSize; i++)
             {
                 byteQueues[i] = new ConcurrentQueue<byte>();
             }
 
+
             //The three parts of the dmx output: stage kit channels, master dimmers, and the channels read from the udp packet
             UpdateMasterDimmers();
-            mainViewModel.UdpIntake.PacketProcessed += (packet) => UpdateDataPacket(packet, mainViewModel);
+            _udpIntake = mainViewModel.UdpIntake;
+            _packetProcessedHandler = packet => UpdateDataPacket(packet, mainViewModel);
+            _udpIntake.PacketProcessed += _packetProcessedHandler;
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
             StatusFooter.UpdateStatus("DMX", IntegrationStatus.Connected);
 
@@ -99,6 +110,14 @@ public class DmxTalker
             if (_sendClient == null) return;
 
             UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+
+            // Unsubscribe safely
+            if (_udpIntake != null && _packetProcessedHandler != null)
+                _udpIntake.PacketProcessed -= _packetProcessedHandler;
+
+            _packetProcessedHandler = null;
+            _udpIntake = null;
+
             StatusFooter.UpdateStatus("DMX", IntegrationStatus.Off);
 
             _timer?.Stop();
@@ -111,7 +130,7 @@ public class DmxTalker
             var app = (App)Application.Current!;
             var mainViewModel = app.MainViewModel;
 
-            // Force send final packet.
+            // Force send a final packet.
             _sendClient.SendDmxData(null,(ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
 
             _sendClient.Dispose();
