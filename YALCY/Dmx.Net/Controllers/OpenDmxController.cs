@@ -188,7 +188,7 @@ namespace Dmx.Net.Controllers
 
             await Task.CompletedTask;
         }
-
+/*
         public static new IEnumerable<Device> GetDevices()
         {
             uint count = 0;
@@ -238,7 +238,7 @@ namespace Dmx.Net.Controllers
                 );
             }
         }
-
+*/
         public override void Dispose()
         {
             if (!IsDisposed)
