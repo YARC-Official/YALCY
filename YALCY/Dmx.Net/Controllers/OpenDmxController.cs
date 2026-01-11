@@ -6,7 +6,7 @@ using Dmx.Net.Common;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-#if LINUX
+#if LINUX || MACOS
 using System.IO.Ports;
 #endif
 
