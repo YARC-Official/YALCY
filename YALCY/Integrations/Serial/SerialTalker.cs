@@ -7,7 +7,9 @@ using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
-
+#if LINUX || MACOS
+using System.Linq;
+#endif
 namespace YALCY.Integrations.Serial;
 
 public class SerialTalker: IDisposable
