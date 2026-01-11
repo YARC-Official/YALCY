@@ -47,6 +47,7 @@
         <PackageReference Include="HueApi.Entertainment" Version="1.7.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="OpenRGB.NET" Version="3.1.1" />
+        <PackageReference Include="System.IO.Ports" Version="10.0.1" />
         <PackageReference Include="System.Management" Version="9.0.0" />
     </ItemGroup>
 
