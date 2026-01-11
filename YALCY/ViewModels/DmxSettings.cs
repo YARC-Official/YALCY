@@ -1,4 +1,8 @@
 ﻿using System.Collections.ObjectModel;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Runtime.Serialization;
 using Avalonia;
 using ReactiveUI;
@@ -36,6 +40,18 @@ public class DmxSingleSetting : ReactiveObject
         _label = label;
         Value = value;
     }
+}
+
+public class SacnAdapterOption
+{
+    public SacnAdapterOption(string name, string? ipAddress)
+    {
+        Name = name;
+        IpAddress = ipAddress;
+    }
+
+    public string Name { get; }
+    public string? IpAddress { get; }
 }
 
 public class DmxChannelSetting : ReactiveObject, IDmxChannelSetting
@@ -155,6 +171,7 @@ public partial class MainWindowViewModel
     public ObservableCollection<IDmxChannelSetting> ColorChannelSettingsContainer { get; set; }
     public ObservableCollection<DmxSingleSetting> InstrumentNoteSettingsContainer { get; set; }
     public ObservableCollection<DmxSingleSetting> BroadcastSettingsContainer { get; set; }
+    public ObservableCollection<SacnAdapterOption> SacnAdapterOptions { get; private set; }
 
     public DmxDimmerChannelSetting MasterDimmerSettings = new("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106);
 
@@ -189,6 +206,23 @@ public partial class MainWindowViewModel
     public DmxSingleSetting PauseStateSetting = new("Pause State", 74);
     public DmxSingleSetting SongSectionSetting = new("Song Section", 75);
 
+    private SacnAdapterOption? _selectedSacnAdapter;
+    public SacnAdapterOption? SelectedSacnAdapter
+    {
+        get => _selectedSacnAdapter;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _selectedSacnAdapter, value);
+            SettingsManager.SacnAdapterIp = value?.IpAddress;
+
+            if (DmxTalker.IsEnabled)
+            {
+                DmxTalker.EnableDmxTalker(false);
+                DmxTalker.EnableDmxTalker(true);
+            }
+        }
+    }
+
     private void FeedInDmxSettings()
     {
         BpmChannelSetting.Value = SettingsManager.BpmChannelSettingValue;
@@ -222,6 +256,40 @@ public partial class MainWindowViewModel
         GreenChannels.Channel = SettingsManager.GreenChannelsChannel;
 
         BroadcastUniverseSetting.Value = SettingsManager.BroadcastUniverseSettingValue;
+    }
+
+    private void InitializeSacnAdapterOptions()
+    {
+        SacnAdapterOptions = new ObservableCollection<SacnAdapterOption>
+        {
+            new SacnAdapterOption("Auto (first available)", null)
+        };
+
+        foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
+        {
+            var ipProperties = adapter.GetIPProperties();
+            foreach (var address in ipProperties.UnicastAddresses)
+            {
+                if (address.Address.AddressFamily != AddressFamily.InterNetwork)
+                {
+                    continue;
+                }
+
+                if (IPAddress.IsLoopback(address.Address))
+                {
+                    continue;
+                }
+
+                SacnAdapterOptions.Add(new SacnAdapterOption(
+                    $"{adapter.Name} ({address.Address})",
+                    address.Address.ToString()));
+            }
+        }
+
+        var savedIp = SettingsManager.SacnAdapterIp;
+        SelectedSacnAdapter = string.IsNullOrWhiteSpace(savedIp)
+            ? SacnAdapterOptions[0]
+            : SacnAdapterOptions.FirstOrDefault(option => option.IpAddress == savedIp) ?? SacnAdapterOptions[0];
     }
 
     private void InitializeDmxCollections()

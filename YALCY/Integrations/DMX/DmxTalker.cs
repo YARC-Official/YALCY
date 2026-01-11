@@ -56,21 +56,25 @@ public class DmxTalker
     App app;
     MainWindowViewModel mainViewModel;
 
+    public bool IsEnabled => _sendClient != null;
+
     public void EnableDmxTalker(bool isEnabled)
     {
         if (isEnabled)
         {
             if (_sendClient != null) return;
 
-            _sendClient = new SACNClient(
-                senderId: AcnSourceId,
-                senderName: AcnSourceName,
-                localAddress: Haukcode.Network.Utils.GetFirstBindAddress().IPAddress
-                );
-
             // Access the MainViewModel instance
             app = (App)Application.Current!;
             mainViewModel = app.MainViewModel;
+
+            var bindAddress = ResolveBindAddress(mainViewModel.SelectedSacnAdapter);
+
+            _sendClient = new SACNClient(
+                senderId: AcnSourceId,
+                senderName: AcnSourceName,
+                localAddress: bindAddress
+                );
 
             byteQueues = new ConcurrentQueue<byte>[UniverseSize];
 
@@ -113,6 +117,18 @@ public class DmxTalker
             _sendClient.Dispose();
             _sendClient = null;
         }
+    }
+
+    private static System.Net.IPAddress ResolveBindAddress(SacnAdapterOption? selectedAdapter)
+    {
+        if (selectedAdapter != null &&
+            !string.IsNullOrWhiteSpace(selectedAdapter.IpAddress) &&
+            System.Net.IPAddress.TryParse(selectedAdapter.IpAddress, out var address))
+        {
+            return address;
+        }
+
+        return Haukcode.Network.Utils.GetFirstBindAddress().IPAddress;
     }
 
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
