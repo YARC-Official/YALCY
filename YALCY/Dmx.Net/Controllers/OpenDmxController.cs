@@ -6,19 +6,26 @@ using Dmx.Net.Common;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+#if LINUX
+using System.IO.Ports;
+#endif
 
 namespace Dmx.Net.Controllers
 {
     [Controller("Open DMX")]
     public class OpenDmxController : ControllerBase
     {
-        public new bool IsOpen => _handle != IntPtr.Zero;
 
-#if WINDOWS || MACOS
-        private const string DllName = "ftd2xx.dll";
-#elif LINUX
-        private const string DllName = "libftd2xx.so";
+#if LINUX || MACOS
+        public new bool IsOpen => _serialPort?.IsOpen == true;
+#else
+        public new bool IsOpen => _handle != IntPtr.Zero;
 #endif
+
+#if WINDOWS
+        private const string DllName = "ftd2xx.dll";
+#endif
+
 
         #region INTEROP
 
@@ -64,6 +71,9 @@ namespace Dmx.Net.Controllers
         #endregion
 
         private IntPtr _handle = IntPtr.Zero;
+#if LINUX || MACOS
+        private SerialPort? _serialPort;
+#endif
         private Status _status;
 
         public OpenDmxController()
@@ -76,6 +86,9 @@ namespace Dmx.Net.Controllers
 
         public override void Open(int deviceIndex)
         {
+#if LINUX || MACOS
+            throw new NotSupportedException("Use Open(string devicePath) for Linux serial devices.");
+#else
             _status = FT_Open((uint)deviceIndex, ref _handle);
             _status = FT_ResetDevice(_handle);
             _status = FT_SetDivisor(_handle, (char)12);
@@ -91,20 +104,68 @@ namespace Dmx.Net.Controllers
             ClearBuffer();
 
             base.Open(deviceIndex);
+#endif
         }
+#if LINUX || MACOS
+        public void Open(string devicePath)
+        {
+            _serialPort = new SerialPort(devicePath, 250000, System.IO.Ports.Parity.None, 8, System.IO.Ports.StopBits.Two)
+            {
+                Handshake = System.IO.Ports.Handshake.None,
+                ReadTimeout = 500,
+                WriteTimeout = 500
+            };
 
+            _serialPort.Open();
+            _serialPort.DiscardInBuffer();
+            _serialPort.DiscardOutBuffer();
+
+            ClearBuffer();
+
+            base.Open(0);
+        }
+#endif
         public override void Close()
         {
             base.Close();
 
+#if LINUX || MACOS
+            if (_serialPort != null)
+            {
+                _serialPort.Close();
+                _serialPort.Dispose();
+                _serialPort = null;
+            }
+#else
             FT_Close(_handle);
             _handle = IntPtr.Zero;
+#endif
         }
 
         public override async Task WriteBuffer()
         {
             if (IsOpen && !IsDisposed)
             {
+
+#if LINUX
+                if (_serialPort == null)
+                {
+                    throw new IOException("Serial port is not open.");
+                }
+
+                _serialPort.DiscardInBuffer();
+                _serialPort.DiscardOutBuffer();
+
+                _serialPort.BreakState = true;
+                Thread.Sleep(1);
+                _serialPort.BreakState = false;
+                Thread.Sleep(1);
+
+                var buffer = new byte[writeBuffer.Length + 1];
+                Buffer.BlockCopy(writeBuffer, 0, buffer, 1, writeBuffer.Length);
+
+                _serialPort.Write(buffer, 0, buffer.Length);
+#else
                 _status = FT_Purge(_handle, PurgeFlags.PurgeTx);
                 _status = FT_Purge(_handle, PurgeFlags.PurgeRx);
                 _status = FT_SetBreakOn(_handle);
@@ -122,6 +183,7 @@ namespace Dmx.Net.Controllers
                     _handle = IntPtr.Zero;
                     throw new IOException($"Data write error ({_status}).");
                 }
+#endif
             }
 
             await Task.CompletedTask;
@@ -182,7 +244,9 @@ namespace Dmx.Net.Controllers
             if (!IsDisposed)
             {
                 Close();
+#if WINDOWS
                 FT_ResetDevice(_handle);
+#endif
                 writeBuffer = Array.Empty<byte>();
                 IsDisposed = true;
 

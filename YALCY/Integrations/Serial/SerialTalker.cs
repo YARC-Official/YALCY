@@ -34,7 +34,20 @@ public class SerialTalker: IDisposable
 
             try
             {
+#if LINUX || MACOS
+                var devicePath = GetLinuxSerialDevicePath();
+                if (string.IsNullOrWhiteSpace(devicePath))
+                {
+                    mainViewModel.SerialMessage = "Error: No serial devices found for DMX output.";
+                    StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error);
+                    UsbDeviceMonitor.SerialDeviceAdded += SerialDeviceAdded;
+                    return;
+                }
+
+                controller.Open(devicePath);
+#else
                 controller.Open(0);
+#endif
                 UsbDeviceMonitor.SerialDeviceAdded -= SerialDeviceAdded;  //disable the watchdog.
 
                 _timer = new Timer(TimeBetweenCalls * 1000);
@@ -60,7 +73,15 @@ public class SerialTalker: IDisposable
         {
             try
             {
+#if LINUX || MACOS
+                var devicePath = GetLinuxSerialDevicePath();
+                if (!string.IsNullOrWhiteSpace(devicePath))
+                {
+                    controller.Open(devicePath);
+                }
+#else
                 controller.Open(0);
+#endif
             }
             catch (Exception e)
             {
@@ -167,6 +188,26 @@ public class SerialTalker: IDisposable
         SerialEnabled = false;
         _timer = null;
     }
+
+#if LINUX || MACOS
+    private static string? GetLinuxSerialDevicePath()
+    {
+        var devices = DeviceList.Local.GetSerialDevices().ToList();
+        if (devices.Count == 0)
+        {
+            return null;
+        }
+
+        var byIdDevice = devices.FirstOrDefault(device => device.GetFileSystemName().StartsWith("/dev/serial/by-id/", StringComparison.OrdinalIgnoreCase));
+        if (byIdDevice != null)
+        {
+            return byIdDevice.GetFileSystemName();
+        }
+
+        var ttyDevice = devices.FirstOrDefault(device => device.GetFileSystemName().StartsWith("/dev/tty", StringComparison.OrdinalIgnoreCase));
+        return ttyDevice?.GetFileSystemName() ?? devices[0].GetFileSystemName();
+    }
+#endif
 
     private void SerialDeviceAdded(SerialDevice device)
     {
