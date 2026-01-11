@@ -75,6 +75,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         //FeedInUsbSettings();
         //FeedInStageKitSettings();
         FeedInDmxSettings();
+        InitializeSacnAdapterOptions();
         //FeedInRb3eSettings();
         FeedInHueSettings();
         FeedInOpenRgbSettings();

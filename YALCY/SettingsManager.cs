@@ -20,6 +20,7 @@ public class SettingsContainer
     public ushort UdpListenPort { get; set; }
     public ushort OpenRgbServerPort { get; set; }
     public string? OpenRgbServerIp { get; set; }
+    public string? SacnAdapterIp { get; set; }
 }
 
 internal static class SettingsManager
@@ -43,6 +44,7 @@ internal static class SettingsManager
         UdpListenPort = 0,
         OpenRgbServerPort = 0,
         OpenRgbServerIp = "",
+        SacnAdapterIp = "",
     };
 
     public static bool UdpEnableSettingIsEnabled { get; set; }
@@ -88,6 +90,7 @@ internal static class SettingsManager
     public static ushort UdpListenPort { get; set; }
     public static ushort OpenRgbServerPort { get; set; }
     public static string? OpenRgbServerIp { get; set; }
+    public static string? SacnAdapterIp { get; set; }
 
     public static void SaveSettings(MainWindowViewModel mainViewModel)
     {
@@ -142,6 +145,7 @@ internal static class SettingsManager
 
         settings.OpenRgbServerIp = mainViewModel.OpenRgbServerIp;
         settings.OpenRgbServerPort = mainViewModel.OpenRgbServerPort;
+        settings.SacnAdapterIp = mainViewModel.SelectedSacnAdapter?.IpAddress;
 
         File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(settings, Formatting.Indented));
     }
@@ -327,6 +331,7 @@ internal static class SettingsManager
 
             OpenRgbServerIp = container.OpenRgbServerIp;
             OpenRgbServerPort = container.OpenRgbServerPort;
+            SacnAdapterIp = container.SacnAdapterIp;
         }
         else // File is either garbage or doesn't exist. Load defaults.
         {
@@ -381,6 +386,7 @@ internal static class SettingsManager
 
             OpenRgbServerIp = "127.0.0.1";
             OpenRgbServerPort = 6742;
+            SacnAdapterIp = "";
         }
     }
 
