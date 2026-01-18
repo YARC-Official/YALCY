@@ -8,6 +8,7 @@ using YALCY.Udp;
 using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
+using Timer = System.Timers.Timer;
 
 namespace YALCY.Integrations.DMX;
 
@@ -25,12 +26,12 @@ public class DmxTalker
     // A 128-bit (16 byte) UUID that translates to "KEEP PLAYING YARG!"
     private static readonly Guid AcnSourceId = new Guid("{4B454550-504C-4159-494E-475941524721}");
 
-    private static SACNClient? _sendClient;
+    private SACNClient? _sendClient;
 
     private readonly byte[] _currentDataPacket = new byte[UniverseSize];
     private ConcurrentQueue<byte>[] byteQueues;
 
-    private static Timer? _timer;
+    private Timer? _timer;
 
     private float _bpmLastItemAdded = 0;
     private byte _cueChangeLastItemAdded = 0;
@@ -56,85 +57,131 @@ public class DmxTalker
 
     //so we know what to unsubscribe later
     private Action<byte[]>? _packetProcessedHandler;
-    private UdpIntake _udpIntake;
-    App app;
-    MainWindowViewModel mainViewModel;
+    private UdpIntake? _udpIntake;
+    MainWindowViewModel? mainViewModel;
 
     public bool IsEnabled => _sendClient != null;
 
-    public void EnableDmxTalker(bool isEnabled)
+    private readonly object _sendLock = new();
+    private readonly object _stateLock = new();
+    private volatile bool _isStopping;
+
+    private void OnTimerElapsed(object? sender, ElapsedEventArgs e) => Sender();
+
+    public void EnableDmxTalker(bool isEnabled, bool sendBlackoutOnDisable = true)
     {
         if (isEnabled)
         {
-            if (_sendClient != null) return;
+            lock (_stateLock)
+            {
 
-            // Access the MainViewModel instance
-            app = (App)Application.Current!;
-            mainViewModel = app.MainViewModel;
 
-            var bindAddress = ResolveBindAddress(mainViewModel.SelectedSacnAdapter);
+                if (_sendClient != null) return;
 
-            _sendClient = new SACNClient(
-                senderId: AcnSourceId,
-                senderName: AcnSourceName,
-                localAddress: bindAddress
+                // Access the MainViewModel instance
+                var app = (App)Application.Current!;
+                mainViewModel = app.MainViewModel;
+
+                var bindAddress = ResolveBindAddress(mainViewModel.SelectedSacnAdapter);
+
+                _sendClient = new SACNClient(
+                    senderId: AcnSourceId,
+                    senderName: AcnSourceName,
+                    localAddress: bindAddress
                 );
 
-            byteQueues = new ConcurrentQueue<byte>[UniverseSize];
+                byteQueues = new ConcurrentQueue<byte>[UniverseSize];
+
+                // Initialize each ConcurrentQueue in the array
+                for (int i = 0; i < UniverseSize; i++)
+                {
+                    byteQueues[i] = new ConcurrentQueue<byte>();
+                }
 
 
+                //The three parts of the dmx output: stage kit channels, master dimmers, and the channels read from the udp packet
+                UpdateMasterDimmers();
+                _udpIntake = mainViewModel.UdpIntake;
+                _packetProcessedHandler = packet => UpdateDataPacket(packet, mainViewModel);
+                _udpIntake.PacketProcessed += _packetProcessedHandler;
+                UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+                StatusFooter.UpdateStatus("DMX", IntegrationStatus.Connected);
 
+                _isStopping = false;
 
-
-            // Initialize each ConcurrentQueue in the array
-            for (int i = 0; i < UniverseSize; i++)
-            {
-                byteQueues[i] = new ConcurrentQueue<byte>();
+                _timer = new Timer(TimeBetweenCalls * 1000);
+                _timer.AutoReset = true;
+                _timer.Elapsed += OnTimerElapsed;
+                _timer.Start();
             }
-
-
-            //The three parts of the dmx output: stage kit channels, master dimmers, and the channels read from the udp packet
-            UpdateMasterDimmers();
-            _udpIntake = mainViewModel.UdpIntake;
-            _packetProcessedHandler = packet => UpdateDataPacket(packet, mainViewModel);
-            _udpIntake.PacketProcessed += _packetProcessedHandler;
-            UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
-            StatusFooter.UpdateStatus("DMX", IntegrationStatus.Connected);
-
-            _timer = new Timer(TimeBetweenCalls * 1000);
-            _timer.Elapsed += (sender, e) => Sender();
-            _timer.Start();
         }
         else
         {
-            if (_sendClient == null) return;
+            SACNClient? clientToDispose;
+            lock (_stateLock)
+            {
+                if (_sendClient == null) return;
 
-            UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+                _isStopping = true;
 
-            // Unsubscribe safely
-            if (_udpIntake != null && _packetProcessedHandler != null)
-                _udpIntake.PacketProcessed -= _packetProcessedHandler;
+                if (_timer != null)
+                {
+                    _timer.Elapsed -= OnTimerElapsed;
+                    _timer.Stop();
+                    _timer.Dispose();
+                    _timer = null;
+                }
 
-            _packetProcessedHandler = null;
-            _udpIntake = null;
+                lock (_sendLock)
+                {
+                    // unsubscribe events, clear packet, final send, dispose
+                    UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
 
-            StatusFooter.UpdateStatus("DMX", IntegrationStatus.Off);
+                    // Unsubscribe safely
+                    if (_udpIntake != null && _packetProcessedHandler != null)
+                    {
+                        _udpIntake.PacketProcessed -= _packetProcessedHandler;
+                    }
 
-            _timer?.Stop();
-            _timer?.Dispose();
+                    _packetProcessedHandler = null;
+                    _udpIntake = null;
 
-            // Turn everything off directly
-            Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
+                    StatusFooter.UpdateStatus("DMX", IntegrationStatus.Off);
 
-            // Access the MainViewModel instance, can't assume it was set in enable
-            var app = (App)Application.Current!;
-            var mainViewModel = app.MainViewModel;
+                    //if just changing adapter, don't blackout
+                    if (sendBlackoutOnDisable)
+                    {
+                        // Turn everything off directly
+                        Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
 
-            // Force send a final packet.
-            _sendClient.SendDmxData(null,(ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
+                        var app = (App)Application.Current!;
+                        var mainViewModel = app.MainViewModel;
 
-            _sendClient.Dispose();
-            _sendClient = null;
+                        // Force send a final packet.
+                        _sendClient?.SendDmxData(null, (ushort)mainViewModel.BroadcastUniverseSetting.Value,
+                            _currentDataPacket);
+                    }
+
+                    clientToDispose = _sendClient;
+                    _sendClient = null;
+                }
+            }
+            try
+            {
+                clientToDispose?.Dispose();
+            }
+            catch (System.Threading.Channels.ChannelClosedException)
+            {
+                // Treat as already-closed: safe to ignore
+            }
+            catch (InvalidOperationException)
+            {
+                // Same idea: library is already shutting down
+            }
+            finally
+            {
+                _isStopping = false;
+            }
         }
     }
 
@@ -252,16 +299,24 @@ public class DmxTalker
 
     private void Sender()
     {
-        for (int i = 0; i < UniverseSize; i++)
-        {
-            if (byteQueues[i].TryDequeue(out byte value))
-            {
-                _currentDataPacket[i] = value;
-            }
-        }
+        if (_isStopping) return;
 
-        // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
-        _sendClient?.SendDmxData(null,(ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
+        lock (_sendLock)
+        {
+            if (_isStopping) return;
+            if (_sendClient == null) return;
+
+            for (int i = 0; i < UniverseSize; i++)
+            {
+                if (byteQueues[i].TryDequeue(out byte value))
+                {
+                    _currentDataPacket[i] = value;
+                }
+            }
+
+            // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
+            _sendClient?.SendDmxData(null, (ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
+        }
     }
 
     public void UpdateMasterDimmers()
@@ -357,6 +412,7 @@ public class DmxTalker
                 timer.AutoReset = false;
                 timer.Elapsed += (s, e) =>
                 {
+                    if (_isStopping) { timer.Dispose(); return; }
                     byteQueues[channel].Enqueue(0);
                     _bonusEffectLocked = false;
                     timer.Dispose();

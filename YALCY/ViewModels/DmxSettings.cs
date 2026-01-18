@@ -1,9 +1,12 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using ReactiveUI;
 
@@ -165,6 +168,7 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
 
 public partial class MainWindowViewModel
 {
+    private CancellationTokenSource? _sacnRestartCts;
     public ObservableCollection<DmxSingleSetting> AdvancedSettingsContainer { get; set; }
     public ObservableCollection<IDmxChannelSetting> EffectsChannelSettingsContainer { get; set; }
     public ObservableCollection<IDmxChannelSetting> MasterDimmerSettingsContainer { get; set; }
@@ -215,11 +219,24 @@ public partial class MainWindowViewModel
             this.RaiseAndSetIfChanged(ref _selectedSacnAdapter, value);
             SettingsManager.SacnAdapterIp = value?.IpAddress;
 
-            if (DmxTalker.IsEnabled)
+            if (!DmxTalker.IsEnabled) return;
+
+            _sacnRestartCts?.Cancel();
+            _sacnRestartCts = new CancellationTokenSource();
+            var token = _sacnRestartCts.Token;
+            // Eh, this shouldn't really be here, too noisy.
+            _ = Task.Run(async () =>
             {
-                DmxTalker.EnableDmxTalker(false);
-                DmxTalker.EnableDmxTalker(true);
-            }
+                try
+                {
+                    // ComboBox can fire multiple changes; debounce a little
+                    await Task.Delay(200, token);
+
+                    DmxTalker.EnableDmxTalker(false, sendBlackoutOnDisable: false);
+                    DmxTalker.EnableDmxTalker(true);
+                }
+                catch (OperationCanceledException) { }
+            }, token);
         }
     }
 
