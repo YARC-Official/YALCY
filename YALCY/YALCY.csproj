@@ -31,7 +31,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Haukcode.sACN\src\Haukcode.sACN\Haukcode.sACN.csproj" />
+        <PackageReference Include="HdrHistogram" Version="*" />
+        <PackageReference Include="Haukcode.Network" Version="1.0.22" />
+        <PackageReference Include="Haukcode.HighPerfComm" Version="1.0.24" />
     </ItemGroup>
 
     <ItemGroup>
