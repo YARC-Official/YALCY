@@ -308,10 +308,13 @@ public class DmxTalker
 
             for (int i = 0; i < UniverseSize; i++)
             {
-                if (byteQueues[i].TryDequeue(out byte value))
+                byte v = _currentDataPacket[i];
+                while (byteQueues[i].TryDequeue(out var next))
                 {
-                    _currentDataPacket[i] = value;
+                    v = next;
                 }
+
+                _currentDataPacket[i] = v;
             }
 
             // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
