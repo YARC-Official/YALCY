@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Timers;
 using Avalonia;
 using Haukcode.sACN;
@@ -29,9 +28,29 @@ public class DmxTalker
     private SACNClient? _sendClient;
 
     private readonly byte[] _currentDataPacket = new byte[UniverseSize];
-    private ConcurrentQueue<byte>[] byteQueues;
 
     private Timer? _timer;
+
+    private volatile byte _latestBpm;
+    private volatile byte _latestCueChange;
+    private volatile byte _latestBeatLine;
+    private volatile byte _latestBonusEffect;
+    private volatile byte _latestKeyFrame;
+    private volatile byte _latestDrumNote;
+    private volatile byte _latestPostProcessing;
+    private volatile byte _latestGuitarNote;
+    private volatile byte _latestBassNote;
+    private volatile byte _latestSingalong;
+    private volatile byte _latestSpotlight;
+    private volatile byte _latestKeysNote;
+    private volatile byte _latestVocalsNote;
+    private volatile byte _latestHarmony0Note;
+    private volatile byte _latestHarmony1Note;
+    private volatile byte _latestHarmony2Note;
+    private volatile byte _latestCurrentScene;
+    private volatile byte _latestVenueSize;
+    private volatile byte _latestPauseState;
+    private volatile byte _latestSongSection;
 
     private float _bpmLastItemAdded = 0;
     private byte _cueChangeLastItemAdded = 0;
@@ -89,15 +108,6 @@ public class DmxTalker
                     senderName: AcnSourceName,
                     localAddress: bindAddress
                 );
-
-                byteQueues = new ConcurrentQueue<byte>[UniverseSize];
-
-                // Initialize each ConcurrentQueue in the array
-                for (int i = 0; i < UniverseSize; i++)
-                {
-                    byteQueues[i] = new ConcurrentQueue<byte>();
-                }
-
 
                 //The three parts of the dmx output: stage kit channels, master dimmers, and the channels read from the udp packet
                 UpdateMasterDimmers();
@@ -199,29 +209,35 @@ public class DmxTalker
 
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
-        // Helper: enqueue value to a whole channel group
-        void EnqueueToChannels(DmxChannelSetting group, byte value)
+        // Helper: set value to a whole channel group
+        void SetChannels(DmxChannelSetting group, byte value)
         {
             if (group.Channel == null) return;
 
-            for (int i = 0; i < 8; i++)
+            lock (_sendLock)
             {
-                int ch = group.Channel[i];
-                if (ch > 0)
-                    byteQueues[ch - 1].Enqueue(value);
+                for (int i = 0; i < 8; i++)
+                {
+                    int ch = group.Channel[i];
+                    if (ch > 0)
+                        SetChannelToValue(ch, value);
+                }
             }
         }
 
-        // Helper: enqueue LED pattern based on parameter bitmask
-        void EnqueueLeds(DmxChannelSetting group)
+        // Helper: set LED pattern based on parameter bitmask
+        void SetLeds(DmxChannelSetting group)
         {
             if (group.Channel == null) return;
 
-            for (int i = 0; i < 8; i++)
+            lock (_sendLock)
             {
-                int ch = group.Channel[i];
-                if (ch > 0)
-                    byteQueues[ch - 1].Enqueue((parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
+                for (int i = 0; i < 8; i++)
+                {
+                    int ch = group.Channel[i];
+                    if (ch > 0)
+                        SetChannelToValue(ch, (parameter & (1 << i)) != 0 ? (byte)255 : (byte)0);
+                }
             }
         }
 
@@ -230,30 +246,30 @@ public class DmxTalker
         {
             var bpm = UdpIntake.BeatsPerMinute.Value;
             byte value = (byte)StrobeDmxFromBpm(bpm, multiplier);
-            EnqueueToChannels(mainViewModel.StrobeChannels, value);
+            SetChannels(mainViewModel.StrobeChannels, value);
         }
 
         switch (commandId)
         {
             case StageKitTalker.CommandId.FogOn:
-                EnqueueToChannels(mainViewModel.FogChannels, 255);
+                SetChannels(mainViewModel.FogChannels, 255);
                 break;
 
             case StageKitTalker.CommandId.FogOff:
-                EnqueueToChannels(mainViewModel.FogChannels, 0);
+                SetChannels(mainViewModel.FogChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.DisableAll:
-                EnqueueToChannels(mainViewModel.StrobeChannels, 0);
-                EnqueueToChannels(mainViewModel.FogChannels, 0);
-                EnqueueToChannels(mainViewModel.BlueChannels, 0);
-                EnqueueToChannels(mainViewModel.GreenChannels, 0);
-                EnqueueToChannels(mainViewModel.YellowChannels, 0);
-                EnqueueToChannels(mainViewModel.RedChannels, 0);
+                SetChannels(mainViewModel.StrobeChannels, 0);
+                SetChannels(mainViewModel.FogChannels, 0);
+                SetChannels(mainViewModel.BlueChannels, 0);
+                SetChannels(mainViewModel.GreenChannels, 0);
+                SetChannels(mainViewModel.YellowChannels, 0);
+                SetChannels(mainViewModel.RedChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeOff:
-                EnqueueToChannels(mainViewModel.StrobeChannels, 0);
+                SetChannels(mainViewModel.StrobeChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeSlow:
@@ -273,19 +289,19 @@ public class DmxTalker
                 break;
 
             case StageKitTalker.CommandId.BlueLeds:
-                EnqueueLeds(mainViewModel.BlueChannels);
+                SetLeds(mainViewModel.BlueChannels);
                 break;
 
             case StageKitTalker.CommandId.GreenLeds:
-                EnqueueLeds(mainViewModel.GreenChannels);
+                SetLeds(mainViewModel.GreenChannels);
                 break;
 
             case StageKitTalker.CommandId.YellowLeds:
-                EnqueueLeds(mainViewModel.YellowChannels);
+                SetLeds(mainViewModel.YellowChannels);
                 break;
 
             case StageKitTalker.CommandId.RedLeds:
-                EnqueueLeds(mainViewModel.RedChannels);
+                SetLeds(mainViewModel.RedChannels);
                 break;
         }
     }
@@ -306,15 +322,9 @@ public class DmxTalker
             if (_isStopping) return;
             if (_sendClient == null) return;
 
-            for (int i = 0; i < UniverseSize; i++)
+            if (mainViewModel != null)
             {
-                byte v = _currentDataPacket[i];
-                while (byteQueues[i].TryDequeue(out var next))
-                {
-                    v = next;
-                }
-
-                _currentDataPacket[i] = v;
+                UpdateStateChannels(mainViewModel);
             }
 
             // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
@@ -336,6 +346,36 @@ public class DmxTalker
         _currentDataPacket[dmxChannel - 1] = value;
     }
 
+    private void UpdateStateChannels(MainWindowViewModel viewModel)
+    {
+        SetChannelIfValid(viewModel.BpmChannelSetting.Value, _latestBpm);
+        SetChannelIfValid(viewModel.VocalsNoteChannelSetting.Value, _latestVocalsNote);
+        SetChannelIfValid(viewModel.Harmony0NoteChannelSetting.Value, _latestHarmony0Note);
+        SetChannelIfValid(viewModel.Harmony1NoteChannelSetting.Value, _latestHarmony1Note);
+        SetChannelIfValid(viewModel.Harmony2NoteChannelSetting.Value, _latestHarmony2Note);
+        SetChannelIfValid(viewModel.CueChangeChannelSetting.Value, _latestCueChange);
+        SetChannelIfValid(viewModel.BeatLineChannelSetting.Value, _latestBeatLine);
+        SetChannelIfValid(viewModel.BonusEffectChannelSetting.Value, _latestBonusEffect);
+        SetChannelIfValid(viewModel.KeyFrameChannelSetting.Value, _latestKeyFrame);
+        SetChannelIfValid(viewModel.DrumNoteChannelSetting.Value, _latestDrumNote);
+        SetChannelIfValid(viewModel.PostProcessingChannelSetting.Value, _latestPostProcessing);
+        SetChannelIfValid(viewModel.GuitarNoteChannelSetting.Value, _latestGuitarNote);
+        SetChannelIfValid(viewModel.BassNoteChannelSetting.Value, _latestBassNote);
+        SetChannelIfValid(viewModel.CurrentSingalongSetting.Value, _latestSingalong);
+        SetChannelIfValid(viewModel.CurrentSpotlightSetting.Value, _latestSpotlight);
+        SetChannelIfValid(viewModel.KeysNoteChannelSetting.Value, _latestKeysNote);
+        SetChannelIfValid(viewModel.CurrentSceneSetting.Value, _latestCurrentScene);
+        SetChannelIfValid(viewModel.VenueSizeSetting.Value, _latestVenueSize);
+        SetChannelIfValid(viewModel.PauseStateSetting.Value, _latestPauseState);
+        SetChannelIfValid(viewModel.SongSectionSetting.Value, _latestSongSection);
+    }
+
+    private void SetChannelIfValid(int dmxChannel, byte value)
+    {
+        if (dmxChannel <= 0 || dmxChannel > UniverseSize) return;
+        _currentDataPacket[dmxChannel - 1] = value;
+    }
+
     private void UpdateDataPacket(byte[] udpBuffer, MainWindowViewModel viewModel)
     {
         if (udpBuffer == null || udpBuffer.Length < UdpIntake.MIN_PACKET_SIZE)
@@ -352,44 +392,44 @@ public class DmxTalker
 
         if (bpm != _bpmLastItemAdded)
         {
-            byteQueues[viewModel.BpmChannelSetting.Value - 1].Enqueue((byte)bpm);
+            _latestBpm = (byte)bpm;
             _bpmLastItemAdded = bpm;
         }
 
         if (vocalsNote != _vocalsNoteLastItemAdded)
         {
-            byteQueues[viewModel.VocalsNoteChannelSetting.Value - 1].Enqueue((byte)vocalsNote);
+            _latestVocalsNote = (byte)vocalsNote;
             _vocalsNoteLastItemAdded = vocalsNote;
         }
 
         if (harmony0Note != _harmony0NoteLastItemAdded)
         {
-            byteQueues[viewModel.Harmony0NoteChannelSetting.Value - 1].Enqueue((byte)harmony0Note);
+            _latestHarmony0Note = (byte)harmony0Note;
             _harmony0NoteLastItemAdded = harmony0Note;
         }
 
         if (harmony1Note != _harmony1NoteLastItemAdded)
         {
-            byteQueues[viewModel.Harmony1NoteChannelSetting.Value - 1].Enqueue((byte)harmony1Note);
+            _latestHarmony1Note = (byte)harmony1Note;
             _harmony1NoteLastItemAdded = harmony1Note;
         }
 
         if (harmony2Note != _harmony2NoteLastItemAdded)
         {
-            byteQueues[viewModel.Harmony2NoteChannelSetting.Value - 1].Enqueue((byte)harmony2Note);
+            _latestHarmony2Note = (byte)harmony2Note;
             _harmony2NoteLastItemAdded = harmony2Note;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.LightingCue] != _cueChangeLastItemAdded)
         {
-            byteQueues[viewModel.CueChangeChannelSetting.Value - 1].Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.LightingCue]);
-            _cueChangeLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.LightingCue];
+            _latestCueChange = udpBuffer[(int)UdpIntake.ByteIndexName.LightingCue];
+            _cueChangeLastItemAdded = _latestCueChange;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.Beat] != _beatLineLastItemAdded)
         {
-            byteQueues[viewModel.BeatLineChannelSetting.Value - 1].Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Beat]);
-            _beatLineLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Beat];
+            _latestBeatLine = udpBuffer[(int)UdpIntake.ByteIndexName.Beat];
+            _beatLineLastItemAdded = _latestBeatLine;
         }
 
         if (!_bonusEffectLocked && udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
@@ -397,14 +437,12 @@ public class DmxTalker
             var newValue = udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect];
             _bonusEffectLastItemAdded = newValue;
 
-            var channel = viewModel.BonusEffectChannelSetting.Value - 1;
-
             if (newValue == 1)
             {
                 _bonusEffectLocked = true;
 
                 // Immediately turn on
-                byteQueues[channel].Enqueue(255);
+                _latestBonusEffect = 255;
 
                 // Compute beat duration in milliseconds
                 float curbpm = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.BeatsPerMinute);
@@ -416,7 +454,7 @@ public class DmxTalker
                 timer.Elapsed += (s, e) =>
                 {
                     if (_isStopping) { timer.Dispose(); return; }
-                    byteQueues[channel].Enqueue(0);
+                    _latestBonusEffect = 0;
                     _bonusEffectLocked = false;
                     timer.Dispose();
                 };
@@ -425,92 +463,80 @@ public class DmxTalker
             else
             {
                 // If explicitly off and not locked (e.g., at song start or stop)
-                byteQueues[channel].Enqueue(0);
+                _latestBonusEffect = 0;
             }
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe] != _keyFrameLastItemAdded)
         {
-            byteQueues[viewModel.KeyFrameChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe]);
-            _keyFrameLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe];
+            _latestKeyFrame = udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe];
+            _keyFrameLastItemAdded = _latestKeyFrame;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes] != _drumNoteLastItemAdded)
         {
-            byteQueues[viewModel.DrumNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes]);
-            _drumNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes];
+            _latestDrumNote = udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes];
+            _drumNoteLastItemAdded = _latestDrumNote;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing] != _postProcessingLastItemAdded)
         {
-            byteQueues[viewModel.PostProcessingChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing]);
-            _postProcessingLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing];
+            _latestPostProcessing = udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing];
+            _postProcessingLastItemAdded = _latestPostProcessing;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes] != _guitarNoteLastItemAdded)
         {
-            byteQueues[viewModel.GuitarNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes]);
-            _guitarNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes];
+            _latestGuitarNote = udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes];
+            _guitarNoteLastItemAdded = _latestGuitarNote;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes] != _bassNoteLastItemAdded)
         {
-            byteQueues[viewModel.BassNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes]);
-            _bassNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes];
+            _latestBassNote = udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes];
+            _bassNoteLastItemAdded = _latestBassNote;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.Singalong] != _currentSingalongLastItemAdded)
         {
-            byteQueues[viewModel.CurrentSingalongSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Singalong]);
-            _currentSingalongLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Singalong];
+            _latestSingalong = udpBuffer[(int)UdpIntake.ByteIndexName.Singalong];
+            _currentSingalongLastItemAdded = _latestSingalong;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight] != _currentSpotlightLastItemAdded)
         {
-            byteQueues[viewModel.CurrentSpotlightSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight]);
-            _currentSpotlightLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight];
+            _latestSpotlight = udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight];
+            _currentSpotlightLastItemAdded = _latestSpotlight;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes] != _keysNoteLastItemAdded)
         {
-            byteQueues[viewModel.KeysNoteChannelSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes]);
-            _keysNoteLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes];
+            _latestKeysNote = udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes];
+            _keysNoteLastItemAdded = _latestKeysNote;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene] != _currentSceneLastItemAdded)
         {
-            byteQueues[viewModel.CurrentSceneSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene]);
-            _currentSceneLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene];
+            _latestCurrentScene = udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene];
+            _currentSceneLastItemAdded = _latestCurrentScene;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.VenueSize] != _venueSizeLastItemAdded)
         {
-            byteQueues[viewModel.VenueSizeSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.VenueSize]);
-            _venueSizeLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.VenueSize];
+            _latestVenueSize = udpBuffer[(int)UdpIntake.ByteIndexName.VenueSize];
+            _venueSizeLastItemAdded = _latestVenueSize;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.PauseState] != _pauseStateLastItemAdded)
         {
-            byteQueues[viewModel.PauseStateSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.PauseState]);
-            _pauseStateLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.PauseState];
+            _latestPauseState = udpBuffer[(int)UdpIntake.ByteIndexName.PauseState];
+            _pauseStateLastItemAdded = _latestPauseState;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.SongSection] != _songSectionLastItemAdded)
         {
-            byteQueues[viewModel.SongSectionSetting.Value - 1]
-                .Enqueue(udpBuffer[(int)UdpIntake.ByteIndexName.SongSection]);
-            _songSectionLastItemAdded = udpBuffer[(int)UdpIntake.ByteIndexName.SongSection];
+            _latestSongSection = udpBuffer[(int)UdpIntake.ByteIndexName.SongSection];
+            _songSectionLastItemAdded = _latestSongSection;
         }
     }
 }
