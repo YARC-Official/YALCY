@@ -57,13 +57,9 @@ public class DmxTalker
     private byte _beatLineLastItemAdded = 0;
     private byte _bonusEffectLastItemAdded = 0;
     private byte _keyFrameLastItemAdded = 0;
-    private byte _drumNoteLastItemAdded = 0;
     private byte _postProcessingLastItemAdded = 0;
-    private byte _guitarNoteLastItemAdded = 0;
-    private byte _bassNoteLastItemAdded = 0;
     private byte _currentSingalongLastItemAdded = 0;
     private byte _currentSpotlightLastItemAdded = 0;
-    private byte _keysNoteLastItemAdded = 0;
     private float _vocalsNoteLastItemAdded = 0;
     private float _harmony0NoteLastItemAdded = 0;
     private float _harmony1NoteLastItemAdded = 0;
@@ -84,6 +80,17 @@ public class DmxTalker
     private readonly object _sendLock = new();
     private readonly object _stateLock = new();
     private volatile bool _isStopping;
+
+    private readonly long[] _guitarHoldUntil = new long[8];
+    private readonly long[] _bassHoldUntil   = new long[8];
+    private readonly long[] _drumsHoldUntil  = new long[8];
+    private readonly long[] _keysHoldUntil   = new long[8];
+
+    private byte _lastGuitarRaw;
+    private byte _lastBassRaw;
+    private byte _lastDrumsRaw;
+    private byte _lastKeysRaw;
+
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e) => Sender();
 
@@ -245,7 +252,7 @@ public class DmxTalker
         void HandleStrobe(int multiplier)
         {
             var bpm = UdpIntake.BeatsPerMinute.Value;
-            byte value = (byte)StrobeDmxFromBpm(bpm, multiplier);
+            byte value = StrobeDmxFromBpm(bpm, multiplier);
             SetChannels(mainViewModel.StrobeChannels, value);
         }
 
@@ -332,6 +339,45 @@ public class DmxTalker
         }
     }
 
+    private static double ComputePulseMs(float bpm)
+    {
+        if (bpm <= 0) return 60; // fallback if bpm missing
+
+        double quarterMs = 60000.0 / bpm;
+
+        // Target a 1/32 note, but clamp to [1/64, 1/16]
+        double target = quarterMs / 8.0;   // 1/32
+        double min    = quarterMs / 16.0;  // 1/64
+        double max    = quarterMs / 4.0;   // 1/16
+
+        return Math.Clamp(target, min, max);
+    }
+
+    private static void ApplyRisingEdgeHolds(byte newVal, ref byte lastVal, long[] holdUntil, long now, long holdMs)
+    {
+        byte rising = (byte)((newVal ^ lastVal) & newVal);
+        if (rising != 0)
+        {
+            for (int bit = 0; bit < 8; bit++)
+            {
+                if ((rising & (1 << bit)) != 0)
+                    holdUntil[bit] = now + holdMs;
+            }
+        }
+        lastVal = newVal;
+    }
+
+    private static byte BuildHeldMask(long[] holdUntil, long now)
+    {
+        byte mask = 0;
+        for (int bit = 0; bit < 8; bit++)
+        {
+            if (now < holdUntil[bit])
+                mask |= (byte)(1 << bit);
+        }
+        return mask;
+    }
+
     public void UpdateMasterDimmers()
     {
         for (int i = 0; i < mainViewModel.MasterDimmerSettings.Channel.Length; i++)
@@ -396,6 +442,9 @@ public class DmxTalker
             _bpmLastItemAdded = bpm;
         }
 
+        long now = Environment.TickCount64;
+        long holdMs = (long)ComputePulseMs(bpm);
+
         if (vocalsNote != _vocalsNoteLastItemAdded)
         {
             _latestVocalsNote = (byte)vocalsNote;
@@ -432,6 +481,12 @@ public class DmxTalker
             _beatLineLastItemAdded = _latestBeatLine;
         }
 
+        if (udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe] != _keyFrameLastItemAdded)
+        {
+            _latestKeyFrame = udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe];
+            _keyFrameLastItemAdded = _latestKeyFrame;
+        }
+        
         if (!_bonusEffectLocked && udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
         {
             var newValue = udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect];
@@ -446,7 +501,7 @@ public class DmxTalker
 
                 // Compute beat duration in milliseconds
                 float curbpm = BitConverter.ToSingle(udpBuffer, (int)UdpIntake.ByteIndexName.BeatsPerMinute);
-                double beatDurationMs = (curbpm > 0 ? 60000.0 / bpm : 500) * 4;
+                double beatDurationMs = (curbpm > 0 ? 60000.0 / curbpm : 500) * 4;
 
                 // Schedule turn-off and unlock
                 var timer = new Timer(beatDurationMs);
@@ -467,34 +522,34 @@ public class DmxTalker
             }
         }
 
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe] != _keyFrameLastItemAdded)
-        {
-            _latestKeyFrame = udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe];
-            _keyFrameLastItemAdded = _latestKeyFrame;
-        }
+        // Guitar
+        byte guitarRaw = udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes];
+        ApplyRisingEdgeHolds(guitarRaw, ref _lastGuitarRaw, _guitarHoldUntil, now, holdMs);
+        byte guitarHeld = (byte)(guitarRaw | BuildHeldMask(_guitarHoldUntil, now));
+        _latestGuitarNote = guitarHeld;
 
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes] != _drumNoteLastItemAdded)
-        {
-            _latestDrumNote = udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes];
-            _drumNoteLastItemAdded = _latestDrumNote;
-        }
+        // Bass
+        byte bassRaw = udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes];
+        ApplyRisingEdgeHolds(bassRaw, ref _lastBassRaw, _bassHoldUntil, now, holdMs);
+        byte bassHeld = (byte)(bassRaw | BuildHeldMask(_bassHoldUntil, now));
+        _latestBassNote = bassHeld;
+
+        // Drums
+        byte drumsRaw = udpBuffer[(int)UdpIntake.ByteIndexName.DrumsNotes];
+        ApplyRisingEdgeHolds(drumsRaw, ref _lastDrumsRaw, _drumsHoldUntil, now, holdMs);
+        byte drumsHeld = (byte)(drumsRaw | BuildHeldMask(_drumsHoldUntil, now));
+        _latestDrumNote = drumsHeld;
+
+        // Keys
+        byte keysRaw = udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes];
+        ApplyRisingEdgeHolds(keysRaw, ref _lastKeysRaw, _keysHoldUntil, now, holdMs);
+        byte keysHeld = (byte)(keysRaw | BuildHeldMask(_keysHoldUntil, now));
+        _latestKeysNote = keysHeld;
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing] != _postProcessingLastItemAdded)
         {
             _latestPostProcessing = udpBuffer[(int)UdpIntake.ByteIndexName.PostProcessing];
             _postProcessingLastItemAdded = _latestPostProcessing;
-        }
-
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes] != _guitarNoteLastItemAdded)
-        {
-            _latestGuitarNote = udpBuffer[(int)UdpIntake.ByteIndexName.GuitarNotes];
-            _guitarNoteLastItemAdded = _latestGuitarNote;
-        }
-
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes] != _bassNoteLastItemAdded)
-        {
-            _latestBassNote = udpBuffer[(int)UdpIntake.ByteIndexName.BassNotes];
-            _bassNoteLastItemAdded = _latestBassNote;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.Singalong] != _currentSingalongLastItemAdded)
@@ -507,12 +562,6 @@ public class DmxTalker
         {
             _latestSpotlight = udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight];
             _currentSpotlightLastItemAdded = _latestSpotlight;
-        }
-
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes] != _keysNoteLastItemAdded)
-        {
-            _latestKeysNote = udpBuffer[(int)UdpIntake.ByteIndexName.KeysNotes];
-            _keysNoteLastItemAdded = _latestKeysNote;
         }
 
         if (udpBuffer[(int)UdpIntake.ByteIndexName.CurrentScene] != _currentSceneLastItemAdded)
