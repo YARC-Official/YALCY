@@ -350,7 +350,7 @@ public class DmxTalker
         double min    = quarterMs / 16.0;  // 1/64
         double max    = quarterMs / 4.0;   // 1/16
 
-        return Math.Clamp(target, min, max);
+        return max; //Math.Clamp(target, min, max);
     }
 
     private static void ApplyRisingEdgeHolds(byte newVal, ref byte lastVal, long[] holdUntil, long now, long holdMs)
@@ -486,7 +486,7 @@ public class DmxTalker
             _latestKeyFrame = udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe];
             _keyFrameLastItemAdded = _latestKeyFrame;
         }
-        
+
         if (!_bonusEffectLocked && udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
         {
             var newValue = udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect];
