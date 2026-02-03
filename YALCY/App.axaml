@@ -10,6 +10,19 @@
         <local:ViewLocator />
     </Application.DataTemplates>
 
+    <TrayIcon.Icons>
+        <TrayIcons>
+            <TrayIcon Icon="/Resources/avalonia-logo.ico" ToolTipText="YALCY">
+                <TrayIcon.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Show YALCY" Click="OnTrayShowClick" />
+                        <NativeMenuItem Header="Hide YALCY" Click="OnTrayHideClick" />
+                        <NativeMenuItem Header="Exit" Click="OnTrayExitClick" />
+                    </NativeMenu>
+                </TrayIcon.Menu>
+            </TrayIcon>
+        </TrayIcons>
+    </TrayIcon.Icons>
 
     <Application.Styles>
         <FluentTheme />

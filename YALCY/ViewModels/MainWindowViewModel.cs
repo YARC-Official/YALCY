@@ -32,6 +32,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
     private readonly IClassicDesktopStyleApplicationLifetime? _desktop;
     private readonly bool _isHeadless;
+    private bool _closeToTrayOnClose;
 
     public new event PropertyChangedEventHandler? PropertyChanged;
     public EnableSetting HueEnabledSetting { get; set; }
@@ -49,6 +50,11 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     public readonly SerialTalker SerialTalker;
     public readonly Udp.UdpIntake UdpIntake;
     public OpenRgbTalker OpenRgbTalker { get; set; }
+    public bool CloseToTrayOnClose
+    {
+        get => _closeToTrayOnClose;
+        set => this.RaiseAndSetIfChanged(ref _closeToTrayOnClose, value);
+    }
 
     public MainWindowViewModel(bool isHeadless = false)
     {
@@ -81,6 +87,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         //FeedInRb3eSettings();
         FeedInHueSettings();
         FeedInOpenRgbSettings();
+        FeedInAppSettings();
 
         // Other initialization code
         InitializeCommands();
@@ -166,6 +173,11 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             async (isEnabled) => OpenRgbTalker.EnableOpenRgbTalker(isEnabled, OpenRgbServerIp, OpenRgbServerPort),
             "Enable or disable output to a OpenRGB client"
         );
+    }
+
+    private void FeedInAppSettings()
+    {
+        CloseToTrayOnClose = SettingsManager.CloseToTrayOnClose;
     }
 
     private void InitializeCommands()

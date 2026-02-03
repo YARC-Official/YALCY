@@ -21,6 +21,7 @@ public class SettingsContainer
     public ushort OpenRgbServerPort { get; set; }
     public string? OpenRgbServerIp { get; set; }
     public string? SacnAdapterIp { get; set; }
+    public bool CloseToTrayOnClose { get; set; }
 }
 
 internal static class SettingsManager
@@ -45,6 +46,7 @@ internal static class SettingsManager
         OpenRgbServerPort = 0,
         OpenRgbServerIp = "",
         SacnAdapterIp = "",
+        CloseToTrayOnClose = false,
     };
 
     public static bool UdpEnableSettingIsEnabled { get; set; }
@@ -91,6 +93,7 @@ internal static class SettingsManager
     public static ushort OpenRgbServerPort { get; set; }
     public static string? OpenRgbServerIp { get; set; }
     public static string? SacnAdapterIp { get; set; }
+    public static bool CloseToTrayOnClose { get; set; }
 
     public static void SaveSettings(MainWindowViewModel mainViewModel)
     {
@@ -146,6 +149,7 @@ internal static class SettingsManager
         settings.OpenRgbServerIp = mainViewModel.OpenRgbServerIp;
         settings.OpenRgbServerPort = mainViewModel.OpenRgbServerPort;
         settings.SacnAdapterIp = mainViewModel.SelectedSacnAdapter?.IpAddress;
+        settings.CloseToTrayOnClose = mainViewModel.CloseToTrayOnClose;
 
         File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(settings, Formatting.Indented));
     }
@@ -332,6 +336,7 @@ internal static class SettingsManager
             OpenRgbServerIp = container.OpenRgbServerIp;
             OpenRgbServerPort = container.OpenRgbServerPort;
             SacnAdapterIp = container.SacnAdapterIp;
+            CloseToTrayOnClose = container.CloseToTrayOnClose;
         }
         else // File is either garbage or doesn't exist. Load defaults.
         {
@@ -387,6 +392,7 @@ internal static class SettingsManager
             OpenRgbServerIp = "127.0.0.1";
             OpenRgbServerPort = 6742;
             SacnAdapterIp = "";
+            CloseToTrayOnClose = false;
         }
     }
 

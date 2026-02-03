@@ -1,9 +1,11 @@
+using System;
+using System.Reflection;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using YALCY.ViewModels;
 using YALCY.Views;
-using System.Reflection;
 
 namespace YALCY;
 
@@ -45,6 +47,64 @@ public class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void OnTrayShowClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            return;
+        }
+
+        if (desktop.MainWindow is not Window window)
+        {
+            return;
+        }
+
+        if (!window.IsVisible)
+        {
+            window.Show();
+        }
+
+        if (window.WindowState == WindowState.Minimized)
+        {
+            window.WindowState = WindowState.Normal;
+        }
+
+        window.Activate();
+    }
+
+    private void OnTrayHideClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            return;
+        }
+
+        if (desktop.MainWindow is MainWindow mainWindow)
+        {
+            mainWindow.HideToTray();
+        }
+        else
+        {
+            desktop.MainWindow?.Hide();
+        }
+    }
+
+    private void OnTrayExitClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            return;
+        }
+
+        if (desktop.MainWindow is MainWindow mainWindow)
+        {
+            mainWindow.RequestExit();
+            return;
+        }
+
+        desktop.Shutdown();
     }
 
     private void InitializeComponents()

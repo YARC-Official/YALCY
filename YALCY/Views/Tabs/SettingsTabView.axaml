@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             x:Class="YALCY.Views.Tabs.SettingsTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <ScrollViewer>
+        <StackPanel Margin="10" Spacing="12">
+            <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" />
+            <TextBlock Text="Quick toggles for integrations. Detailed options are in their tabs."
+                       TextWrapping="Wrap" />
+
+            <TextBlock Text="Integrations" FontWeight="SemiBold" />
+            <UniformGrid Columns="2">
+                <ToggleButton ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}"
+                              Content="{Binding UdpEnableSetting.ToggleButtonContent}"
+                              IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
+                <ToggleButton ToolTip.Tip="{Binding StageKitEnabledSetting.ToolTip}"
+                              Content="{Binding StageKitEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding StageKitEnabledSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
+                <ToggleButton ToolTip.Tip="{Binding DmxEnabledSetting.ToolTip}"
+                              Content="{Binding DmxEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding DmxEnabledSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
+                <ToggleButton ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
+                              Content="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
+                <ToggleButton ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
+                              Content="{Binding SerialEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
+                <ToggleButton ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
+                              Content="{Binding HueEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
+                <ToggleButton ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
+                              Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
+            </UniformGrid>
+
+            <TextBlock Text="Window" FontWeight="SemiBold" />
+            <StackPanel Spacing="4">
+                <ToggleButton Content="Minimize to tray when closing"
+                              IsChecked="{Binding CloseToTrayOnClose, Mode=TwoWay}"
+                              ToolTip.Tip="When enabled, clicking the window close button hides YALCY in the tray."
+                              Margin="5" />
+                <TextBlock Text="When disabled, the close button exits YALCY."
+                           TextWrapping="Wrap"
+                           Opacity="0.75"
+                           Margin="5,0,5,0" />
+            </StackPanel>
+
+            <TextBlock Text="Settings are saved automatically when YALCY closes." TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

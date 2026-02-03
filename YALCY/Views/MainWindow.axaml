@@ -110,6 +110,9 @@
             <TabItem Header="openRGB">
                 <tabs:OpenRgbTabView />
             </TabItem>
+            <TabItem Header="Settings">
+                <tabs:SettingsTabView />
+            </TabItem>
             <TabItem Header="Credits">
                 <tabs:CreditsTabView />
             </TabItem>
