@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using ReactiveUI;
+using YALCY.ViewModels;
 using YALCY.Views.Components;
 
 namespace YALCY.Udp;
@@ -16,6 +15,7 @@ public partial class UdpIntake : ReactiveObject
 {
     public const int MIN_PACKET_SIZE = 44;
     public Action<byte[]> PacketProcessed;
+    private MainWindowViewModel? _mainViewModel;
 
     public interface IDatapacketMember
     {
@@ -101,10 +101,18 @@ public partial class UdpIntake : ReactiveObject
     private const int HEALTH_CHECK_INTERVAL_MS = 1000; // Verifica a cada 1 segundo
     private const int PACKET_TIMEOUT_MS = 3000; // Timeout de 3 segundos
 
-    public async Task EnableUdpIntake(bool isEnabled)
+    public async Task EnableUdpIntake(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
-        var app = (App)Application.Current!;
-        var mainViewModel = app.MainViewModel;
+        if (viewModel != null)
+        {
+            _mainViewModel = viewModel;
+        }
+
+        if (_mainViewModel == null)
+        {
+            Console.WriteLine("UdpIntake: No ViewModel provided and none cached.");
+            return;
+        }
 
         if (isEnabled)
         {
@@ -117,8 +125,8 @@ public partial class UdpIntake : ReactiveObject
 
             try
             {
-                Console.WriteLine($"Starting UDP client on port {mainViewModel.UdpListenPort}");
-                _udpClient = new UdpClient(mainViewModel.UdpListenPort);
+                Console.WriteLine($"Starting UDP client on port {_mainViewModel.UdpListenPort}");
+                _udpClient = new UdpClient(_mainViewModel.UdpListenPort);
                 _udpClient.Client.ReceiveBufferSize = 8192; // Increase buffer size
                 
                 // Inicializa o timer de verificação de saúde da conexão

@@ -30,7 +30,8 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    private readonly IClassicDesktopStyleApplicationLifetime _desktop;
+    private readonly IClassicDesktopStyleApplicationLifetime? _desktop;
+    private readonly bool _isHeadless;
 
     public new event PropertyChangedEventHandler? PropertyChanged;
     public EnableSetting HueEnabledSetting { get; set; }
@@ -49,10 +50,12 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     public readonly Udp.UdpIntake UdpIntake;
     public OpenRgbTalker OpenRgbTalker { get; set; }
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(bool isHeadless = false)
     {
-        // Register ShutdownRequested event handler
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        _isHeadless = isHeadless;
+
+        // Register ShutdownRequested event handler only for GUI mode
+        if (!isHeadless && Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             _desktop = desktop;
             _desktop.ShutdownRequested += ShutdownRequested;
@@ -91,6 +94,10 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         //InitializeRb3eCollections();
         //InitializeHueCollections();
         InitializeOpenRgbCollections();
+
+        // Wire up DmxTalker to dimmer settings
+        MasterDimmerSettings.SetDmxTalker(DmxTalker);
+        MasterDimmerValues.SetDmxTalker(DmxTalker);
 
         //Things actually start after this fully completes, called from App.axaml.cs
     }
@@ -170,32 +177,40 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
     private async void ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
+        await ShutdownAsync();
+    }
+
+    /// <summary>
+    /// Shuts down all integrations and saves settings. Used by both GUI and CLI.
+    /// </summary>
+    public async Task ShutdownAsync()
+    {
         // Save the settings
         SettingsManager.SaveSettings(this);
 
         // Turn off the OpenRGB talker
-        OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp, OpenRgbServerPort);
+        await OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp, OpenRgbServerPort, this);
 
         // Turn off the RB3E Talker
         Rb3ETalker.EnableRb3eTalker(false);
 
         // Turn off the sACN/DMX talker
-        DmxTalker.EnableDmxTalker(false);
+        DmxTalker.EnableDmxTalker(false, this);
 
         // Turn off the Serial Talker
-        SerialTalker.EnableSerialTalker(false);
+        SerialTalker.EnableSerialTalker(false, this);
 
         // Turn off the StageKit
         StageKitTalker.EnableStageKitTalker(false);
 
         // Turn off the Hue Talker
-        await HueTalker.EnableHue(false, HueBridgeIp);
+        await HueTalker.EnableHue(false, HueBridgeIp, this);
 
         // Turn off the USB device monitor
         UsbDeviceMonitor.StopUsbDeviceMonitor();
 
         // Turn off the UDP listener
-        await UdpIntake.EnableUdpIntake(false);
+        await UdpIntake.EnableUdpIntake(false, this);
     }
 }
 
@@ -256,6 +271,7 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
     public event PropertyChangedEventHandler PropertyChanged;
     public Device Device { get; set; }
     private int _category;
+    private MainWindowViewModel? _viewModel;
 
     public int Category
     {
@@ -269,77 +285,75 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
         }
     }
 
-    public DeviceCategory(Device device, int initialCategory)
+    public DeviceCategory(Device device, int initialCategory, MainWindowViewModel? viewModel = null)
     {
         Device = device;
         _category = initialCategory;
+        _viewModel = viewModel;
+    }
+
+    public void SetViewModel(MainWindowViewModel viewModel)
+    {
+        _viewModel = viewModel;
     }
 
     private void RemoveFromCategoryList(int category)
     {
-        App app;
-        MainWindowViewModel mainViewModel;
-
-        app = (App)Application.Current!;
-        mainViewModel = app.MainViewModel;
+        if (_viewModel == null) return;
 
         switch (category)
         {
             case 0:
-                mainViewModel.OpenRgbTalker.OffList.Remove(Device);
+                _viewModel.OpenRgbTalker.OffList.Remove(Device);
                 break;
 
             case 1:
-                mainViewModel.OpenRgbTalker.LightPodList.Remove(Device);
-                lock (mainViewModel.OpenRgbTalker.LightPodStates)
+                _viewModel.OpenRgbTalker.LightPodList.Remove(Device);
+                lock (_viewModel.OpenRgbTalker.LightPodStates)
                 {
-                    mainViewModel.OpenRgbTalker.LightPodStates.Remove(Device.Index);
+                    _viewModel.OpenRgbTalker.LightPodStates.Remove(Device.Index);
                 }
                 break;
 
             case 2:
-                mainViewModel.OpenRgbTalker.StrobeList.Remove(Device);
+                _viewModel.OpenRgbTalker.StrobeList.Remove(Device);
                 break;
 
             case 3:
-                mainViewModel.OpenRgbTalker.FoggerList.Remove(Device);
+                _viewModel.OpenRgbTalker.FoggerList.Remove(Device);
                 break;
         }
     }
 
     private void UpdateDeviceCategoryList(int category)
     {
-        App app;
-        MainWindowViewModel mainViewModel;
-
-        app = (App)Application.Current!;
-        mainViewModel = app.MainViewModel;
+        if (_viewModel == null) return;
 
         // Add the device to the correct list based on the category
         switch (category)
         {
             case 0:
-                mainViewModel.OpenRgbTalker.OffList.Add(Device);
+                _viewModel.OpenRgbTalker.OffList.Add(Device);
                 break;
 
             case 1:
-                mainViewModel.OpenRgbTalker.LightPodList.Add(Device);
-                lock (mainViewModel.OpenRgbTalker.LightPodStates)
+                _viewModel.OpenRgbTalker.LightPodList.Add(Device);
+                lock (_viewModel.OpenRgbTalker.LightPodStates)
                 {
-                    if (!mainViewModel.OpenRgbTalker.LightPodStates.ContainsKey(Device.Index))
+                    if (!_viewModel.OpenRgbTalker.LightPodStates.ContainsKey(Device.Index))
                     {
                         // Initialize the light pod state for this device
-                        mainViewModel.OpenRgbTalker.LightPodStates[Device.Index] = new Color[Device.Leds.Length];
+                        _viewModel.OpenRgbTalker.LightPodStates[Device.Index] = new Color[Device.Leds.Length];
                     }
                 }
                 break;
 
             case 2:
-                mainViewModel.OpenRgbTalker.StrobeList.Add(Device);
+                _viewModel.OpenRgbTalker.StrobeList.Add(Device);
                 break;
 
             case 3:
-                mainViewModel.OpenRgbTalker.FoggerList.Add(Device);
+                _viewModel.OpenRgbTalker.FoggerList.Add(Device);
                 break;
         }
     }

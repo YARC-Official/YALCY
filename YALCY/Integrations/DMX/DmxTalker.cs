@@ -1,6 +1,5 @@
 using System;
 using System.Timers;
-using Avalonia;
 using Haukcode.sACN;
 using YALCY.Integrations.StageKit;
 using YALCY.Udp;
@@ -73,7 +72,7 @@ public class DmxTalker
     //so we know what to unsubscribe later
     private Action<byte[]>? _packetProcessedHandler;
     private UdpIntake? _udpIntake;
-    MainWindowViewModel? mainViewModel;
+    private MainWindowViewModel? _mainViewModel;
 
     public bool IsEnabled => _sendClient != null;
 
@@ -94,21 +93,26 @@ public class DmxTalker
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e) => Sender();
 
-    public void EnableDmxTalker(bool isEnabled, bool sendBlackoutOnDisable = true)
+    public void EnableDmxTalker(bool isEnabled, MainWindowViewModel? viewModel = null, bool sendBlackoutOnDisable = true)
     {
         if (isEnabled)
         {
             lock (_stateLock)
             {
-
-
                 if (_sendClient != null) return;
 
-                // Access the MainViewModel instance
-                var app = (App)Application.Current!;
-                mainViewModel = app.MainViewModel;
+                if (viewModel != null)
+                {
+                    _mainViewModel = viewModel;
+                }
 
-                var bindAddress = ResolveBindAddress(mainViewModel.SelectedSacnAdapter);
+                if (_mainViewModel == null)
+                {
+                    Console.WriteLine("DmxTalker: No ViewModel provided and none cached.");
+                    return;
+                }
+
+                var bindAddress = ResolveBindAddress(_mainViewModel.SelectedSacnAdapter);
 
                 _sendClient = new SACNClient(
                     senderId: AcnSourceId,
@@ -118,8 +122,8 @@ public class DmxTalker
 
                 //The three parts of the dmx output: stage kit channels, master dimmers, and the channels read from the udp packet
                 UpdateMasterDimmers();
-                _udpIntake = mainViewModel.UdpIntake;
-                _packetProcessedHandler = packet => UpdateDataPacket(packet, mainViewModel);
+                _udpIntake = _mainViewModel.UdpIntake;
+                _packetProcessedHandler = packet => UpdateDataPacket(packet, _mainViewModel);
                 _udpIntake.PacketProcessed += _packetProcessedHandler;
                 UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
                 StatusFooter.UpdateStatus("DMX", IntegrationStatus.Connected);
@@ -166,16 +170,13 @@ public class DmxTalker
                     StatusFooter.UpdateStatus("DMX", IntegrationStatus.Off);
 
                     //if just changing adapter, don't blackout
-                    if (sendBlackoutOnDisable)
+                    if (sendBlackoutOnDisable && _mainViewModel != null)
                     {
                         // Turn everything off directly
                         Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
 
-                        var app = (App)Application.Current!;
-                        var mainViewModel = app.MainViewModel;
-
                         // Force send a final packet.
-                        _sendClient?.SendDmxData(null, (ushort)mainViewModel.BroadcastUniverseSetting.Value,
+                        _sendClient?.SendDmxData(null, (ushort)_mainViewModel.BroadcastUniverseSetting.Value,
                             _currentDataPacket);
                     }
 
@@ -216,6 +217,8 @@ public class DmxTalker
 
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
+        if (_mainViewModel == null) return;
+
         // Helper: set value to a whole channel group
         void SetChannels(DmxChannelSetting group, byte value)
         {
@@ -253,30 +256,30 @@ public class DmxTalker
         {
             var bpm = UdpIntake.BeatsPerMinute.Value;
             byte value = StrobeDmxFromBpm(bpm, multiplier);
-            SetChannels(mainViewModel.StrobeChannels, value);
+            SetChannels(_mainViewModel.StrobeChannels, value);
         }
 
         switch (commandId)
         {
             case StageKitTalker.CommandId.FogOn:
-                SetChannels(mainViewModel.FogChannels, 255);
+                SetChannels(_mainViewModel.FogChannels, 255);
                 break;
 
             case StageKitTalker.CommandId.FogOff:
-                SetChannels(mainViewModel.FogChannels, 0);
+                SetChannels(_mainViewModel.FogChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.DisableAll:
-                SetChannels(mainViewModel.StrobeChannels, 0);
-                SetChannels(mainViewModel.FogChannels, 0);
-                SetChannels(mainViewModel.BlueChannels, 0);
-                SetChannels(mainViewModel.GreenChannels, 0);
-                SetChannels(mainViewModel.YellowChannels, 0);
-                SetChannels(mainViewModel.RedChannels, 0);
+                SetChannels(_mainViewModel.StrobeChannels, 0);
+                SetChannels(_mainViewModel.FogChannels, 0);
+                SetChannels(_mainViewModel.BlueChannels, 0);
+                SetChannels(_mainViewModel.GreenChannels, 0);
+                SetChannels(_mainViewModel.YellowChannels, 0);
+                SetChannels(_mainViewModel.RedChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeOff:
-                SetChannels(mainViewModel.StrobeChannels, 0);
+                SetChannels(_mainViewModel.StrobeChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeSlow:
@@ -296,19 +299,19 @@ public class DmxTalker
                 break;
 
             case StageKitTalker.CommandId.BlueLeds:
-                SetLeds(mainViewModel.BlueChannels);
+                SetLeds(_mainViewModel.BlueChannels);
                 break;
 
             case StageKitTalker.CommandId.GreenLeds:
-                SetLeds(mainViewModel.GreenChannels);
+                SetLeds(_mainViewModel.GreenChannels);
                 break;
 
             case StageKitTalker.CommandId.YellowLeds:
-                SetLeds(mainViewModel.YellowChannels);
+                SetLeds(_mainViewModel.YellowChannels);
                 break;
 
             case StageKitTalker.CommandId.RedLeds:
-                SetLeds(mainViewModel.RedChannels);
+                SetLeds(_mainViewModel.RedChannels);
                 break;
         }
     }
@@ -328,14 +331,12 @@ public class DmxTalker
         {
             if (_isStopping) return;
             if (_sendClient == null) return;
+            if (_mainViewModel == null) return;
 
-            if (mainViewModel != null)
-            {
-                UpdateStateChannels(mainViewModel);
-            }
+            UpdateStateChannels(_mainViewModel);
 
             // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
-            _sendClient?.SendDmxData(null, (ushort)mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
+            _sendClient?.SendDmxData(null, (ushort)_mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
         }
     }
 
@@ -380,10 +381,11 @@ public class DmxTalker
 
     public void UpdateMasterDimmers()
     {
-        for (int i = 0; i < mainViewModel.MasterDimmerSettings.Channel.Length; i++)
+        if (_mainViewModel == null) return;
+        for (int i = 0; i < _mainViewModel.MasterDimmerSettings.Channel.Length; i++)
         {
-            SetChannelToValue(mainViewModel.MasterDimmerSettings.Channel[i],
-                (byte)mainViewModel.MasterDimmerValues.Channel[i]);
+            SetChannelToValue(_mainViewModel.MasterDimmerSettings.Channel[i],
+                (byte)_mainViewModel.MasterDimmerValues.Channel[i]);
         }
     }
 

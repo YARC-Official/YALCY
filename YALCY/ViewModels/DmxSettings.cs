@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
@@ -7,8 +7,8 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using ReactiveUI;
+using YALCY.Integrations.DMX;
 
 namespace YALCY.ViewModels;
 
@@ -88,6 +88,7 @@ public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
 {
     private string _label;
     private int[]? _channel;
+    private DmxTalker? _dmxTalker;
 
     [DataMember]
     public string Label
@@ -103,22 +104,21 @@ public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
         set
         {
             this.RaiseAndSetIfChanged(ref _channel, value);
-            // Safely access the MainViewModel instance
-            var app = (App)Application.Current!;
-            //set previous channel value to 0
-            if (app.MainViewModel != null)
+            // Set previous channel value to 0 and update master dimmers
+            if (_dmxTalker != null && _channel != null)
             {
-
                 foreach (var t in _channel)
                 {
-                    app.MainViewModel.DmxTalker?.SetChannelToValue(t, 0);
-
+                    _dmxTalker.SetChannelToValue(t, 0);
                 }
-
-                //set the new channel value to the previous value
-                app.MainViewModel.DmxTalker?.UpdateMasterDimmers();
+                _dmxTalker.UpdateMasterDimmers();
             }
         }
+    }
+
+    public void SetDmxTalker(DmxTalker? talker)
+    {
+        _dmxTalker = talker;
     }
 
     public DmxDimmerChannelSetting(string label, params int[]? channels)
@@ -133,6 +133,7 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
 {
     private string _label;
     private int[]? _channel;
+    private DmxTalker? _dmxTalker;
 
     [DataMember]
     public string Label
@@ -148,14 +149,13 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
         set
         {
             this.RaiseAndSetIfChanged(ref _channel, value);
-
-            // Safely access the MainViewModel instance
-            var app = (App)Application.Current!;
-            if (app.MainViewModel != null)
-            {
-                app.MainViewModel.DmxTalker.UpdateMasterDimmers();
-            }
+            _dmxTalker?.UpdateMasterDimmers();
         }
+    }
+
+    public void SetDmxTalker(DmxTalker? talker)
+    {
+        _dmxTalker = talker;
     }
 
     public DmxDimmerValueSetting(string label, params int[]? channels)

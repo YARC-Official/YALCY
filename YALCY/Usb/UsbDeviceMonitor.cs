@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Threading;
 using HidSharp;
 using HidSharp.Experimental;
@@ -38,42 +37,49 @@ public class UsbDeviceMonitor
 
     public static event Action<StageKitTalker.CommandId, byte> OnStageKitCommand;
 
-    public void StartUsbDeviceMonitor()
-    {
-        // Access the MainViewModel instance, can't assume it was set in enable
-        var app = (App)Application.Current!;
-        var mainViewModel = app.MainViewModel;
+    private MainWindowViewModel? _mainViewModel;
+    private bool _isRunning;
 
-        //visual list
-        DeviceInserted += mainViewModel.OnDeviceInserted;
-        DeviceRemoved += mainViewModel.OnDeviceRemoved;
+    public void StartUsbDeviceMonitor(MainWindowViewModel? viewModel = null)
+    {
+        if (viewModel != null)
+        {
+            _mainViewModel = viewModel;
+        }
+
+        if (_mainViewModel != null)
+        {
+            //visual list
+            DeviceInserted += _mainViewModel.OnDeviceInserted;
+            DeviceRemoved += _mainViewModel.OnDeviceRemoved;
+        }
 
         //actual device list
         _changedHandler = (sender, e) => OnDeviceListChanged();
         _list.Changed += _changedHandler;
 
-        //actual device list
-        //_list.Changed += (sender, e) => OnDeviceListChanged();
-
+        _isRunning = true;
         OnDeviceListChanged();
     }
 
     public void StopUsbDeviceMonitor()
     {
-        // Access the MainViewModel instance, can't assume it was set in enable
-        var app = (App)Application.Current!;
-        var mainViewModel = app.MainViewModel;
+        if (!_isRunning) return;
+        _isRunning = false;
 
-        DeviceInserted -= mainViewModel.OnDeviceInserted;
-        DeviceRemoved -= mainViewModel.OnDeviceRemoved;
+        if (_mainViewModel != null)
+        {
+            DeviceInserted -= _mainViewModel.OnDeviceInserted;
+            DeviceRemoved -= _mainViewModel.OnDeviceRemoved;
+        }
 
-            if (_changedHandler != null) _list.Changed -= _changedHandler;
+        if (_changedHandler != null) _list.Changed -= _changedHandler;
 
-            lock (DeviceStateLock)
-            {
-                _connectedHidDevices.Clear();
-                _connectedControllerIndices.Clear(); // Clear XInput controllers
-            }
+        lock (DeviceStateLock)
+        {
+            _connectedHidDevices.Clear();
+            _connectedControllerIndices.Clear(); // Clear XInput controllers
+        }
 
         _updateCts?.Cancel();
         _updateCts?.Dispose();

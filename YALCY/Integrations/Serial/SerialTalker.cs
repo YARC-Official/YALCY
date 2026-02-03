@@ -1,5 +1,4 @@
 using System;
-using Avalonia;
 using Dmx.Net.Controllers;
 using System.Timers;
 using HidSharp;
@@ -21,11 +20,21 @@ public class SerialTalker: IDisposable
     private const float TimeBetweenCalls = 1f / TargetFps;
     private static Timer? _timer;
     private static Timer? _checkerTimer;
-    private static App app = (App)Application.Current!;
-    private static MainWindowViewModel mainViewModel = app.MainViewModel;
+    private MainWindowViewModel? _mainViewModel;
     private static bool SerialEnabled = false;
-    public void EnableSerialTalker(bool isEnabled)
+    public void EnableSerialTalker(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
+        if (viewModel != null)
+        {
+            _mainViewModel = viewModel;
+        }
+
+        if (_mainViewModel == null)
+        {
+            Console.WriteLine("SerialTalker: No ViewModel provided and none cached.");
+            return;
+        }
+
         SerialEnabled = isEnabled;
         if (SerialEnabled)
         {
@@ -40,7 +49,7 @@ public class SerialTalker: IDisposable
                 var devicePath = GetLinuxSerialDevicePath();
                 if (string.IsNullOrWhiteSpace(devicePath))
                 {
-                    mainViewModel.SerialMessage = "Error: No serial devices found for DMX output.";
+                    _mainViewModel.SerialMessage = "Error: No serial devices found for DMX output.";
                     StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error);
                     UsbDeviceMonitor.SerialDeviceAdded += SerialDeviceAdded;
                     return;
@@ -58,7 +67,7 @@ public class SerialTalker: IDisposable
             }
             catch (Exception e)
             {
-                mainViewModel.SerialMessage = $"Error: {e.Message}";
+                _mainViewModel.SerialMessage = $"Error: {e.Message}";
                 StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error);
                 UsbDeviceMonitor.SerialDeviceAdded += SerialDeviceAdded;  //start the watchdog.
             }
@@ -71,6 +80,8 @@ public class SerialTalker: IDisposable
 
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
+        if (_mainViewModel == null) return;
+
         if (controller.IsOpen == false)
         {
             try
@@ -96,9 +107,9 @@ public class SerialTalker: IDisposable
                 case StageKitTalker.CommandId.BlueLeds:
                     for (int i = 0; i < 8; i++)
                     {
-                        if (mainViewModel.BlueChannels.Channel != null)
+                        if (_mainViewModel.BlueChannels.Channel != null)
                         {
-                            controller.SetChannel(mainViewModel.BlueChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
+                            controller.SetChannel(_mainViewModel.BlueChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
                         }
                     }
 
@@ -107,9 +118,9 @@ public class SerialTalker: IDisposable
                 case StageKitTalker.CommandId.GreenLeds:
                     for (int i = 0; i < 8; i++)
                     {
-                        if (mainViewModel.GreenChannels.Channel != null)
+                        if (_mainViewModel.GreenChannels.Channel != null)
                         {
-                            controller.SetChannel(mainViewModel.GreenChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
+                            controller.SetChannel(_mainViewModel.GreenChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
                         }
                     }
 
@@ -118,9 +129,9 @@ public class SerialTalker: IDisposable
                 case StageKitTalker.CommandId.YellowLeds:
                     for (int i = 0; i < 8; i++)
                     {
-                        if (mainViewModel.YellowChannels.Channel != null)
+                        if (_mainViewModel.YellowChannels.Channel != null)
                         {
-                            controller.SetChannel(mainViewModel.YellowChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
+                            controller.SetChannel(_mainViewModel.YellowChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
                         }
                     }
 
@@ -129,9 +140,9 @@ public class SerialTalker: IDisposable
                 case StageKitTalker.CommandId.RedLeds:
                     for (int i = 0; i < 8; i++)
                     {
-                        if (mainViewModel.RedChannels.Channel != null)
+                        if (_mainViewModel.RedChannels.Channel != null)
                         {
-                            controller.SetChannel(mainViewModel.RedChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
+                            controller.SetChannel(_mainViewModel.RedChannels.Channel[i], (byte)((parameter & (1 << i)) != 0 ? 255 : 0));
                         }
                     }
 
@@ -142,35 +153,35 @@ public class SerialTalker: IDisposable
 
     private void Sender()
     {
-        if (!SerialEnabled || !controller.IsOpen)
+        if (!SerialEnabled || !controller.IsOpen || _mainViewModel == null)
         {
             return;
         }
 
-        controller.SetChannel(mainViewModel.GuitarNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.GuitarNotes);
-        controller.SetChannel(mainViewModel.BassNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BassNotes);
-        controller.SetChannel(mainViewModel.DrumNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.DrumsNotes);
-        controller.SetChannel(mainViewModel.VocalsNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VocalsNote);
-        controller.SetChannel(mainViewModel.Harmony0NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony0Note);
-        controller.SetChannel(mainViewModel.Harmony1NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony1Note);
-        controller.SetChannel(mainViewModel.Harmony2NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony2Note);
+        controller.SetChannel(_mainViewModel.GuitarNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.GuitarNotes);
+        controller.SetChannel(_mainViewModel.BassNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BassNotes);
+        controller.SetChannel(_mainViewModel.DrumNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.DrumsNotes);
+        controller.SetChannel(_mainViewModel.VocalsNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VocalsNote);
+        controller.SetChannel(_mainViewModel.Harmony0NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony0Note);
+        controller.SetChannel(_mainViewModel.Harmony1NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony1Note);
+        controller.SetChannel(_mainViewModel.Harmony2NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony2Note);
 
-        controller.SetChannel(mainViewModel.BpmChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BeatsPerMinute);
-        controller.SetChannel(mainViewModel.KeyFrameChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Keyframe);
-        controller.SetChannel(mainViewModel.VenueSizeSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VenueSize);
-        controller.SetChannel(mainViewModel.CueChangeChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.LightingCue);
-        controller.SetChannel(mainViewModel.PostProcessingChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PostProcessing);
-        controller.SetChannel(mainViewModel.PauseStateSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PauseState);
-        controller.SetChannel(mainViewModel.BeatLineChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Beat);
-        controller.SetChannel(mainViewModel.CurrentSingalongSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Singalong);
-        controller.SetChannel(mainViewModel.CurrentSpotlightSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Spotlight);
-        controller.SetChannel(mainViewModel.SongSectionSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.SongSection);
-        controller.SetChannel(mainViewModel.BonusEffectChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BonusEffect);
-        controller.SetChannel(mainViewModel.CurrentSceneSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.CurrentScene);
+        controller.SetChannel(_mainViewModel.BpmChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BeatsPerMinute);
+        controller.SetChannel(_mainViewModel.KeyFrameChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Keyframe);
+        controller.SetChannel(_mainViewModel.VenueSizeSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VenueSize);
+        controller.SetChannel(_mainViewModel.CueChangeChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.LightingCue);
+        controller.SetChannel(_mainViewModel.PostProcessingChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PostProcessing);
+        controller.SetChannel(_mainViewModel.PauseStateSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PauseState);
+        controller.SetChannel(_mainViewModel.BeatLineChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Beat);
+        controller.SetChannel(_mainViewModel.CurrentSingalongSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Singalong);
+        controller.SetChannel(_mainViewModel.CurrentSpotlightSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Spotlight);
+        controller.SetChannel(_mainViewModel.SongSectionSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.SongSection);
+        controller.SetChannel(_mainViewModel.BonusEffectChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BonusEffect);
+        controller.SetChannel(_mainViewModel.CurrentSceneSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.CurrentScene);
 
         for (int i = 0; i < 8; i++)
         {
-            controller.SetChannel(mainViewModel.MasterDimmerSettings.Channel[i], (byte)mainViewModel.MasterDimmerValues.Channel[i]);
+            controller.SetChannel(_mainViewModel.MasterDimmerSettings.Channel[i], (byte)_mainViewModel.MasterDimmerValues.Channel[i]);
         }
 
         controller.WriteSafe();
@@ -214,6 +225,6 @@ public class SerialTalker: IDisposable
     private void SerialDeviceAdded(SerialDevice device)
     {
         //When a serial device is added, will try to start again, if the state is enabled.
-        EnableSerialTalker(SettingsManager.SerialEnabledSettingIsEnabled);
+        EnableSerialTalker(SettingsManager.SerialEnabledSettingIsEnabled, _mainViewModel);
     }
 }

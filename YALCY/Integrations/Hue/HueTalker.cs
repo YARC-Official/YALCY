@@ -1,9 +1,7 @@
-﻿using System;
+using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using HueApi;
 using HueApi.ColorConverters;
 using HueApi.Entertainment;
@@ -26,13 +24,24 @@ public class HueTalker : IDisposable
     private static HueResponse<EntertainmentConfiguration>? _entArea;
     private StreamingHueClient? _client;
     private CancellationTokenSource? _cancellationTokenSource;
+    private MainWindowViewModel? _mainViewModel;
 
-    public async Task EnableHue(bool isEnabled, string? bridgeIp)
+    public async Task EnableHue(bool isEnabled, string? bridgeIp, MainWindowViewModel? viewModel = null)
     {
         Console.WriteLine("EnableHue called.");
-        // Access the MainViewModel instance
-        var app = (App)Application.Current!;
-        var mainViewModel = app.MainViewModel;
+
+        if (viewModel != null)
+        {
+            _mainViewModel = viewModel;
+        }
+
+        if (_mainViewModel == null)
+        {
+            Console.WriteLine("HueTalker: No ViewModel provided and none cached.");
+            return;
+        }
+
+        var mainViewModel = _mainViewModel;
 
         if (isEnabled)
         {
@@ -143,11 +152,20 @@ public class HueTalker : IDisposable
         }
     }
 
-    public async Task RegisterHueBridgeAsync(string? bridgeIp)
+    public async Task RegisterHueBridgeAsync(string? bridgeIp, MainWindowViewModel? viewModel = null)
     {
-        // Access the MainViewModel instance
-        var app = (App)Application.Current!;
-        var mainViewModel = app.MainViewModel;
+        if (viewModel != null)
+        {
+            _mainViewModel = viewModel;
+        }
+
+        if (_mainViewModel == null)
+        {
+            Console.WriteLine("HueTalker: No ViewModel provided and none cached.");
+            return;
+        }
+
+        var mainViewModel = _mainViewModel;
 
         var (isValid, statusMessage) = Helpers.IpValidator(bridgeIp);
 
@@ -182,33 +200,37 @@ public class HueTalker : IDisposable
             mainViewModel.HueRegisterStatus = "Registering Status: Already registered with the bridge";
         }
 
-        await EnableHue(mainViewModel.HueEnabledSetting.IsEnabled, bridgeIp);
+        await EnableHue(mainViewModel.HueEnabledSetting.IsEnabled, bridgeIp, mainViewModel);
     }
 
     private async Task<StreamingHueClient?> CreateStreamingClientAsync(string? bridgeIp, string username, string streamingClientKey)
     {
         try
         {
-            var mainViewModel = ((App)Application.Current!).MainViewModel;
-            mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Attempting to create streaming client...";
+            if (_mainViewModel == null) return null;
+            _mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Attempting to create streaming client...";
 
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(25)); // Set timeout
             var client = await Task.Run(() => new StreamingHueClient(bridgeIp, username, streamingClientKey), cts.Token);
 
-            mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Streaming Client created.";
+            _mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Streaming Client created.";
             return client;
         }
         catch (OperationCanceledException)
         {
-            var mainViewModel = ((App)Application.Current!).MainViewModel;
-            mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Operation timed out.";
+            if (_mainViewModel != null)
+            {
+                _mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Operation timed out.";
+            }
             StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
             return null;
         }
         catch (Exception e)
         {
-            var mainViewModel = ((App)Application.Current!).MainViewModel;
-            mainViewModel.HueStreamingClientStatus = $"Streaming Client Status: Error - {e.Message}";
+            if (_mainViewModel != null)
+            {
+                _mainViewModel.HueStreamingClientStatus = $"Streaming Client Status: Error - {e.Message}";
+            }
             StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
             return null;
         }

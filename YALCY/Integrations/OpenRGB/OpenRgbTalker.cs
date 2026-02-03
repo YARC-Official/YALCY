@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Threading;
 using OpenRGB.NET;
 using YALCY.Integrations.StageKit;
@@ -34,13 +33,22 @@ public class OpenRgbTalker
     public event Action<Device> OpenRgbDeviceInserted;
     public event Action<Device> OpenRgbDeviceRemoved;
 
-    App app;
-    MainWindowViewModel mainViewModel;
+    private MainWindowViewModel? _mainViewModel;
 
-    public async Task ConnectToOpenRgbServerAsync(string serverIp, ushort serverPort)
+    public async Task ConnectToOpenRgbServerAsync(string serverIp, ushort serverPort, MainWindowViewModel? viewModel = null)
     {
-        app = (App)Application.Current!;
-        mainViewModel = app.MainViewModel;
+        if (viewModel != null)
+        {
+            _mainViewModel = viewModel;
+        }
+
+        if (_mainViewModel == null)
+        {
+            Console.WriteLine("OpenRgbTalker: No ViewModel provided and none cached.");
+            return;
+        }
+
+        var mainViewModel = _mainViewModel;
 
         Console.WriteLine("Connecting to OpenRGB server");
 
@@ -79,7 +87,7 @@ public class OpenRgbTalker
             {
                 OffList.Add(device);
                 OpenRgbDeviceInserted?.Invoke(device);
-                mainViewModel.DeviceCategories.Add(new DeviceCategory(device, 0));
+                mainViewModel.DeviceCategories.Add(new DeviceCategory(device, 0, mainViewModel));
             }
 
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
@@ -92,12 +100,17 @@ public class OpenRgbTalker
         }
     }
 
-    public async Task EnableOpenRgbTalker(bool isEnabled, string serverIP, ushort serverPort)
+    public async Task EnableOpenRgbTalker(bool isEnabled, string serverIP, ushort serverPort, MainWindowViewModel? viewModel = null)
     {
+        if (viewModel != null)
+        {
+            _mainViewModel = viewModel;
+        }
+
         if (isEnabled)
         {
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Connecting);
-            await ConnectToOpenRgbServerAsync(serverIP, serverPort);
+            await ConnectToOpenRgbServerAsync(serverIP, serverPort, _mainViewModel);
         }
         else
         {
@@ -111,7 +124,10 @@ public class OpenRgbTalker
             {
                 foreach (var innerException in ex.InnerExceptions)
                 {
-                    mainViewModel.OpenRgbStatus = $"Task error: {innerException.Message}";
+                    if (_mainViewModel != null)
+                    {
+                        _mainViewModel.OpenRgbStatus = $"Task error: {innerException.Message}";
+                    }
                 }
             }
             finally
