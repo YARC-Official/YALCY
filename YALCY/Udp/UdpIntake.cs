@@ -59,7 +59,7 @@ public partial class UdpIntake : ReactiveObject
 
         object IDatapacketMember.Value => Value;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged(string propertyName)
         {

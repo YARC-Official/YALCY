@@ -101,7 +101,7 @@ public class HeadlessHost : IDisposable
         // Initialize OpenRGB
         if (ViewModel.OpenRgbEnabledSetting.IsEnabled)
         {
-            await ViewModel.OpenRgbTalker.EnableOpenRgbTalker(true, ViewModel.OpenRgbServerIp, ViewModel.OpenRgbServerPort, ViewModel);
+            await ViewModel.OpenRgbTalker.EnableOpenRgbTalker(true, ViewModel.OpenRgbServerIp ?? string.Empty, ViewModel.OpenRgbServerPort, ViewModel);
             Console.WriteLine("  OpenRGB: Enabled");
         }
         else

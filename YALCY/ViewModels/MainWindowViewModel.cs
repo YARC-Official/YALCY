@@ -268,7 +268,7 @@ public class EnableSetting : ReactiveObject
 
 public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
 {
-    public event PropertyChangedEventHandler PropertyChanged;
+    public new event PropertyChangedEventHandler? PropertyChanged;
     public Device Device { get; set; }
     private int _category;
     private MainWindowViewModel? _viewModel;
