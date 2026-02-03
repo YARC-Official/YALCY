@@ -14,25 +14,25 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
-        working-directory: ./YALCY
+        run: dotnet restore YALCY.sln
 
       - name: Build
-        run: dotnet build --configuration Release
-        working-directory: ./YALCY
+        run: dotnet build --configuration Release YALCY.sln
 
-      - name: Publish
-        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish
-        working-directory: ./YALCY
+      - name: Publish GUI
+        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+
+      - name: Publish CLI
+        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload Windows Binaries
         uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
-          path: ./YALCY/publish
+          path: ./publish
 
   build-linux:
     runs-on: ubuntu-latest
@@ -44,25 +44,25 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
-        working-directory: ./YALCY
+        run: dotnet restore YALCY.sln
 
       - name: Build
-        run: dotnet build --configuration Release
-        working-directory: ./YALCY
+        run: dotnet build --configuration Release YALCY.sln
 
-      - name: Publish
-        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish
-        working-directory: ./YALCY
+      - name: Publish GUI
+        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+
+      - name: Publish CLI
+        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload Linux Binaries
         uses: actions/upload-artifact@v4
         with:
           name: linux-binaries
-          path: ./YALCY/publish
+          path: ./publish
 
   build-macos:
     runs-on: macos-latest
@@ -74,25 +74,25 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
-        working-directory: ./YALCY
+        run: dotnet restore YALCY.sln
 
       - name: Build
-        run: dotnet build --configuration Release
-        working-directory: ./YALCY
+        run: dotnet build --configuration Release YALCY.sln
 
-      - name: Publish
-        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish
-        working-directory: ./YALCY
+      - name: Publish GUI
+        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+
+      - name: Publish CLI
+        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload macOS Binaries
         uses: actions/upload-artifact@v4
         with:
           name: macos-binaries
-          path: ./YALCY/publish
+          path: ./publish
 
   release:
     runs-on: ubuntu-latest
@@ -124,7 +124,12 @@ jobs:
           release_name: "YALCY ${{ env.next_version }}"
           body: |
             Automatically generated release.
+
             Includes:
+            - **YALCY** (GUI) - Full graphical interface
+            - **YALCY-cli** (CLI) - Headless command-line version
+
+            Platforms:
             - Windows x64 binaries
             - Linux x64 binaries
             - macOS x64 binaries

@@ -1,4 +1,4 @@
-name: Delete this
+name: Build Only (No Release)
 
 on:
   workflow_dispatch:
@@ -14,22 +14,25 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore YALCY/YALCY.csproj
+        run: dotnet restore YALCY.sln
 
       - name: Build
-        run: dotnet build --configuration Release YALCY/YALCY.csproj
+        run: dotnet build --configuration Release YALCY.sln
 
-      - name: Publish
+      - name: Publish GUI
         run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+
+      - name: Publish CLI
+        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload Windows Binaries
         uses: actions/upload-artifact@v3
         with:
           name: windows-binaries
-          path: YALCY/publish
+          path: ./publish
 
   build-linux:
     runs-on: ubuntu-latest
@@ -41,22 +44,25 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore YALCY/YALCY.csproj
+        run: dotnet restore YALCY.sln
 
       - name: Build
-        run: dotnet build --configuration Release YALCY/YALCY.csproj
+        run: dotnet build --configuration Release YALCY.sln
 
-      - name: Publish
+      - name: Publish GUI
         run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+
+      - name: Publish CLI
+        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload Linux Binaries
         uses: actions/upload-artifact@v3
         with:
           name: linux-binaries
-          path: YALCY/publish
+          path: ./publish
 
   build-macos:
     runs-on: macos-latest
@@ -68,19 +74,22 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore YALCY/YALCY.csproj
+        run: dotnet restore YALCY.sln
 
       - name: Build
-        run: dotnet build --configuration Release YALCY/YALCY.csproj
+        run: dotnet build --configuration Release YALCY.sln
 
-      - name: Publish
+      - name: Publish GUI
         run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+
+      - name: Publish CLI
+        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload macOS Binaries
         uses: actions/upload-artifact@v3
         with:
           name: macos-binaries
-          path: YALCY/publish
+          path: ./publish
