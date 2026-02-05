@@ -6,17 +6,32 @@
              x:Class="YALCY.Views.Tabs.OpenRgbTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
-    <StackPanel Margin="5">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        
         <!-- Enable Button -->
-        <ToggleButton ToolTip.Tip="{Binding  OpenRgbEnabledSetting.ToolTip}"
+        <ToggleButton Grid.Row="0" 
+                      ToolTip.Tip="{Binding  OpenRgbEnabledSetting.ToolTip}"
                       Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
-                      IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
+                      IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}" 
+                      Margin="5" />
+        
         <!-- Info -->
-        <TextBlock Text="Setup needed:" />
-        <TextBlock Text="1) OpenRgb Server needs to be running!" Margin="5" />
-        <TextBlock Text="2) Be sure your devices are in Direct mode" Margin="5" />
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="Setup needed:" />
+            <TextBlock Text="1) OpenRgb Server needs to be running!" Margin="5" />
+            <TextBlock Text="2) Be sure your devices are in Direct mode" Margin="5" />
+        </StackPanel>
+        
         <!-- IP Address and Server port -->
-        <Grid Margin="5">
+        <Grid Grid.Row="2" Margin="5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="150" /> <!-- Width for the IP TextBox -->
@@ -33,45 +48,155 @@
             <Button Content="Connect to OpenRGB server" Command="{Binding ConnectToOpenRgbServerCommand}"
                     Margin="10,0,0,0" Grid.Column="4" HorizontalAlignment="Right" />
         </Grid>
+        
         <!-- Status Message -->
-        <TextBlock Text="{Binding OpenRgbStatus}" />
-        <!-- Data Grid -->
-        <DataGrid CanUserSortColumns="False" ItemsSource="{Binding DeviceCategories}"
-                  AutoGenerateColumns="False" IsReadOnly="True">
-            <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Category">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <RadioButton Content="Off" GroupName="{Binding Device.Index}" Margin="5,0"
-                                             IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
-
-                                <RadioButton Content="LightPod" GroupName="{Binding Device.Index}" Margin="5,0"
-                                             IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
-
-                                <RadioButton Content="Strobe" GroupName="{Binding Device.Index}" Margin="5,0"
-                                             IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}" />
-
-                                <RadioButton Content="Fogger" GroupName="{Binding Device.Index}" Margin="5,0"
-                                             IsChecked="{Binding Category, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=3}" />
+        <TextBlock Grid.Row="3" Text="{Binding OpenRgbStatus}" Margin="5,5,5,10" />
+        
+        <!-- Devices List with Scroll - Takes remaining space -->
+        <ScrollViewer Grid.Row="5" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding DevicesWithZones}" Margin="0,0,0,15">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- Device Card -->
+                        <Border Background="#1A1A1A" 
+                                BorderBrush="#3A3A3A" 
+                                BorderThickness="1" 
+                                CornerRadius="8"
+                                Margin="5,5,5,10"
+                                Padding="15">
+                            <StackPanel>
+                                <!-- Device Header -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Device.Name}" 
+                                                   FontSize="16" 
+                                                   FontWeight="SemiBold" 
+                                                   Foreground="#FFFFFF"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding Device.Type}" 
+                                                       FontSize="12" 
+                                                       Foreground="#888888"
+                                                       Margin="0,0,15,0"/>
+                                            <TextBlock Text="{Binding Device.Vendor}" 
+                                                       FontSize="12" 
+                                                       Foreground="#888888"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    
+                                    <Border Grid.Column="1" 
+                                            Background="#2A2A2A" 
+                                            CornerRadius="4" 
+                                            Padding="10,5">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Zones.Count}" 
+                                                       FontSize="14" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="#4A9EFF"/>
+                                            <TextBlock Text=" zones" 
+                                                       FontSize="14" 
+                                                       Foreground="#AAAAAA" 
+                                                       Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                
+                                <!-- Zones List -->
+                                <ItemsControl ItemsSource="{Binding Zones}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#252525" 
+                                                    BorderBrush="#3A3A3A" 
+                                                    BorderThickness="1" 
+                                                    CornerRadius="6" 
+                                                    Margin="0,0,0,8"
+                                                    Padding="12">
+                                                <StackPanel>
+                                                    <!-- Zone Header -->
+                                                    <Grid Margin="0,0,0,10">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        
+                                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                            <Border Background="#3A3A3A" 
+                                                                    CornerRadius="3" 
+                                                                    Padding="6,3"
+                                                                    Margin="0,0,10,0">
+                                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#4A9EFF">
+                                                                    <Run Text="Zone "/>
+                                                                    <Run Text="{Binding ZoneIndex}"/>
+                                                                </TextBlock>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding Zone.Name}" 
+                                                                       FontSize="13" 
+                                                                       FontWeight="Medium" 
+                                                                       Foreground="#FFFFFF"
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                        
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Zone.Type}" 
+                                                                       FontSize="11" 
+                                                                       Foreground="#888888"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="0,0,15,0"/>
+                                                            <TextBlock FontSize="11" 
+                                                                       Foreground="#888888"
+                                                                       VerticalAlignment="Center">
+                                                                <Run Text="{Binding Zone.LedCount}"/>
+                                                                <Run Text=" LEDs"/>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    
+                                                    <!-- Function Selection -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="Function:" 
+                                                                   FontSize="12" 
+                                                                   Foreground="#AAAAAA" 
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="0,0,8,0"/>
+                                                        
+                                                        <RadioButton Content="Off" 
+                                                                     GroupName="{Binding GetZoneKeyProperty}"
+                                                                     IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
+                                                                     Foreground="#CCCCCC"
+                                                                     FontSize="12"/>
+                                                        
+                                                        <RadioButton Content="LightPod" 
+                                                                     GroupName="{Binding GetZoneKeyProperty}"
+                                                                     IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                                                                     Foreground="#CCCCCC"
+                                                                     FontSize="12"/>
+                                                        
+                                                        <RadioButton Content="Strobe" 
+                                                                     GroupName="{Binding GetZoneKeyProperty}"
+                                                                     IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}"
+                                                                     Foreground="#CCCCCC"
+                                                                     FontSize="12"/>
+                                                        
+                                                        <RadioButton Content="Fogger" 
+                                                                     GroupName="{Binding GetZoneKeyProperty}"
+                                                                     IsChecked="{Binding Category, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=3}"
+                                                                     Foreground="#CCCCCC"
+                                                                     FontSize="12"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Index" Binding="{Binding Device.Index}" />
-                <DataGridTextColumn Header="Type" Binding="{Binding Device.Type}" />
-                <DataGridTextColumn Header="Name" Binding="{Binding Device.Name}" />
-                <DataGridTextColumn Header="Vendor" Binding="{Binding Device.Vendor}" />
-                <DataGridTextColumn Header="Description" Binding="{Binding Device.Description}" />
-                <DataGridTextColumn Header="Version" Binding="{Binding Device.Version}" />
-                <DataGridTextColumn Header="Serial" Binding="{Binding Device.Serial}" />
-                <DataGridTextColumn Header="Location" Binding="{Binding Device.Location}" />
-                <DataGridTextColumn Header="Active Mode Index" Binding="{Binding Device.ActiveModeIndex}" />
-                <DataGridTextColumn Header="Modes" Binding="{Binding Device.Modes.Length}" />
-                <DataGridTextColumn Header="Zones" Binding="{Binding Device.Zones.Length}" />
-                <DataGridTextColumn Header="Leds" Binding="{Binding Device.Leds.Length}" />
-                <DataGridTextColumn Header="Colors" Binding="{Binding Device.Colors.Length}" />
-            </DataGrid.Columns>
-        </DataGrid>
-    </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
 </UserControl>
