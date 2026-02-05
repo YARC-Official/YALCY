@@ -78,6 +78,26 @@ public class OpenRgbTalker
 
         try
         {
+            // Clear all device lists to prevent duplicates on reconnection
+            OffList.Clear();
+            LightPodList.Clear();
+            StrobeList.Clear();
+            FoggerList.Clear();
+            LightPodStates.Clear();
+            OffZones.Clear();
+            LightPodZones.Clear();
+            StrobeZones.Clear();
+            FoggerZones.Clear();
+            LightPodZoneStates.Clear();
+            
+            // Clear visual lists in the UI synchronously
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                MainWindowViewModel.ClearOpenRgbVisualList();
+                mainViewModel.DeviceCategories.Clear();
+                mainViewModel.DevicesWithZones.Clear();
+            });
+            
             client = new OpenRgbClient(serverIp, serverPort, name, autoConnect, timeoutMs, protocolVersionNumber);
 
             // This really should be awaited since it waits for timeoutMs, however it isn't written that way.
