@@ -14,16 +14,32 @@ using YALCY.Views.Components;
 
 namespace YALCY.Integrations.OpenRGB;
 
+public class ZoneInfo
+{
+    public Device Device { get; set; } = null!;
+    public int ZoneIndex { get; set; }
+    public Zone Zone { get; set; } = null!;
+}
+
 public class OpenRgbTalker
 {
     private CancellationTokenSource cts = new();
     private Task updateTask = Task.CompletedTask;
 
+    // Legacy device-based lists (kept for backward compatibility)
     public List<Device> OffList = new();
     public List<Device> LightPodList = new();
     public List<Device> StrobeList = new();
     public List<Device> FoggerList = new();
     public Dictionary<int, Color[]> LightPodStates = new Dictionary<int, Color[]>();
+    
+    // New zone-based dictionaries
+    public Dictionary<string, ZoneInfo> OffZones = new();
+    public Dictionary<string, ZoneInfo> LightPodZones = new();
+    public Dictionary<string, ZoneInfo> StrobeZones = new();
+    public Dictionary<string, ZoneInfo> FoggerZones = new();
+    public Dictionary<string, Color[]> LightPodZoneStates = new Dictionary<string, Color[]>();
+    
     private static string name = "YALCY";
     private static bool autoConnect = false; // can't catch exceptions in constructor
     private static int timeoutMs = 1000;
@@ -62,6 +78,26 @@ public class OpenRgbTalker
 
         try
         {
+            // Clear all device lists to prevent duplicates on reconnection
+            OffList.Clear();
+            LightPodList.Clear();
+            StrobeList.Clear();
+            FoggerList.Clear();
+            LightPodStates.Clear();
+            OffZones.Clear();
+            LightPodZones.Clear();
+            StrobeZones.Clear();
+            FoggerZones.Clear();
+            LightPodZoneStates.Clear();
+            
+            // Clear visual lists in the UI synchronously
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                MainWindowViewModel.ClearOpenRgbVisualList();
+                mainViewModel.DeviceCategories.Clear();
+                mainViewModel.DevicesWithZones.Clear();
+            });
+            
             client = new OpenRgbClient(serverIp, serverPort, name, autoConnect, timeoutMs, protocolVersionNumber);
 
             // This really should be awaited since it waits for timeoutMs, however it isn't written that way.
@@ -88,6 +124,7 @@ public class OpenRgbTalker
                 OffList.Add(device);
                 OpenRgbDeviceInserted?.Invoke(device);
                 mainViewModel.DeviceCategories.Add(new DeviceCategory(device, 0, mainViewModel));
+                mainViewModel.DevicesWithZones.Add(new DeviceWithZones(device, mainViewModel));
             }
 
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
@@ -144,10 +181,22 @@ public class OpenRgbTalker
         var devices = client.GetAllControllerData();
         OffList.Clear();
         Dispatcher.UIThread.InvokeAsync(MainWindowViewModel.ClearOpenRgbVisualList);
+        
+        if (_mainViewModel != null)
+        {
+            Dispatcher.UIThread.InvokeAsync(() => _mainViewModel.ClearDevicesWithZones());
+        }
+        
         foreach (var dev in devices)
         {
             OffList.Add(dev);
             OpenRgbDeviceInserted?.Invoke(dev);
+            
+            if (_mainViewModel != null)
+            {
+                Dispatcher.UIThread.InvokeAsync(() => 
+                    _mainViewModel.DevicesWithZones.Add(new DeviceWithZones(dev, _mainViewModel)));
+            }
         }
     }
 
@@ -252,15 +301,27 @@ public class OpenRgbTalker
         {
             while (!cts.Token.IsCancellationRequested)
             {
+                // Support both legacy device-based and new zone-based strobes
                 foreach (var device in StrobeList)
                 {
                     ToggleDeviceLeds(device, true);
                 }
+                
+                foreach (var zoneInfo in StrobeZones.Values)
+                {
+                    ToggleZoneLeds(zoneInfo, true);
+                }
 
                 await Task.Delay(interval);
+                
                 foreach (var device in StrobeList)
                 {
                     ToggleDeviceLeds(device, false);
+                }
+                
+                foreach (var zoneInfo in StrobeZones.Values)
+                {
+                    ToggleZoneLeds(zoneInfo, false);
                 }
 
                 await Task.Delay(interval);
@@ -284,12 +345,14 @@ public class OpenRgbTalker
                 for (byte brightness = 0; brightness <= 255; brightness += 5)
                 {
                     SetDeviceBrightness(brightness);
+                    SetZoneBrightness(brightness);
                     await Task.Delay(30);
                 }
 
                 for (byte brightness = 255; brightness >= 0; brightness -= 5)
                 {
                     SetDeviceBrightness(brightness);
+                    SetZoneBrightness(brightness);
                     await Task.Delay(30);
                 }
             }
@@ -309,15 +372,27 @@ public class OpenRgbTalker
             client.UpdateLeds(device.Index, colors);
         }
     }
+    
+    private void SetZoneBrightness(byte brightness)
+    {
+        foreach (var zoneInfo in FoggerZones.Values)
+        {
+            var color = new Color(brightness, brightness, brightness);
+            var colors = Enumerable.Repeat(color, (int)zoneInfo.Zone.LedCount).ToArray();
+            client.UpdateZoneLeds(zoneInfo.Device.Index, zoneInfo.ZoneIndex, colors);
+        }
+    }
 
     private void UpdateLightPodColor(byte parameter, Color color, int areaOffset)
     {
-        if (LightPodList.Count == 0)
+        if (LightPodList.Count == 0 && LightPodZones.Count == 0)
         {
             return;
         }
 
         const int numAreas = 32;
+        
+        // Legacy device-based lightpods
         foreach (var device in LightPodList)
         {
             // Adjust the number of LEDs per area, ensuring at least one LED per area
@@ -345,6 +420,37 @@ public class OpenRgbTalker
             // Update LEDs for this device
             client.UpdateLeds(device.Index, new Span<Color>(colors));
         }
+        
+        // New zone-based lightpods
+        foreach (var kvp in LightPodZones)
+        {
+            var zoneInfo = kvp.Value;
+            var zoneKey = kvp.Key;
+            
+            var keysPerArea = Math.Max(1, zoneInfo.Zone.LedCount / numAreas);
+            var colors = LightPodZoneStates[zoneKey];
+
+            for (int area = areaOffset; area < areaOffset + 8; area++)
+            {
+                for (int key = 0; key < keysPerArea; key++)
+                {
+                    var ledIndex = area * keysPerArea + key;
+                    if (ledIndex >= zoneInfo.Zone.LedCount) continue;
+
+                    if ((parameter & (1 << (area - areaOffset))) != 0)
+                    {
+                        colors[ledIndex] = color;
+                    }
+                    else
+                    {
+                        colors[ledIndex] = new Color(0, 0, 0);
+                    }
+                }
+            }
+
+            // Update LEDs for this zone
+            client.UpdateZoneLeds(zoneInfo.Device.Index, zoneInfo.ZoneIndex, new Span<Color>(colors));
+        }
     }
 
 
@@ -353,6 +459,13 @@ public class OpenRgbTalker
         var color = turnOn ? new Color(255, 255, 255) : new Color(0, 0, 0);
         var colors = Enumerable.Repeat(color, device.Leds.Length).ToArray();
         client.UpdateLeds(device.Index, colors);
+    }
+    
+    private void ToggleZoneLeds(ZoneInfo zoneInfo, bool turnOn)
+    {
+        var color = turnOn ? new Color(255, 255, 255) : new Color(0, 0, 0);
+        var colors = Enumerable.Repeat(color, (int)zoneInfo.Zone.LedCount).ToArray();
+        client.UpdateZoneLeds(zoneInfo.Device.Index, zoneInfo.ZoneIndex, colors);
     }
 
     private int CalculateDelay(int noteValue, float bpm)

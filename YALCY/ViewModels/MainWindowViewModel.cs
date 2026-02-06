@@ -170,7 +170,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             SettingsManager.OpenRgbEnabledSettingIsEnabled,
             "YALCY is talking OpenRGB!",
             "YALCY is NOT talking to OpenRGB!",
-            async (isEnabled) => OpenRgbTalker.EnableOpenRgbTalker(isEnabled, OpenRgbServerIp, OpenRgbServerPort),
+            async (isEnabled) => await OpenRgbTalker.EnableOpenRgbTalker(isEnabled, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort),
             "Enable or disable output to a OpenRGB client"
         );
     }
@@ -184,7 +184,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
         RegisterHueBridgeCommand = ReactiveCommand.CreateFromTask(() => HueTalker.RegisterHueBridgeAsync(HueBridgeIp));
         ConnectToOpenRgbServerCommand = ReactiveCommand.CreateFromTask(() =>
-            OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp, OpenRgbServerPort));
+            OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort));
     }
 
     private async void ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
@@ -201,7 +201,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         SettingsManager.SaveSettings(this);
 
         // Turn off the OpenRGB talker
-        await OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp, OpenRgbServerPort, this);
+        await OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort, this);
 
         // Turn off the RB3E Talker
         Rb3ETalker.EnableRb3eTalker(false);
@@ -278,6 +278,140 @@ public class EnableSetting : ReactiveObject
     }
 }
 
+public class DeviceWithZones : ReactiveObject
+{
+    public Device Device { get; set; }
+    public ObservableCollection<DeviceZoneCategory> Zones { get; set; }
+
+    public DeviceWithZones(Device device, MainWindowViewModel? viewModel = null)
+    {
+        Device = device;
+        Zones = new ObservableCollection<DeviceZoneCategory>();
+        
+        // Create a zone category for each zone in the device
+        for (int i = 0; i < device.Zones.Length; i++)
+        {
+            var zone = device.Zones[i];
+            Zones.Add(new DeviceZoneCategory(device, zone, i, 0, viewModel));
+        }
+    }
+}
+
+public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
+{
+    public new event PropertyChangedEventHandler? PropertyChanged;
+    public Device Device { get; set; }
+    public Zone Zone { get; set; }
+    public int ZoneIndex { get; set; }
+    private int _category;
+    private MainWindowViewModel? _viewModel;
+
+    public int Category
+    {
+        get => _category;
+        set
+        {
+            RemoveFromCategoryList(_category);
+            _category = value;
+            UpdateDeviceCategoryList(_category);
+            OnPropertyChanged(nameof(Category));
+        }
+    }
+
+    public DeviceZoneCategory(Device device, Zone zone, int zoneIndex, int initialCategory, MainWindowViewModel? viewModel = null)
+    {
+        Device = device;
+        Zone = zone;
+        ZoneIndex = zoneIndex;
+        _category = initialCategory;
+        _viewModel = viewModel;
+    }
+
+    public void SetViewModel(MainWindowViewModel viewModel)
+    {
+        _viewModel = viewModel;
+    }
+
+    private void RemoveFromCategoryList(int category)
+    {
+        if (_viewModel == null) return;
+
+        var key = GetZoneKey();
+        
+        switch (category)
+        {
+            case 0:
+                _viewModel.OpenRgbTalker.OffZones.Remove(key);
+                break;
+
+            case 1:
+                _viewModel.OpenRgbTalker.LightPodZones.Remove(key);
+                lock (_viewModel.OpenRgbTalker.LightPodZoneStates)
+                {
+                    _viewModel.OpenRgbTalker.LightPodZoneStates.Remove(key);
+                }
+                break;
+
+            case 2:
+                _viewModel.OpenRgbTalker.StrobeZones.Remove(key);
+                break;
+
+            case 3:
+                _viewModel.OpenRgbTalker.FoggerZones.Remove(key);
+                break;
+        }
+    }
+
+    private void UpdateDeviceCategoryList(int category)
+    {
+        if (_viewModel == null) return;
+
+        var key = GetZoneKey();
+        var zoneInfo = new ZoneInfo { Device = Device, ZoneIndex = ZoneIndex, Zone = Zone };
+        
+        switch (category)
+        {
+            case 0:
+                _viewModel.OpenRgbTalker.OffZones[key] = zoneInfo;
+                break;
+
+            case 1:
+                _viewModel.OpenRgbTalker.LightPodZones[key] = zoneInfo;
+                lock (_viewModel.OpenRgbTalker.LightPodZoneStates)
+                {
+                    if (!_viewModel.OpenRgbTalker.LightPodZoneStates.ContainsKey(key))
+                    {
+                        // Initialize the light pod state for this zone
+                        int ledCount = (int)Zone.LedCount;
+                        _viewModel.OpenRgbTalker.LightPodZoneStates[key] = new Color[ledCount];
+                    }
+                }
+                break;
+
+            case 2:
+                _viewModel.OpenRgbTalker.StrobeZones[key] = zoneInfo;
+                break;
+
+            case 3:
+                _viewModel.OpenRgbTalker.FoggerZones[key] = zoneInfo;
+                break;
+        }
+    }
+
+    private string GetZoneKey()
+    {
+        return $"{Device.Index}_{ZoneIndex}";
+    }
+    
+    public string GetZoneKeyProperty => GetZoneKey();
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+// Keep the old DeviceCategory for backward compatibility
 public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
 {
     public new event PropertyChangedEventHandler? PropertyChanged;
