@@ -351,7 +351,7 @@ public class DmxTalker
         double min    = quarterMs / 16.0;  // 1/64
         double max    = quarterMs / 4.0;   // 1/16
 
-        return max; //Math.Clamp(target, min, max);
+        return Math.Clamp(target, min, max);
     }
 
     private static void ApplyRisingEdgeHolds(byte newVal, ref byte lastVal, long[] holdUntil, long now, long holdMs)

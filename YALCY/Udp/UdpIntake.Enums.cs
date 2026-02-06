@@ -105,7 +105,7 @@ public partial class UdpIntake
 
     private enum DatagramVersionByte
     {
-        Version,
+        Version = 2,
     }
 
     private enum PlatformByte
@@ -275,5 +275,6 @@ public partial class UdpIntake
         Gameplay,
         Score,
         Calibration,
+        Practice
     }
 }

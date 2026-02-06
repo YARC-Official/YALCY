@@ -319,6 +319,7 @@ public partial class UdpIntake
             (int)SceneIndexByte.Gameplay => "Gameplay",
             (int)SceneIndexByte.Score => "Score",
             (int)SceneIndexByte.Calibration => "Calibration",
+            (int)SceneIndexByte.Practice => "Practice",
             _ => "Unknown"
         };
         return sceneIndexDescription;
