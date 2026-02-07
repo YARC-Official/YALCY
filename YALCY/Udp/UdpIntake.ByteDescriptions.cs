@@ -12,6 +12,94 @@ public partial class UdpIntake
     public static Action<bool>? OnFogState { get; set; }
     public static Action<byte>? OnStrobeState { get; set; }
     public static Action<byte>? OnPause { get; set; }
+
+    public static string GetCameraCutSubjectDescription(byte  byteValue)
+    {
+        var cameraCutSubjectDescription = byteValue switch
+        {
+            (int)CameraCutSubjectByte.Crowd => "Crowd",
+            (int)CameraCutSubjectByte.Stage => "Stage",
+            (int)CameraCutSubjectByte.AllBehind => "All Behind",
+            (int)CameraCutSubjectByte.AllFar => "All Far",
+            (int)CameraCutSubjectByte.AllNear => "All Near",
+            (int)CameraCutSubjectByte.BehindNoDrum => "Behind No drum",
+            (int)CameraCutSubjectByte.NearNoDrum => "Near No drum",
+            (int)CameraCutSubjectByte.Guitar => "Guitar",
+            (int)CameraCutSubjectByte.GuitarBehind => "Guitar Behind",
+            (int)CameraCutSubjectByte.GuitarCloseup => "Guitar Closeup",
+            (int)CameraCutSubjectByte.GuitarCloseupHead => "Guitar Closeup Head",
+            (int)CameraCutSubjectByte.Drums => "Drums",
+            (int)CameraCutSubjectByte.DrumsKick => "Drums Kick",
+            (int)CameraCutSubjectByte.DrumsBehind => "Drums Behind",
+            (int)CameraCutSubjectByte.DrumsCloseupHand => "Drums Closeup Hand",
+            (int)CameraCutSubjectByte.DrumsCloseupHead => "Drums Closeup Head",
+            (int)CameraCutSubjectByte.Bass => "Bass",
+            (int)CameraCutSubjectByte.BassBehind => "Bass Behind",
+            (int)CameraCutSubjectByte.BassCloseup =>  "Bass Closeup",
+            (int)CameraCutSubjectByte.BassCloseupHead =>  "Bass Closeup Head",
+            (int)CameraCutSubjectByte.Vocals => "Vocals",
+            (int)CameraCutSubjectByte.VocalsCloseup => "Vocals Closeup",
+            (int)CameraCutSubjectByte.VocalsBehind =>  "Vocals Behind",
+            (int)CameraCutSubjectByte.Keys => "Keys",
+            (int)CameraCutSubjectByte.KeysBehind => "Keys Behind",
+            (int)CameraCutSubjectByte.KeysCloseupHand =>  "Keys Closeup Hand",
+            (int)CameraCutSubjectByte.KeysCloseupHead =>  "Keys Closeup Head",
+            (int)CameraCutSubjectByte.DrumsVocals => "Drums Vocals",
+            (int)CameraCutSubjectByte.BassDrums => "Drums Bass",
+            (int)CameraCutSubjectByte.DrumsGuitar => "Drums Guitar",
+            (int)CameraCutSubjectByte.BassVocalsBehind => "Bass Vocals Behind",
+            (int)CameraCutSubjectByte.BassVocals => "Bass Vocals",
+            (int)CameraCutSubjectByte.GuitarVocalsBehind => "Guitar Vocals Behind",
+            (int)CameraCutSubjectByte.GuitarVocals => "Guitar Vocals",
+            (int)CameraCutSubjectByte.KeysVocalsBehind => "Keys Vocals Behind",
+            (int)CameraCutSubjectByte.KeysVocals => "Keys Vocals",
+            (int)CameraCutSubjectByte.BassGuitarBehind => "Bass Guitar Behind",
+            (int)CameraCutSubjectByte.BassGuitar => "Bass Guitar",
+            (int)CameraCutSubjectByte.BassKeysBehind => "Bass Keys Behind",
+            (int)CameraCutSubjectByte.BassKeys => "Bass Keys",
+            (int)CameraCutSubjectByte.GuitarKeysBehind => "Guitar Keys Behind",
+            (int)CameraCutSubjectByte.GuitarKeys => "Guitar Keys",
+            (int)CameraCutSubjectByte.Random => "Random",
+        };
+        return cameraCutSubjectDescription;
+
+    }
+
+    public static string GetCameraCutPriorityDescription(byte byteValue)
+    {
+        var cameraCutPriority = byteValue switch
+        {
+            (int)CameraCutPriorityByte.Normal => "Normal",
+            (int)CameraCutPriorityByte.Directed => "Directed",
+            _ => "Unknown",
+        };
+
+        return cameraCutPriority;
+    }
+
+    public static string GetCameraCutConstraintDescription(byte byteValue)
+    {
+        var result = "";
+
+        foreach (CameraCutConstraintByte constraint in Enum.GetValues(typeof(CameraCutConstraintByte)))
+        {
+            if (constraint == CameraCutConstraintByte.None || (byteValue & (byte)constraint) == 0) continue;
+            if (result != "")
+            {
+                result += ", ";
+            }
+            result += constraint.ToString();
+        }
+
+        // If no bits are set, it means "None"
+        if (string.IsNullOrEmpty(result))
+        {
+            result = CameraCutConstraintByte.None.ToString();
+        }
+
+        return result;
+    }
+
     public static string GetVocalHarmonyByteDescription(float byteValue)
     {
         var vocalHarmonyDescription = byteValue switch

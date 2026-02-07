@@ -40,6 +40,72 @@ public partial class UdpIntake
         AutoGen = 41,
         Spotlight = 42,
         Singalong = 43,
+        CameraCutConstraint = 44,
+        CameraCutPriority = 45,
+        CameraCutSubject = 46,
+    }
+
+    public enum CameraCutPriorityByte
+    {
+        Normal,
+        Directed
+    }
+
+    [Flags]
+    public enum CameraCutConstraintByte
+    {
+        None = 0,
+        OnlyClose = 1 << 0,
+        OnlyFar = 1 << 1,
+        NoClose = 1 << 2,
+        NoBehind = 1 << 3,
+    }
+
+    public enum CameraCutSubjectByte
+    {
+        Crowd,
+        Stage,
+        AllBehind,
+        AllFar,
+        AllNear,
+        BehindNoDrum,
+        NearNoDrum,
+        Guitar,
+        GuitarBehind,
+        GuitarCloseup,
+        GuitarCloseupHead,
+        Drums,
+        DrumsKick,
+        DrumsBehind,
+        DrumsCloseupHand,
+        DrumsCloseupHead,
+        Bass,
+        BassBehind,
+        BassCloseup,
+        BassCloseupHead,
+        Vocals,
+        VocalsCloseup,
+        VocalsBehind,
+        Keys,
+        KeysBehind,
+        KeysCloseupHand,
+        KeysCloseupHead,
+        DrumsVocals,
+        BassDrums,
+        DrumsGuitar,
+        BassVocalsBehind,
+        BassVocals,
+        GuitarVocalsBehind,
+        GuitarVocals,
+        KeysVocalsBehind,
+        KeysVocals,
+        BassGuitarBehind,
+        BassGuitar,
+        BassKeysBehind,
+        BassKeys,
+        GuitarKeysBehind,
+        GuitarKeys,
+        Random               // This needs to always be last
     }
 
      public enum SongSectionByte
@@ -105,7 +171,7 @@ public partial class UdpIntake
 
     private enum DatagramVersionByte
     {
-        Version = 2,
+        Version = 3,
     }
 
     private enum PlatformByte

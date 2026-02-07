@@ -94,6 +94,17 @@ public partial class UdpIntake : ReactiveObject
     public DatapacketMember<byte> Spotlight { get; private set; } = new ("Spotlight", (byte)ByteIndexName.Spotlight, GetPerformerDescription);
     public DatapacketMember<byte> Singalong { get; private set; } = new ("Singalong", (byte)ByteIndexName.Singalong, GetPerformerDescription);
 
+    public DatapacketMember<byte> CameraCutConstraint { get; private set; } = new("Camera cut constraint",
+        (byte)ByteIndexName.CameraCutConstraint, GetCameraCutConstraintDescription);
+
+    public DatapacketMember<byte> CameraCutPriority { get; private set; } = new("Camera cut Priority",
+        (byte)ByteIndexName.CameraCutPriority, GetCameraCutPriorityDescription);
+
+
+    public DatapacketMember<byte> CameraCutSubject { get; private set; } = new("Camera cut subject",
+        (byte)ByteIndexName.CameraCutSubject, GetCameraCutSubjectDescription);
+
+
     private static UdpClient? _udpClient;
     private static CancellationTokenSource? _cancellationTokenSource;
     private static DateTime _lastPacketReceived = DateTime.MinValue;
@@ -228,6 +239,10 @@ public partial class UdpIntake : ReactiveObject
             AutoGen.Value = reader.ReadBoolean(); // 42
             Spotlight.Value = reader.ReadByte(); // 43
             Singalong.Value = reader.ReadByte(); // 44
+            CameraCutConstraint.Value = reader.ReadByte(); //45
+            CameraCutPriority.Value = reader.ReadByte(); //46
+            CameraCutSubject.Value = reader.ReadByte(); //47
+
         }
         PacketProcessed?.Invoke(data);
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connected);
@@ -292,15 +307,4 @@ public partial class UdpIntake : ReactiveObject
             StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
         }
     }
-
-    /*
-    private static void ClearByteIndexes()
-    {
-        foreach (var byteIndex in MainWindowViewModel.ByteIndexes)
-        {
-            byteIndex.CurrentValue = 0;
-            byteIndex.ValueDescription = string.Empty;
-        }
-    }
-    */
 }
