@@ -102,6 +102,10 @@ internal static class SettingsManager
             Directory.CreateDirectory(SettingsDirectory);
         }
 
+        settings.CurrentEnableSettings.Clear();
+        settings.CurrentSingleSettings.Clear();
+        settings.CurrentChannelSettings.Clear();
+
         settings.CurrentEnableSettings.Add(mainViewModel.UdpEnableSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.DmxEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.HueEnabledSetting);
@@ -290,36 +294,35 @@ internal static class SettingsManager
                         BroadcastUniverseSettingValue = single.Value;
                         break;
                 }
+            }
 
-                foreach (var channel in container.CurrentChannelSettings)
+            foreach (var channel in container.CurrentChannelSettings)
+            {
+                switch (channel.Label)
                 {
-                    switch (channel.Label)
-                    {
-                        case "Fog Channels":
-                            FogChannelsChannel = channel.Channel;
-                            break;
+                    case "Fog Channels":
+                        FogChannelsChannel = channel.Channel;
+                        break;
 
-                        case "Strobe Channels":
-                            StrobeChannelsChannel = channel.Channel;
-                            break;
+                    case "Strobe Channels":
+                        StrobeChannelsChannel = channel.Channel;
+                        break;
 
-                        case "Red Channels":
-                            RedChannelsChannel = channel.Channel;
-                            break;
+                    case "Red Channels":
+                        RedChannelsChannel = channel.Channel;
+                        break;
 
-                        case "Blue Channels":
-                            BlueChannelsChannel = channel.Channel;
-                            break;
+                    case "Blue Channels":
+                        BlueChannelsChannel = channel.Channel;
+                        break;
 
-                        case "Yellow Channels":
-                            YellowChannelsChannel = channel.Channel;
-                            break;
+                    case "Yellow Channels":
+                        YellowChannelsChannel = channel.Channel;
+                        break;
 
-                        case "Green Channels":
-                            GreenChannelsChannel = channel.Channel;
-                            break;
-
-                    }
+                    case "Green Channels":
+                        GreenChannelsChannel = channel.Channel;
+                        break;
                 }
             }
 

@@ -80,10 +80,12 @@ public partial class StrobeVisualizerWindow : Window
     }
 
     private void StartStrobeEffect(int speed)
-    {   
+    {
+        StopStrobeEffect();
+
         float bpm = UdpIntake.BeatsPerMinute.Value;
         int interval = CalculateDelay(speed, bpm);
-        
+
         cts = new CancellationTokenSource();
         
         strobeTask = Task.Run(async () =>
@@ -149,6 +151,7 @@ public partial class StrobeVisualizerWindow : Window
             _ => 16   // Default to slow
         };
 
+        if (bpm <= 0) return 100;
         return (int)(60000.0 / bpm * 4 / noteValue);
     }
 

@@ -29,6 +29,7 @@ namespace YALCY.Integrations.RB3E;
                 SendPacket(StageKitTalker.CommandId.DisableAll, 0x00);
 
                 _sendClient.Dispose();
+                _sendClient = null;
             }
         }
 

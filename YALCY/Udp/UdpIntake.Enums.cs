@@ -143,6 +143,7 @@ public partial class UdpIntake
         On,
     }
 
+    [Flags]
     private enum GuitarBassKeyboardNotesByte
     {
         None = 0,

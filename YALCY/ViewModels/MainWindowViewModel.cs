@@ -27,14 +27,12 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        this.RaisePropertyChanged(propertyName);
     }
 
     private readonly IClassicDesktopStyleApplicationLifetime? _desktop;
     private readonly bool _isHeadless;
     private bool _closeToTrayOnClose;
-
-    public new event PropertyChangedEventHandler? PropertyChanged;
     public EnableSetting HueEnabledSetting { get; set; }
     public EnableSetting DmxEnabledSetting { get; set; }
     public EnableSetting StageKitEnabledSetting { get; set; }
@@ -280,7 +278,6 @@ public class EnableSetting : ReactiveObject
 
 public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
 {
-    public new event PropertyChangedEventHandler? PropertyChanged;
     public Device Device { get; set; }
     private int _category;
     private MainWindowViewModel? _viewModel;
@@ -293,7 +290,7 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
             RemoveFromCategoryList(_category);
             _category = value;
             UpdateDeviceCategoryList(_category);
-            OnPropertyChanged(nameof(Category));
+            this.RaisePropertyChanged(nameof(Category));
         }
     }
 
@@ -370,8 +367,4 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
         }
     }
 
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

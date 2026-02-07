@@ -93,6 +93,7 @@ public partial class UdpIntake
             0 => "At menu",
             1 => "Unpaused",
             2 => "Paused",
+            _ => "Unknown"
         };
         OnPause?.Invoke(byteValue);
         return pauseDescription;
@@ -198,10 +199,10 @@ public partial class UdpIntake
     {
         var beatlineDescription = byteValue switch
         {
-            0 => "Measure",
-            1 => "Strong",
-            2 => "Weak",
-            3 => "Off",
+            (byte)BeatByte.Off => "Off",
+            (byte)BeatByte.Measure => "Measure",
+            (byte)BeatByte.Strong => "Strong",
+            (byte)BeatByte.Weak => "Weak",
             _ => "Unknown"
         };
 
@@ -281,7 +282,6 @@ public partial class UdpIntake
         {
             result = PerformerByte.None.ToString();
         }
-        OnDrum?.Invoke(byteValue);
         return result;
     }
 

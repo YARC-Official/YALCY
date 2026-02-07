@@ -16,8 +16,10 @@ namespace YALCY.Integrations.OpenRGB;
 
 public class OpenRgbTalker
 {
-    private CancellationTokenSource cts = new();
-    private Task updateTask = Task.CompletedTask;
+    private CancellationTokenSource _strobeCts = new();
+    private CancellationTokenSource _fogCts = new();
+    private Task _strobeTask = Task.CompletedTask;
+    private Task _fogTask = Task.CompletedTask;
 
     public List<Device> OffList = new();
     public List<Device> LightPodList = new();
@@ -115,10 +117,11 @@ public class OpenRgbTalker
         else
         {
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Off);
-            await cts.CancelAsync();
+            await _strobeCts.CancelAsync();
+            await _fogCts.CancelAsync();
             try
             {
-                updateTask.Wait();
+                Task.WaitAll(_strobeTask, _fogTask);
             }
             catch (AggregateException ex)
             {
@@ -132,7 +135,10 @@ public class OpenRgbTalker
             }
             finally
             {
-                cts.Dispose();
+                _strobeCts.Dispose();
+                _fogCts.Dispose();
+                client?.Dispose();
+                client = null;
             }
         }
     }
@@ -247,58 +253,58 @@ public class OpenRgbTalker
                 return;
         }
 
-        cts = new CancellationTokenSource();
-        updateTask = Task.Run(async () =>
+        _strobeCts = new CancellationTokenSource();
+        _strobeTask = Task.Run(async () =>
         {
-            while (!cts.Token.IsCancellationRequested)
+            while (!_strobeCts.Token.IsCancellationRequested)
             {
                 foreach (var device in StrobeList)
                 {
                     ToggleDeviceLeds(device, true);
                 }
 
-                await Task.Delay(interval);
+                await Task.Delay(interval, _strobeCts.Token);
                 foreach (var device in StrobeList)
                 {
                     ToggleDeviceLeds(device, false);
                 }
 
-                await Task.Delay(interval);
+                await Task.Delay(interval, _strobeCts.Token);
             }
-        }, cts.Token);
+        }, _strobeCts.Token);
     }
 
     private void StopStrobeEffect()
     {
-        cts.Cancel();
+        _strobeCts.Cancel();
     }
 
     private void StartBreathingEffect()
     {
         StopBreathingEffect();
-        cts = new CancellationTokenSource();
-        updateTask = Task.Run(async () =>
+        _fogCts = new CancellationTokenSource();
+        _fogTask = Task.Run(async () =>
         {
-            while (!cts.Token.IsCancellationRequested)
+            while (!_fogCts.Token.IsCancellationRequested)
             {
-                for (byte brightness = 0; brightness <= 255; brightness += 5)
+                for (int brightness = 0; brightness <= 255; brightness += 5)
                 {
-                    SetDeviceBrightness(brightness);
-                    await Task.Delay(30);
+                    SetDeviceBrightness((byte)brightness);
+                    await Task.Delay(30, _fogCts.Token);
                 }
 
-                for (byte brightness = 255; brightness >= 0; brightness -= 5)
+                for (int brightness = 255; brightness >= 0; brightness -= 5)
                 {
-                    SetDeviceBrightness(brightness);
-                    await Task.Delay(30);
+                    SetDeviceBrightness((byte)brightness);
+                    await Task.Delay(30, _fogCts.Token);
                 }
             }
-        }, cts.Token);
+        }, _fogCts.Token);
     }
 
     private void StopBreathingEffect()
     {
-        cts.Cancel();
+        _fogCts.Cancel();
     }
 
     private void SetDeviceBrightness(byte brightness)
@@ -357,6 +363,7 @@ public class OpenRgbTalker
 
     private int CalculateDelay(int noteValue, float bpm)
     {
+        if (bpm <= 0) return 100;
         return (int)(60000.0 / bpm * 4 / noteValue);
     }
 }

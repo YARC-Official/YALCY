@@ -382,6 +382,7 @@ public class DmxTalker
     public void UpdateMasterDimmers()
     {
         if (_mainViewModel == null) return;
+        if (_mainViewModel.MasterDimmerSettings.Channel == null || _mainViewModel.MasterDimmerValues.Channel == null) return;
         for (int i = 0; i < _mainViewModel.MasterDimmerSettings.Channel.Length; i++)
         {
             SetChannelToValue(_mainViewModel.MasterDimmerSettings.Channel[i],

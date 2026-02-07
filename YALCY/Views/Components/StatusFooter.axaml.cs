@@ -165,9 +165,9 @@ public partial class StatusFooter : UserControl
         };
     }
 
-    // Cleanup when control is disposed
-    ~StatusFooter()
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         StatusColorChanged -= OnStatusColorChanged;
+        base.OnDetachedFromVisualTree(e);
     }
 }

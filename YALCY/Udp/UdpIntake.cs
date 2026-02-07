@@ -14,7 +14,7 @@ namespace YALCY.Udp;
 public partial class UdpIntake : ReactiveObject
 {
     public const int MIN_PACKET_SIZE = 44;
-    public Action<byte[]> PacketProcessed;
+    public event Action<byte[]> PacketProcessed;
     private MainWindowViewModel? _mainViewModel;
 
     public interface IDatapacketMember
@@ -276,6 +276,8 @@ public partial class UdpIntake : ReactiveObject
         try
         {
             _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
             _healthCheckTimer?.Dispose();
             _healthCheckTimer = null;
             _udpClient?.Close();

@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -112,14 +113,42 @@ public class App : Application
         var mainViewModel = MainViewModel;
 
         mainViewModel.UsbDeviceMonitor.StartUsbDeviceMonitor(mainViewModel);
-        // Fire-and-forget async calls - intentionally not awaited during initialization
-        _ = mainViewModel.HueTalker.EnableHue(mainViewModel.HueEnabledSetting.IsEnabled, mainViewModel.HueBridgeIp, mainViewModel);
         mainViewModel.DmxTalker.EnableDmxTalker(mainViewModel.DmxEnabledSetting.IsEnabled, mainViewModel);
         mainViewModel.SerialTalker.EnableSerialTalker(mainViewModel.SerialEnabledSetting.IsEnabled, mainViewModel);
         mainViewModel.Rb3ETalker.EnableRb3eTalker(mainViewModel.Rb3eEnabledSetting.IsEnabled);
         mainViewModel.StageKitTalker.EnableStageKitTalker(mainViewModel.StageKitEnabledSetting.IsEnabled);
-        _ = mainViewModel.OpenRgbTalker.EnableOpenRgbTalker(mainViewModel.OpenRgbEnabledSetting.IsEnabled,
-            mainViewModel.OpenRgbServerIp ?? string.Empty, mainViewModel.OpenRgbServerPort, mainViewModel);
-        _ = mainViewModel.UdpIntake.EnableUdpIntake(mainViewModel.UdpEnableSetting.IsEnabled, mainViewModel);
+
+        _ = InitializeAsync(mainViewModel);
+    }
+
+    private static async Task InitializeAsync(MainWindowViewModel mainViewModel)
+    {
+        try
+        {
+            await mainViewModel.HueTalker.EnableHue(mainViewModel.HueEnabledSetting.IsEnabled, mainViewModel.HueBridgeIp, mainViewModel);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing Hue: {ex.Message}");
+        }
+
+        try
+        {
+            await mainViewModel.OpenRgbTalker.EnableOpenRgbTalker(mainViewModel.OpenRgbEnabledSetting.IsEnabled,
+                mainViewModel.OpenRgbServerIp ?? string.Empty, mainViewModel.OpenRgbServerPort, mainViewModel);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing OpenRGB: {ex.Message}");
+        }
+
+        try
+        {
+            await mainViewModel.UdpIntake.EnableUdpIntake(mainViewModel.UdpEnableSetting.IsEnabled, mainViewModel);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing UDP: {ex.Message}");
+        }
     }
 }
