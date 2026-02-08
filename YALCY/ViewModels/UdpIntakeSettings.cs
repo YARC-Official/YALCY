@@ -54,6 +54,10 @@ public partial class MainWindowViewModel
         LightingMessageBytes.Add(UdpIntake.Spotlight);
         LightingMessageBytes.Add(UdpIntake.Singalong);
 
+        LightingMessageBytes.Add(UdpIntake.CameraCutConstraint);
+        LightingMessageBytes.Add(UdpIntake.CameraCutPriority);
+        LightingMessageBytes.Add(UdpIntake.CameraCutSubject);
+
         LightingMessageBools= new ObservableCollection<UdpIntake.DatapacketMember<bool>>();
         LightingMessageBools.Add(UdpIntake.BonusEffect);
         LightingMessageBools.Add(UdpIntake.FogState);
@@ -65,6 +69,8 @@ public partial class MainWindowViewModel
         LightingMessageFloats.Add(UdpIntake.CurrentHarmony0Note);
         LightingMessageFloats.Add(UdpIntake.CurrentHarmony1Note);
         LightingMessageFloats.Add(UdpIntake.CurrentHarmony2Note);
+
+
 
         CombinedCollection = new ObservableCollection<UdpIntake.IDatapacketMember>(LightingMessageUints.Concat(LightingMessageBytes.Cast<UdpIntake.IDatapacketMember>()).Concat(LightingMessageBools).Concat(LightingMessageFloats));
 
