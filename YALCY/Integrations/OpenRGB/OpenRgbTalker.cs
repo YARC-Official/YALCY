@@ -116,6 +116,11 @@ public class OpenRgbTalker
         }
         else
         {
+            if (client == null)
+            {
+                return;
+            }
+            
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Off);
             await _strobeCts.CancelAsync();
             await _fogCts.CancelAsync();

@@ -48,6 +48,7 @@ public sealed class LifxTalker : IDisposable
     private List<LifxLanDeviceModel> _devices = new();
     private bool _isEnabled;
     private bool _isSubscribedToStageKit;
+    private bool _discoveryCompleted;
 
     public async Task EnableLifxLan(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
@@ -64,10 +65,18 @@ public sealed class LifxTalker : IDisposable
             UpdateViewModelStatus("LIFX status: Discovering devices...", string.Empty);
             StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Connecting);
             await DiscoverDevicesAsync(_mainViewModel);
+            _discoveryCompleted = true;
+            SaveColors(_devices);
             return;
         }
 
         _isEnabled = false;
+
+        if (_discoveryCompleted)
+        {
+            RestoreColors(_devices);
+        }
+
         UnsubscribeFromStageKit();
 
         lock (_socketLock)
@@ -784,6 +793,36 @@ public sealed class LifxTalker : IDisposable
             }
         }
     }
+    
+    private void SaveColors(IEnumerable<LifxLanDeviceModel> devices)
+    {
+        foreach (var device in devices)
+        {
+            foreach (var zone in device.Zones)
+            {
+                zone.OriginalColor = zone.CurrentColor;
+            }
+        }
+    }
+
+    private void RestoreColors(IEnumerable<LifxLanDeviceModel> devices)
+    {
+        var zoneList = new List<int>();
+        foreach (var device in devices)
+        {
+            zoneList.Clear();
+            foreach (var zone in device.Zones)
+            {
+                if (zone.AssignedStageLight != LifxStageAssignments.Unassigned)
+                {
+                    zone.CurrentColor = zone.OriginalColor;
+                    zoneList.Add(zone.ZoneIndex);
+                }
+            }
+
+            SendDeviceState(device, zoneList);
+        }
+    }
 
     private Dictionary<string, Dictionary<int, string>> GetSavedZoneAssignments()
     {
@@ -985,6 +1024,7 @@ public sealed class LifxTalker : IDisposable
     public void Dispose()
     {
         UnsubscribeFromStageKit();
+        RestoreColors(_devices);
 
         lock (_socketLock)
         {

@@ -203,7 +203,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
     private async void ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
+        e.Cancel = true;
         await ShutdownAsync();
+        _desktop?.Shutdown();
     }
 
     /// <summary>
