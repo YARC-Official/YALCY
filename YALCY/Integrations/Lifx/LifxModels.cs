@@ -10,7 +10,7 @@ internal static class LifxStageAssignments
 {
     public const string Unassigned = "Unassigned";
 
-    private static readonly string[] ColorNames = { "Blue", "Green", "Yellow", "Red" };
+    private static readonly string[] ColorNames = { "Blue", "Green", "Yellow", "Red", "Strobe" };
     private static readonly IReadOnlyList<string> AllOptionsInternal = BuildAllOptions();
 
     public static IReadOnlyList<string> AllOptions => AllOptionsInternal;
@@ -79,6 +79,11 @@ internal static class LifxStageAssignments
             StageKitTalker.CommandId.GreenLeds => "Green",
             StageKitTalker.CommandId.YellowLeds => "Yellow",
             StageKitTalker.CommandId.RedLeds => "Red",
+            StageKitTalker.CommandId.StrobeFastest => "Strobe",
+            StageKitTalker.CommandId.StrobeFast => "Strobe",
+            StageKitTalker.CommandId.StrobeMedium => "Strobe",
+            StageKitTalker.CommandId.StrobeSlow => "Strobe",
+            StageKitTalker.CommandId.StrobeOff => "Strobe",
             _ => string.Empty
         };
 
@@ -90,6 +95,13 @@ internal static class LifxStageAssignments
         var options = new List<string> { Unassigned };
         foreach (var colorName in ColorNames)
         {
+            if (colorName == "Strobe")
+            {
+                // Only one strobe option
+                options.Add(colorName + " 1");
+                continue;
+            }
+            
             for (var i = 1; i <= 8; i++)
             {
                 options.Add($"{colorName} {i}");
