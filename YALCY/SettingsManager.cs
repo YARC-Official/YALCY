@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using HueApi.Models.Clip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using YALCY.Integrations.Lifx;
 using YALCY.ViewModels;
 
 namespace YALCY;
@@ -13,6 +15,7 @@ public class SettingsContainer
     public List<EnableSetting> CurrentEnableSettings { get; set; }
     public List<DmxSingleSetting> CurrentSingleSettings { get; set; }
     public List<DmxChannelSetting> CurrentChannelSettings { get; set; }
+    public List<LifxZoneAssignmentSetting> LifxZoneAssignments { get; set; }
     public DmxDimmerChannelSetting CurrentMasterDimmerChannelSettings { get; set; }
     public DmxDimmerValueSetting CurrentMasterDimmerValueChannelSettings { get; set; }
     public RegisterEntertainmentResult HueAuthResult { get; set; }
@@ -22,6 +25,13 @@ public class SettingsContainer
     public string? OpenRgbServerIp { get; set; }
     public string? SacnAdapterIp { get; set; }
     public bool CloseToTrayOnClose { get; set; }
+}
+
+public sealed class LifxZoneAssignmentSetting
+{
+    public string Serial { get; set; } = string.Empty;
+    public int ZoneIndex { get; set; }
+    public string StageLight { get; set; } = LifxStageAssignments.Unassigned;
 }
 
 internal static class SettingsManager
@@ -36,6 +46,7 @@ internal static class SettingsManager
         CurrentEnableSettings = new List<EnableSetting>(),
         CurrentChannelSettings = new List<DmxChannelSetting>(),
         CurrentSingleSettings = new List<DmxSingleSetting>(),
+        LifxZoneAssignments = new List<LifxZoneAssignmentSetting>(),
         CurrentMasterDimmerChannelSettings =
             new DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106),
         CurrentMasterDimmerValueChannelSettings =
@@ -56,6 +67,7 @@ internal static class SettingsManager
     public static bool Rb3eEnabledSettingIsEnabled { get; set; }
     public static bool SerialEnabledSettingIsEnabled { get; set; }
     public static bool OpenRgbEnabledSettingIsEnabled { get; set; }
+    public static bool LifxEnabledSettingIsEnabled { get; set; }
     public static int BpmChannelSettingValue { get; private set; }
     public static int CueChangeChannelSettingValue { get; private set; }
     public static int PostProcessingChannelSettingValue { get; private set; }
@@ -94,6 +106,8 @@ internal static class SettingsManager
     public static string? OpenRgbServerIp { get; set; }
     public static string? SacnAdapterIp { get; set; }
     public static bool CloseToTrayOnClose { get; set; }
+    public static IReadOnlyList<LifxZoneAssignmentSetting> LifxZoneAssignments { get; private set; } =
+        Array.Empty<LifxZoneAssignmentSetting>();
 
     public static void SaveSettings(MainWindowViewModel mainViewModel)
     {
@@ -113,6 +127,7 @@ internal static class SettingsManager
         settings.CurrentEnableSettings.Add(mainViewModel.Rb3eEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.OpenRgbEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.SerialEnabledSetting);
+        settings.CurrentEnableSettings.Add(mainViewModel.LifxEnabledSetting);
 
         settings.CurrentSingleSettings.Add(mainViewModel.BpmChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.CueChangeChannelSetting);
@@ -149,11 +164,21 @@ internal static class SettingsManager
         settings.HueAuthResult = mainViewModel.HueAuthResult;
         settings.HueBridgeIP = mainViewModel.HueBridgeIp;
         settings.UdpListenPort = mainViewModel.UdpListenPort;
+        settings.LifxZoneAssignments = new List<LifxZoneAssignmentSetting>(mainViewModel.GetLifxZoneAssignments());
 
         settings.OpenRgbServerIp = mainViewModel.OpenRgbServerIp;
         settings.OpenRgbServerPort = mainViewModel.OpenRgbServerPort;
         settings.SacnAdapterIp = mainViewModel.SelectedSacnAdapter?.IpAddress;
         settings.CloseToTrayOnClose = mainViewModel.CloseToTrayOnClose;
+
+        LifxZoneAssignments = settings.LifxZoneAssignments
+            .Select(assignment => new LifxZoneAssignmentSetting
+            {
+                Serial = assignment.Serial,
+                ZoneIndex = assignment.ZoneIndex,
+                StageLight = LifxStageAssignments.Normalize(assignment.StageLight)
+            })
+            .ToList();
 
         File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(settings, Formatting.Indented));
     }
@@ -201,6 +226,10 @@ internal static class SettingsManager
 
                     case "OpenRGB Enabled":
                         OpenRgbEnabledSettingIsEnabled = enable.IsEnabled;
+                        break;
+
+                    case "LIFX Enabled":
+                        LifxEnabledSettingIsEnabled = enable.IsEnabled;
                         break;
                 }
             }
@@ -335,6 +364,15 @@ internal static class SettingsManager
             HueBridgeIp = container.HueBridgeIP;
 
             UdpListenPort = container.UdpListenPort;
+            LifxZoneAssignments = (container.LifxZoneAssignments ?? new List<LifxZoneAssignmentSetting>())
+                .Where(assignment => !string.IsNullOrWhiteSpace(assignment.Serial) && assignment.ZoneIndex >= 0)
+                .Select(assignment => new LifxZoneAssignmentSetting
+                {
+                    Serial = assignment.Serial.Trim().ToLowerInvariant(),
+                    ZoneIndex = assignment.ZoneIndex,
+                    StageLight = LifxStageAssignments.Normalize(assignment.StageLight)
+                })
+                .ToList();
 
             OpenRgbServerIp = container.OpenRgbServerIp;
             OpenRgbServerPort = container.OpenRgbServerPort;
@@ -352,6 +390,7 @@ internal static class SettingsManager
             Rb3eEnabledSettingIsEnabled = true;
             OpenRgbEnabledSettingIsEnabled = true;
             SerialEnabledSettingIsEnabled = true;
+            LifxEnabledSettingIsEnabled = false;
 
             BpmChannelSettingValue = 57;
             CueChangeChannelSettingValue = 58;
@@ -391,6 +430,7 @@ internal static class SettingsManager
             HueBridgeIp = "";
 
             UdpListenPort = 36107;
+            LifxZoneAssignments = Array.Empty<LifxZoneAssignmentSetting>();
 
             OpenRgbServerIp = "127.0.0.1";
             OpenRgbServerPort = 6742;

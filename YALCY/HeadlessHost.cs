@@ -65,6 +65,17 @@ public class HeadlessHost : IDisposable
             Console.WriteLine("  Hue: Disabled");
         }
 
+        // Initialize LIFX LAN
+        if (ViewModel.LifxEnabledSetting.IsEnabled)
+        {
+            await ViewModel.LifxTalker.EnableLifxLan(true, ViewModel);
+            Console.WriteLine("  LIFX: Enabled");
+        }
+        else
+        {
+            Console.WriteLine("  LIFX: Disabled");
+        }
+
         // Initialize Serial
         if (ViewModel.SerialEnabledSetting.IsEnabled)
         {

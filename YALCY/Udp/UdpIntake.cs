@@ -13,7 +13,8 @@ namespace YALCY.Udp;
 
 public partial class UdpIntake : ReactiveObject
 {
-    public const int MIN_PACKET_SIZE = 44;
+    public const int MIN_PACKET_SIZE = 47;
+    private const int CURRENT_PACKET_SIZE = (int)ByteIndexName.CameraCutSubject + 1;
     public event Action<byte[]> PacketProcessed;
     private MainWindowViewModel? _mainViewModel;
 
@@ -194,6 +195,7 @@ public partial class UdpIntake : ReactiveObject
     if (data.Length < MIN_PACKET_SIZE)
     {
         Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {MIN_PACKET_SIZE})");
+        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
         return;
     }
 
@@ -207,6 +209,7 @@ public partial class UdpIntake : ReactiveObject
             if (Header.Value != PACKET_HEADER)
             {
                 Console.WriteLine($"Invalid packet header: {Header.Value}");
+                Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
                 return;
             }
 
@@ -250,15 +253,32 @@ public partial class UdpIntake : ReactiveObject
     catch (EndOfStreamException ex)
     {
         Console.WriteLine($"Error reading UDP data (incomplete packet): {ex.Message}");
+        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error reading UDP data: {ex.Message}");
-        Console.WriteLine($"Data length={data.Length}");
+        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
     }
 }
+
+    private static string DescribePacket(byte[] data)
+    {
+        var header = data.Length >= sizeof(uint)
+            ? $"0x{BitConverter.ToUInt32(data, 0):X8}"
+            : "n/a";
+        var datagramVersion = data.Length > (int)ByteIndexName.DatagramVersion
+            ? data[(int)ByteIndexName.DatagramVersion].ToString()
+            : "n/a";
+        var previewLength = Math.Min(data.Length, 16);
+        var preview = previewLength > 0
+            ? BitConverter.ToString(data, 0, previewLength)
+            : "<empty>";
+
+        return $"length={data.Length}, minAccepted={MIN_PACKET_SIZE}, parserBytes={CURRENT_PACKET_SIZE}, header={header}, expectedHeader=0x{PACKET_HEADER:X8}, datagramVersion={datagramVersion}, preview={preview}";
+    }
 
     /// <summary>
     /// Callback do timer que verifica se dados foram recebidos nos últimos 3 segundos

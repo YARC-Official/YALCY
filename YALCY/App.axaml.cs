@@ -134,6 +134,15 @@ public class App : Application
 
         try
         {
+            await mainViewModel.LifxTalker.EnableLifxLan(mainViewModel.LifxEnabledSetting.IsEnabled, mainViewModel);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing LIFX: {ex.Message}");
+        }
+
+        try
+        {
             await mainViewModel.OpenRgbTalker.EnableOpenRgbTalker(mainViewModel.OpenRgbEnabledSetting.IsEnabled,
                 mainViewModel.OpenRgbServerIp ?? string.Empty, mainViewModel.OpenRgbServerPort, mainViewModel);
         }

@@ -29,6 +29,7 @@ public partial class StatusFooter : UserControl
         { "RB3E", "#808080" },
         { "Serial", "#808080" },
         { "Hue", "#808080" },
+        { "LIFX", "#808080" },
         { "OpenRGB", "#808080" }
     };
 
@@ -39,6 +40,7 @@ public partial class StatusFooter : UserControl
     private Ellipse? _rb3eStatusEllipse;
     private Ellipse? _serialStatusEllipse;
     private Ellipse? _hueStatusEllipse;
+    private Ellipse? _lifxStatusEllipse;
     private Ellipse? _openRgbStatusEllipse;
 
     public StatusFooter()
@@ -52,6 +54,7 @@ public partial class StatusFooter : UserControl
         _rb3eStatusEllipse = this.FindControl<Ellipse>("Rb3eStatusEllipse");
         _serialStatusEllipse = this.FindControl<Ellipse>("SerialStatusEllipse");
         _hueStatusEllipse = this.FindControl<Ellipse>("HueStatusEllipse");
+        _lifxStatusEllipse = this.FindControl<Ellipse>("LifxStatusEllipse");
         _openRgbStatusEllipse = this.FindControl<Ellipse>("OpenRgbStatusEllipse");
         
         // Subscribe to status change events
@@ -101,6 +104,7 @@ public partial class StatusFooter : UserControl
             "RB3E" => _rb3eStatusEllipse,
             "SERIAL" => _serialStatusEllipse,
             "HUE" => _hueStatusEllipse,
+            "LIFX" => _lifxStatusEllipse,
             "OPENRGB" => _openRgbStatusEllipse,
             _ => null
         };

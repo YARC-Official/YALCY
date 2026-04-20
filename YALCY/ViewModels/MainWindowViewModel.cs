@@ -13,6 +13,7 @@ using OpenRGB.NET;
 using ReactiveUI;
 using YALCY.Integrations.DMX;
 using YALCY.Integrations.Hue;
+using YALCY.Integrations.Lifx;
 using YALCY.Integrations.OpenRGB;
 using YALCY.Integrations.RB3E;
 using YALCY.Integrations.Serial;
@@ -40,8 +41,10 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     public EnableSetting Rb3eEnabledSetting { get; set; }
     public EnableSetting OpenRgbEnabledSetting { get; set; }
     public EnableSetting SerialEnabledSetting { get; set; }
+    public EnableSetting LifxEnabledSetting { get; set; }
     public readonly UsbDeviceMonitor UsbDeviceMonitor;
     public readonly HueTalker HueTalker;
+    public readonly LifxTalker LifxTalker;
     public readonly DmxTalker DmxTalker;
     public readonly StageKitTalker StageKitTalker;
     public readonly Rb3eTalker Rb3ETalker;
@@ -66,6 +69,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         }
 
         HueTalker = new HueTalker();
+        LifxTalker = new LifxTalker();
         DmxTalker = new DmxTalker();
         StageKitTalker = new StageKitTalker();
         Rb3ETalker = new Rb3eTalker();
@@ -84,6 +88,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         FeedInDmxSettings();
         //FeedInRb3eSettings();
         FeedInHueSettings();
+        FeedInLifxSettings();
         FeedInOpenRgbSettings();
         FeedInAppSettings();
 
@@ -98,6 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         InitializeDmxCollections();
         //InitializeRb3eCollections();
         //InitializeHueCollections();
+        InitializeLifxCollections();
         InitializeOpenRgbCollections();
 
         // Wire up DmxTalker to dimmer settings
@@ -163,6 +169,15 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             "Enable or disable output to a serial device"
         );
 
+        LifxEnabledSetting = new EnableSetting(
+            "LIFX Enabled",
+            SettingsManager.LifxEnabledSettingIsEnabled,
+            "YALCY is talking LIFX!",
+            "YALCY is NOT talking LIFX!",
+            async (isEnabled) => await LifxTalker.EnableLifxLan(isEnabled),
+            "Enable or disable output to LIFX LAN devices"
+        );
+
         OpenRgbEnabledSetting = new EnableSetting(
             "OpenRGB Enabled",
             SettingsManager.OpenRgbEnabledSettingIsEnabled,
@@ -181,6 +196,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     private void InitializeCommands()
     {
         RegisterHueBridgeCommand = ReactiveCommand.CreateFromTask(() => HueTalker.RegisterHueBridgeAsync(HueBridgeIp));
+        DiscoverLifxDevicesCommand = ReactiveCommand.CreateFromTask(() => LifxTalker.DiscoverDevicesAsync(this));
         ConnectToOpenRgbServerCommand = ReactiveCommand.CreateFromTask(() =>
             OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp, OpenRgbServerPort));
     }
@@ -215,6 +231,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
         // Turn off the Hue Talker
         await HueTalker.EnableHue(false, HueBridgeIp, this);
+
+        // Turn off the LIFX Talker
+        await LifxTalker.EnableLifxLan(false, this);
 
         // Turn off the USB device monitor
         UsbDeviceMonitor.StopUsbDeviceMonitor();

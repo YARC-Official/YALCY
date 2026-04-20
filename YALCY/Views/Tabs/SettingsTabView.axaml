@@ -38,6 +38,10 @@
                               Content="{Binding HueEnabledSetting.ToggleButtonContent}"
                               IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}"
                               Margin="5" />
+                <ToggleButton ToolTip.Tip="{Binding LifxEnabledSetting.ToolTip}"
+                              Content="{Binding LifxEnabledSetting.ToggleButtonContent}"
+                              IsChecked="{Binding LifxEnabledSetting.IsEnabled, Mode=TwoWay}"
+                              Margin="5" />
                 <ToggleButton ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
                               Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
                               IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"

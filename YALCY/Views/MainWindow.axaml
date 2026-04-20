@@ -107,6 +107,9 @@
             <TabItem Header="Hue">
                 <tabs:HueTabView />
             </TabItem>
+            <TabItem Header="LIFX">
+                <tabs:LifxTabView />
+            </TabItem>
             <TabItem Header="openRGB">
                 <tabs:OpenRgbTabView />
             </TabItem>

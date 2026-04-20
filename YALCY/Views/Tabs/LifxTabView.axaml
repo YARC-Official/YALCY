@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             x:Class="YALCY.Views.Tabs.LifxTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <StackPanel Margin="5" Spacing="8">
+        <ToggleButton ToolTip.Tip="{Binding LifxEnabledSetting.ToolTip}"
+                      Content="{Binding LifxEnabledSetting.ToggleButtonContent}"
+                      IsChecked="{Binding LifxEnabledSetting.IsEnabled, Mode=TwoWay}"
+                      Margin="5" />
+
+        <TextBlock Text="Setup needed:" Margin="5,0,5,0" />
+        <TextBlock Text="1) Keep your LIFX bulbs on the same local network as YALCY."
+                   Margin="5,0,5,0"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="2) Use discovery to load bulbs and multizone strips."
+                   Margin="5,0,5,0"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="3) Map each discovered zone to one Stage Kit light. The Stage Kit offers Blue, Green, Yellow, and Red banks with 8 LEDs each."
+                   Margin="5,0,5,0"
+                   TextWrapping="Wrap" />
+
+        <Button Content="Discover LIFX devices"
+                Command="{Binding DiscoverLifxDevicesCommand}"
+                Margin="5,0,5,0"
+                HorizontalAlignment="Left" />
+
+        <TextBlock Text="{Binding LifxStatus}" Margin="5,0,5,0" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding LifxMessage}" Margin="5,0,5,0" Foreground="Red" TextWrapping="Wrap" />
+
+        <ScrollViewer Margin="5,0,5,0"
+                      MaxHeight="520"
+                      VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding LifxDevices}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LifxDeviceViewModel">
+                        <Border BorderBrush="#555555"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="10"
+                                Margin="0,0,0,10">
+                            <StackPanel Spacing="8">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Label}" FontWeight="Bold" />
+                                    <TextBlock Text="{Binding DeviceSummary}" />
+                                    <TextBlock Text="{Binding Serial}" />
+                                </StackPanel>
+
+                                <Grid ColumnDefinitions="90,90,*"
+                                      RowDefinitions="Auto">
+                                    <TextBlock Grid.Column="0" Text="Zone" FontWeight="Bold" />
+                                    <TextBlock Grid.Column="1" Text="State" FontWeight="Bold" />
+                                    <TextBlock Grid.Column="2" Text="Stage Kit light" FontWeight="Bold" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding Zones}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LifxZoneViewModel">
+                                            <Grid ColumnDefinitions="90,90,*"
+                                                  Margin="0,2,0,2">
+                                                <TextBlock Grid.Column="0"
+                                                           VerticalAlignment="Center"
+                                                           Text="{Binding ZoneLabel}" />
+                                                <TextBlock Grid.Column="1"
+                                                           VerticalAlignment="Center"
+                                                           Text="{Binding CurrentState}" />
+                                                <ComboBox Grid.Column="2"
+                                                          ItemsSource="{Binding AvailableStageLights}"
+                                                          SelectedItem="{Binding SelectedStageLight, Mode=TwoWay}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </StackPanel>
+</UserControl>
