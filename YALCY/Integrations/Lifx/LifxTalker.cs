@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using YALCY.Integrations.StageKit;
+using YALCY.Udp;
 using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
@@ -34,6 +35,8 @@ public sealed class LifxTalker : IDisposable
     private static readonly LifxHsbk StageKitYellow = new(0x2AAB, FullColorValue, FullColorValue, DefaultKelvin); // Hue = 60
     private static readonly LifxHsbk StageKitGreen = new(0x5555, FullColorValue, FullColorValue, DefaultKelvin); // Hue = 120
     private static readonly LifxHsbk StageKitBlue = new(0xAAAB, FullColorValue, FullColorValue, DefaultKelvin); // Hue = 240
+    private static readonly LifxHsbk StrobeWhite = new(0xFFFF, 0, FullColorValue, DefaultKelvin);
+    private static readonly LifxHsbk StrobeOffish = new(0x0000, 0, 1, DefaultKelvin);
 
     private readonly object _deviceLock = new();
     private readonly object _socketLock = new();
@@ -269,7 +272,22 @@ public sealed class LifxTalker : IDisposable
                 case StageKitTalker.CommandId.YellowLeds:
                     ApplyColorState(commandId, parameter, GetStageKitColor(commandId));
                     break;
-
+                
+                case StageKitTalker.CommandId.StrobeFastest:
+                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(4));
+                    break;
+                case StageKitTalker.CommandId.StrobeFast:
+                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(3));
+                    break;
+                case StageKitTalker.CommandId.StrobeMedium:
+                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(2));
+                    break;
+                case StageKitTalker.CommandId.StrobeSlow:
+                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(1));
+                    break;
+                case StageKitTalker.CommandId.StrobeOff:
+                    ApplyStrobeState(commandId, 1, 1000, true);
+                    break;
                 case StageKitTalker.CommandId.DisableAll:
                     DisableAssignedZones();
                     break;
@@ -282,6 +300,39 @@ public sealed class LifxTalker : IDisposable
             if (_isEnabled)
             {
                 StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Error);
+            }
+        }
+    }
+
+    private void ApplyStrobeState(StageKitTalker.CommandId commandId, byte activeSlotsMask, int periodMs, bool cancel = false)
+    {
+        var devices = SnapshotDevices();
+        if (devices.Count == 0)
+        {
+            return;
+        }
+        
+        EnsureCommandClient();
+
+        lock (_socketLock)
+        {
+            foreach (var device in devices)
+            {
+                foreach (var zone in device.Zones)
+                {
+                    if (!LifxStageAssignments.TryGetAssignmentSlot(zone.AssignedStageLight, commandId, out var slotIndex))
+                    {
+                        continue;
+                    }
+                    
+                    var shouldEnable = (activeSlotsMask & (1 << slotIndex)) != 0;
+                    if (!shouldEnable)
+                    {
+                        continue;
+                    }
+                    
+                    SendStrobe(device, (uint) periodMs, cancel);
+                }
             }
         }
     }
@@ -432,6 +483,41 @@ public sealed class LifxTalker : IDisposable
         device.BaseColor = zone.CurrentColor;
     }
 
+    private void SendStrobe(LifxLanDeviceModel device, uint periodMs, bool cancel)
+    {
+        var activeColor = cancel ? StrobeOffish : StrobeWhite;
+        SendStrobeWaveform(device, activeColor, periodMs, cancel);
+        if (cancel)
+        {
+            SendColor(device, StrobeOffish, DefaultTransitionMs);
+        }
+    }
+    
+    private void SendStrobeWaveform(LifxLanDeviceModel device, LifxHsbk color, uint periodMs, bool cancel)
+    {
+        float cycles = cancel ? 0 : 1e30f;
+        
+        Span<byte> payload = stackalloc byte[21];
+        payload[0] = 0;
+        // 1 means the effect is transient, when we disable the strobe the light will revert to its previous state
+        payload[1] = (byte)1;
+        
+        BinaryPrimitives.WriteUInt16LittleEndian(payload[2..4], color.Hue);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload[4..6], color.Saturation);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload[6..8], color.Brightness);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload[8..10], color.Kelvin);
+        
+        BinaryPrimitives.WriteUInt32LittleEndian(payload[10..14], periodMs);
+        
+        BinaryPrimitives.WriteSingleLittleEndian(payload[14..18], cycles);
+        
+        // 50% duty cycle
+        BinaryPrimitives.WriteInt16LittleEndian(payload[18..20], 0);
+
+        payload[20] = 4;
+        SendPacket(device, 103, payload);
+    }
+    
     private void SendColor(LifxLanDeviceModel device, LifxHsbk color, uint durationMs)
     {
         Span<byte> payload = stackalloc byte[13];
@@ -878,6 +964,22 @@ public sealed class LifxTalker : IDisposable
 
         segments.Add(new ZoneSegment(currentSegmentStart, currentSegmentEnd, currentColor));
         return segments;
+    }
+    
+    private int CalculateStrobeSpeed(int speed)
+    {
+        var bpm = UdpIntake.BeatsPerMinute.Value;
+        int noteValue = speed switch
+        {
+            1 => 16,  // Slow (16th note)
+            2 => 24,  // Medium (24th note)
+            3 => 32,  // Fast (32nd note)
+            4 => 64,  // Fastest (64th note)
+            _ => 16   // Default to slow
+        };
+
+        if (bpm <= 0) return 100;
+        return (int)(60000.0 / bpm * 4 / noteValue);
     }
 
     public void Dispose()
