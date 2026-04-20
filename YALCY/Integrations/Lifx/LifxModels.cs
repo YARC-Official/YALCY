@@ -121,6 +121,7 @@ internal sealed class LifxLanDeviceModel
     public LifxHsbk BaseColor { get; set; }
     public int ExpectedZoneCount { get; set; } = 1;
     public List<LifxZoneModel> Zones { get; }
+    public LifxHsbk OriginalColor { get; set; }
 }
 
 internal sealed class LifxZoneModel
@@ -135,6 +136,7 @@ internal sealed class LifxZoneModel
     public int ZoneIndex { get; }
     public string AssignedStageLight { get; set; }
     public LifxHsbk CurrentColor { get; set; }
+    public LifxHsbk OriginalColor { get; set; }
 }
 
 internal readonly record struct LifxHsbk(ushort Hue, ushort Saturation, ushort Brightness, ushort Kelvin)
