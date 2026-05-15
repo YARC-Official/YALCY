@@ -1,7 +1,10 @@
 using System;
 using Dmx.Net.Controllers;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Timers;
 using HidSharp;
+using YALCY.Integrations;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
@@ -9,6 +12,7 @@ using YALCY.Views.Components;
 #if LINUX || MACOS
 using System.Linq;
 #endif
+using Timer = System.Timers.Timer;
 namespace YALCY.Integrations.Serial;
 
 public class SerialTalker: IDisposable
@@ -22,6 +26,8 @@ public class SerialTalker: IDisposable
     private static Timer? _checkerTimer;
     private MainWindowViewModel? _mainViewModel;
     private static bool SerialEnabled = false;
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"Serial manual strobe error: {ex.Message}"));
+
     public void EnableSerialTalker(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
         if (viewModel != null)
@@ -133,8 +139,82 @@ public class SerialTalker: IDisposable
                     }
 
                     break;
+
+                case StageKitTalker.CommandId.StrobeOff:
+                    _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+                    SetStrobeChannels(0);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeSlow:
+                    HandleStrobeCommand(commandId, 4);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeMedium:
+                    HandleStrobeCommand(commandId, 6);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeFast:
+                    HandleStrobeCommand(commandId, 8);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeFastest:
+                    HandleStrobeCommand(commandId, 10);
+                    break;
+
+                case StageKitTalker.CommandId.DisableAll:
+                    _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+                    SetStrobeChannels(0);
+                    break;
             }
         }
+    }
+
+    private void HandleStrobeCommand(StageKitTalker.CommandId commandId, int commandMultiplier)
+    {
+        if (_mainViewModel == null) return;
+
+        if (_mainViewModel.SerialStrobeMode == StrobeOutputModes.ManualFlash)
+        {
+            _manualStrobeFlasher.Start(
+                commandId,
+                Udp.UdpIntake.BeatsPerMinute.Value,
+                SetStrobeChannelsForManualFlashAsync);
+            return;
+        }
+
+        _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+        SetStrobeChannels(StrobeDmxFromBpm(Udp.UdpIntake.BeatsPerMinute.Value, commandMultiplier));
+    }
+
+    private Task SetStrobeChannelsForManualFlashAsync(bool isOn, CancellationToken cancellationToken)
+    {
+        SetStrobeChannels(isOn ? (byte)255 : (byte)0);
+        return Task.CompletedTask;
+    }
+
+    private void SetStrobeChannels(byte value)
+    {
+        if (_mainViewModel?.StrobeChannels.Channel == null || controller == null || !controller.IsOpen)
+        {
+            return;
+        }
+
+        for (int i = 0; i < 8 && i < _mainViewModel.StrobeChannels.Channel.Length; i++)
+        {
+            var channel = _mainViewModel.StrobeChannels.Channel[i];
+            if (channel > 0)
+            {
+                controller.SetChannel(channel, value);
+            }
+        }
+    }
+
+    private static byte StrobeDmxFromBpm(float bpm, int speed)
+    {
+        var f = bpm * speed / 60.0;
+        if (f <= 0) return 0;
+        if (f > 25.0) f = 25.0;
+        return (byte)Math.Round((f / 25.0) * 255.0);
     }
 
     private void Sender()
@@ -178,6 +258,7 @@ public class SerialTalker: IDisposable
     public void Dispose()
     {
         UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
         StatusFooter.UpdateStatus("Serial", IntegrationStatus.Off);
         if (controller != null)
         {

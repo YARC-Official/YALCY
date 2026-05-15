@@ -1,6 +1,9 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Timers;
 using Haukcode.sACN;
+using YALCY.Integrations;
 using YALCY.Integrations.StageKit;
 using YALCY.Udp;
 using YALCY.Usb;
@@ -27,6 +30,7 @@ public class DmxTalker
     private SACNClient? _sendClient;
 
     private readonly byte[] _currentDataPacket = new byte[UniverseSize];
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"DMX manual strobe error: {ex.Message}"));
 
     private Timer? _timer;
 
@@ -164,6 +168,8 @@ public class DmxTalker
                         _udpIntake.PacketProcessed -= _packetProcessedHandler;
                     }
 
+                    _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+
                     _packetProcessedHandler = null;
                     _udpIntake = null;
 
@@ -219,22 +225,6 @@ public class DmxTalker
     {
         if (_mainViewModel == null) return;
 
-        // Helper: set value to a whole channel group
-        void SetChannels(DmxChannelSetting group, byte value)
-        {
-            if (group.Channel == null) return;
-
-            lock (_sendLock)
-            {
-                for (int i = 0; i < 8; i++)
-                {
-                    int ch = group.Channel[i];
-                    if (ch > 0)
-                        SetChannelToValue(ch, value);
-                }
-            }
-        }
-
         // Helper: set LED pattern based on parameter bitmask
         void SetLeds(DmxChannelSetting group)
         {
@@ -251,14 +241,6 @@ public class DmxTalker
             }
         }
 
-        // Helper: handle all strobe speed modes
-        void HandleStrobe(int multiplier)
-        {
-            var bpm = UdpIntake.BeatsPerMinute.Value;
-            byte value = StrobeDmxFromBpm(bpm, multiplier);
-            SetChannels(_mainViewModel.StrobeChannels, value);
-        }
-
         switch (commandId)
         {
             case StageKitTalker.CommandId.FogOn:
@@ -270,6 +252,7 @@ public class DmxTalker
                 break;
 
             case StageKitTalker.CommandId.DisableAll:
+                _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
                 SetChannels(_mainViewModel.StrobeChannels, 0);
                 SetChannels(_mainViewModel.FogChannels, 0);
                 SetChannels(_mainViewModel.BlueChannels, 0);
@@ -279,23 +262,24 @@ public class DmxTalker
                 break;
 
             case StageKitTalker.CommandId.StrobeOff:
+                _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
                 SetChannels(_mainViewModel.StrobeChannels, 0);
                 break;
 
             case StageKitTalker.CommandId.StrobeSlow:
-                HandleStrobe(4);
+                HandleStrobeCommand(commandId, 4);
                 break;
 
             case StageKitTalker.CommandId.StrobeMedium:
-                HandleStrobe(6);
+                HandleStrobeCommand(commandId, 6);
                 break;
 
             case StageKitTalker.CommandId.StrobeFast:
-                HandleStrobe(8);
+                HandleStrobeCommand(commandId, 8);
                 break;
 
             case StageKitTalker.CommandId.StrobeFastest:
-                HandleStrobe(10);
+                HandleStrobeCommand(commandId, 10);
                 break;
 
             case StageKitTalker.CommandId.BlueLeds:
@@ -315,6 +299,51 @@ public class DmxTalker
                 break;
         }
     }
+
+    private void HandleStrobeCommand(StageKitTalker.CommandId commandId, int commandMultiplier)
+    {
+        if (_mainViewModel == null) return;
+
+        if (_mainViewModel.DmxStrobeMode == StrobeOutputModes.ManualFlash)
+        {
+            _manualStrobeFlasher.Start(
+                commandId,
+                UdpIntake.BeatsPerMinute.Value,
+                SetStrobeChannelsForManualFlashAsync);
+            return;
+        }
+
+        _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+        var bpm = UdpIntake.BeatsPerMinute.Value;
+        var value = StrobeDmxFromBpm(bpm, commandMultiplier);
+        SetChannels(_mainViewModel.StrobeChannels, value);
+    }
+
+    private Task SetStrobeChannelsForManualFlashAsync(bool isOn, CancellationToken cancellationToken)
+    {
+        if (_mainViewModel != null)
+        {
+            SetChannels(_mainViewModel.StrobeChannels, isOn ? (byte)255 : (byte)0);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void SetChannels(DmxChannelSetting group, byte value)
+    {
+        if (group.Channel == null) return;
+
+        lock (_sendLock)
+        {
+            for (int i = 0; i < 8 && i < group.Channel.Length; i++)
+            {
+                int ch = group.Channel[i];
+                if (ch > 0)
+                    SetChannelToValue(ch, value);
+            }
+        }
+    }
+
     private byte StrobeDmxFromBpm(float bpm, int speed) {
         var f = bpm * speed / 60.0;
         if (f <= 0) return 0;

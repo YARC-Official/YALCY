@@ -12,6 +12,7 @@ using HidSharp.Experimental;
 using OpenRGB.NET;
 using ReactiveUI;
 using YALCY.Integrations.DMX;
+using YALCY.Integrations.HomeAssistant;
 using YALCY.Integrations.Hue;
 using YALCY.Integrations.Lifx;
 using YALCY.Integrations.OpenRGB;
@@ -42,9 +43,11 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     public EnableSetting OpenRgbEnabledSetting { get; set; }
     public EnableSetting SerialEnabledSetting { get; set; }
     public EnableSetting LifxEnabledSetting { get; set; }
+    public EnableSetting HomeAssistantEnabledSetting { get; set; }
     public readonly UsbDeviceMonitor UsbDeviceMonitor;
     public readonly HueTalker HueTalker;
     public readonly LifxTalker LifxTalker;
+    public readonly HomeAssistantTalker HomeAssistantTalker;
     public readonly DmxTalker DmxTalker;
     public readonly StageKitTalker StageKitTalker;
     public readonly Rb3eTalker Rb3ETalker;
@@ -70,6 +73,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
         HueTalker = new HueTalker();
         LifxTalker = new LifxTalker();
+        HomeAssistantTalker = new HomeAssistantTalker();
         DmxTalker = new DmxTalker();
         StageKitTalker = new StageKitTalker();
         Rb3ETalker = new Rb3eTalker();
@@ -89,7 +93,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         //FeedInRb3eSettings();
         FeedInHueSettings();
         FeedInLifxSettings();
+        FeedInHomeAssistantSettings();
         FeedInOpenRgbSettings();
+        FeedInStrobeModeSettings();
         FeedInAppSettings();
 
         // Other initialization code
@@ -104,6 +110,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         //InitializeRb3eCollections();
         //InitializeHueCollections();
         InitializeLifxCollections();
+        InitializeHomeAssistantCollections();
         InitializeOpenRgbCollections();
 
         // Wire up DmxTalker to dimmer settings
@@ -156,7 +163,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             SettingsManager.Rb3eEnabledSettingIsEnabled,
             "YALCY is talking RB3E!",
             "YALCY is NOT talking to the RB3E!",
-            async (isEnabled) => Rb3ETalker.EnableRb3eTalker(isEnabled),
+            async (isEnabled) => Rb3ETalker.EnableRb3eTalker(isEnabled, this),
             "Enable or disable a partial implementation of the RB3E udp protocol"
         );
 
@@ -178,6 +185,15 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             "Enable or disable output to LIFX LAN devices"
         );
 
+        HomeAssistantEnabledSetting = new EnableSetting(
+            "Home Assistant Enabled",
+            SettingsManager.HomeAssistantEnabledSettingIsEnabled,
+            "YALCY is talking Home Assistant!",
+            "YALCY is NOT talking Home Assistant!",
+            async (isEnabled) => await HomeAssistantTalker.EnableHomeAssistant(isEnabled),
+            "Enable or disable Home Assistant light service output"
+        );
+
         OpenRgbEnabledSetting = new EnableSetting(
             "OpenRGB Enabled",
             SettingsManager.OpenRgbEnabledSettingIsEnabled,
@@ -197,6 +213,8 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
         RegisterHueBridgeCommand = ReactiveCommand.CreateFromTask(() => HueTalker.RegisterHueBridgeAsync(HueBridgeIp));
         DiscoverLifxDevicesCommand = ReactiveCommand.CreateFromTask(() => LifxTalker.DiscoverDevicesAsync(this));
+        DiscoverHomeAssistantLightsCommand = ReactiveCommand.CreateFromTask(() => HomeAssistantTalker.DiscoverLightsAsync(this));
+        AddHomeAssistantEntityCommand = ReactiveCommand.Create(AddHomeAssistantEntity);
         ConnectToOpenRgbServerCommand = ReactiveCommand.CreateFromTask(() =>
             OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp, OpenRgbServerPort));
     }
@@ -220,7 +238,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         await OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp, OpenRgbServerPort, this);
 
         // Turn off the RB3E Talker
-        Rb3ETalker.EnableRb3eTalker(false);
+        Rb3ETalker.EnableRb3eTalker(false, this);
 
         // Turn off the sACN/DMX talker
         DmxTalker.EnableDmxTalker(false, this);
@@ -236,6 +254,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
         // Turn off the LIFX Talker
         await LifxTalker.EnableLifxLan(false, this);
+
+        // Turn off the Home Assistant Talker
+        await HomeAssistantTalker.EnableHomeAssistant(false, this);
 
         // Turn off the USB device monitor
         UsbDeviceMonitor.StopUsbDeviceMonitor();

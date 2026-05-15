@@ -30,6 +30,7 @@ public partial class StatusFooter : UserControl
         { "Serial", "#808080" },
         { "Hue", "#808080" },
         { "LIFX", "#808080" },
+        { "HomeAssistant", "#808080" },
         { "OpenRGB", "#808080" }
     };
 
@@ -41,6 +42,7 @@ public partial class StatusFooter : UserControl
     private Ellipse? _serialStatusEllipse;
     private Ellipse? _hueStatusEllipse;
     private Ellipse? _lifxStatusEllipse;
+    private Ellipse? _homeAssistantStatusEllipse;
     private Ellipse? _openRgbStatusEllipse;
 
     public StatusFooter()
@@ -55,6 +57,7 @@ public partial class StatusFooter : UserControl
         _serialStatusEllipse = this.FindControl<Ellipse>("SerialStatusEllipse");
         _hueStatusEllipse = this.FindControl<Ellipse>("HueStatusEllipse");
         _lifxStatusEllipse = this.FindControl<Ellipse>("LifxStatusEllipse");
+        _homeAssistantStatusEllipse = this.FindControl<Ellipse>("HomeAssistantStatusEllipse");
         _openRgbStatusEllipse = this.FindControl<Ellipse>("OpenRgbStatusEllipse");
         
         // Subscribe to status change events
@@ -105,6 +108,7 @@ public partial class StatusFooter : UserControl
             "SERIAL" => _serialStatusEllipse,
             "HUE" => _hueStatusEllipse,
             "LIFX" => _lifxStatusEllipse,
+            "HOMEASSISTANT" => _homeAssistantStatusEllipse,
             "OPENRGB" => _openRgbStatusEllipse,
             _ => null
         };

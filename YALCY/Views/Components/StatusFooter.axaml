@@ -59,6 +59,12 @@
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="LifxStatusEllipse" />
                     <TextBlock Text="LIFX" Foreground="White" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
+
+                <!-- Home Assistant -->
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="HomeAssistantStatusEllipse" />
+                    <TextBlock Text="Home Assistant" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
                 
                 <!-- OpenRGB -->
                 <StackPanel Orientation="Horizontal" Spacing="5">

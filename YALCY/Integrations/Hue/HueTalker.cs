@@ -9,7 +9,9 @@ using HueApi.Entertainment.Extensions;
 using HueApi.Entertainment.Models;
 using HueApi.Models;
 using HueApi.Models.Exceptions;
+using YALCY.Integrations;
 using YALCY.Integrations.StageKit;
+using YALCY.Udp;
 using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
@@ -25,6 +27,7 @@ public class HueTalker : IDisposable
     private StreamingHueClient? _client;
     private CancellationTokenSource? _cancellationTokenSource;
     private MainWindowViewModel? _mainViewModel;
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"Hue manual strobe error: {ex.Message}"));
 
     public async Task EnableHue(bool isEnabled, string? bridgeIp, MainWindowViewModel? viewModel = null)
     {
@@ -138,6 +141,7 @@ public class HueTalker : IDisposable
         {
             Console.WriteLine("Disabling Hue.");
             // Cancel any ongoing operations
+            _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
             _cancellationTokenSource?.Cancel();
 
             // Remove event handlers
@@ -236,7 +240,7 @@ public class HueTalker : IDisposable
         }
     }
 
-    private static void SendRequest(StageKitTalker.CommandId commandId, byte parameter)
+    private void SendRequest(StageKitTalker.CommandId commandId, byte parameter)
     {
         if (_entArea != null && _entArea.Data.First().Status != EntertainmentConfigurationStatus.active)
         {
@@ -246,6 +250,17 @@ public class HueTalker : IDisposable
         RGBColor color;
         switch (commandId)
         {
+            case StageKitTalker.CommandId.StrobeSlow:
+            case StageKitTalker.CommandId.StrobeMedium:
+            case StageKitTalker.CommandId.StrobeFast:
+            case StageKitTalker.CommandId.StrobeFastest:
+                HandleStrobeCommand(commandId);
+                return;
+
+            case StageKitTalker.CommandId.StrobeOff:
+                _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+                return;
+
             case StageKitTalker.CommandId.BlueLeds:
                 color = new RGBColor("0000FF");
                 break;
@@ -263,12 +278,12 @@ public class HueTalker : IDisposable
                 break;
 
             case StageKitTalker.CommandId.DisableAll:
+                _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
                 color = new RGBColor("000000");
                 break;
 
             default:
-                color = new RGBColor("000000");
-                break;
+                return;
         }
 
         for (int i = 0; i < 8; i++)
@@ -291,8 +306,32 @@ public class HueTalker : IDisposable
         }
     }
 
+    private void HandleStrobeCommand(StageKitTalker.CommandId commandId)
+    {
+        if (_mainViewModel?.HueStrobeMode != StrobeOutputModes.ManualFlash)
+        {
+            _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+            return;
+        }
+
+        _manualStrobeFlasher.Start(commandId, UdpIntake.BeatsPerMinute.Value, SetManualStrobeStateAsync);
+    }
+
+    private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
+    {
+        var layer = _effectLayer ?? _baseEntLayer;
+        if (layer == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        layer.SetState(cancellationToken, new RGBColor(isOn ? "FFFFFF" : "000000"), isOn ? 1 : 0);
+        return Task.CompletedTask;
+    }
+
     public void Dispose()
     {
+        _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
         _cancellationTokenSource?.Cancel();
         _client?.Dispose();
         _cancellationTokenSource?.Dispose();

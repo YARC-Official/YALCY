@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using YALCY.Integrations;
 using YALCY.Integrations.StageKit;
 using YALCY.Udp;
 using YALCY.Usb;
@@ -49,6 +50,7 @@ public sealed class LifxTalker : IDisposable
     private bool _isEnabled;
     private bool _isSubscribedToStageKit;
     private bool _discoveryCompleted;
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"LIFX manual strobe error: {ex.Message}"));
 
     public async Task EnableLifxLan(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
@@ -71,6 +73,7 @@ public sealed class LifxTalker : IDisposable
         }
 
         _isEnabled = false;
+        _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
 
         if (_discoveryCompleted)
         {
@@ -283,21 +286,26 @@ public sealed class LifxTalker : IDisposable
                     break;
                 
                 case StageKitTalker.CommandId.StrobeFastest:
-                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(4));
+                    HandleStrobeState(commandId, 4);
                     break;
                 case StageKitTalker.CommandId.StrobeFast:
-                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(3));
+                    HandleStrobeState(commandId, 3);
                     break;
                 case StageKitTalker.CommandId.StrobeMedium:
-                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(2));
+                    HandleStrobeState(commandId, 2);
                     break;
                 case StageKitTalker.CommandId.StrobeSlow:
-                    ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(1));
+                    HandleStrobeState(commandId, 1);
                     break;
                 case StageKitTalker.CommandId.StrobeOff:
-                    ApplyStrobeState(commandId, 1, 1000, true);
+                    _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+                    if (_mainViewModel?.LifxStrobeMode != StrobeOutputModes.ManualFlash)
+                    {
+                        ApplyStrobeState(commandId, 1, 1000, true);
+                    }
                     break;
                 case StageKitTalker.CommandId.DisableAll:
+                    _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
                     DisableAssignedZones();
                     break;
             }
@@ -311,6 +319,18 @@ public sealed class LifxTalker : IDisposable
                 StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Error);
             }
         }
+    }
+
+    private void HandleStrobeState(StageKitTalker.CommandId commandId, int speed)
+    {
+        if (_mainViewModel?.LifxStrobeMode == StrobeOutputModes.ManualFlash)
+        {
+            _manualStrobeFlasher.Start(commandId, UdpIntake.BeatsPerMinute.Value, SetManualStrobeStateAsync);
+            return;
+        }
+
+        _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+        ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(speed));
     }
 
     private void ApplyStrobeState(StageKitTalker.CommandId commandId, byte activeSlotsMask, int periodMs, bool cancel = false)
@@ -344,6 +364,49 @@ public sealed class LifxTalker : IDisposable
                 }
             }
         }
+    }
+
+    private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
+    {
+        var devices = SnapshotDevices();
+        if (devices.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        EnsureCommandClient();
+
+        lock (_socketLock)
+        {
+            foreach (var device in devices)
+            {
+                var changedZones = new List<int>();
+
+                foreach (var zone in device.Zones)
+                {
+                    if (!string.Equals(zone.AssignedStageLight, "Strobe 1", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var nextColor = isOn ? StrobeWhite : zone.CurrentColor.WithBrightness(0);
+                    if (zone.CurrentColor == nextColor)
+                    {
+                        continue;
+                    }
+
+                    zone.CurrentColor = nextColor;
+                    changedZones.Add(zone.ZoneIndex);
+                }
+
+                if (changedZones.Count > 0)
+                {
+                    SendDeviceState(device, changedZones);
+                }
+            }
+        }
+
+        return Task.CompletedTask;
     }
 
     private void ApplyColorState(StageKitTalker.CommandId commandId, byte activeSlotsMask, LifxHsbk activeColor)
@@ -1024,6 +1087,7 @@ public sealed class LifxTalker : IDisposable
     public void Dispose()
     {
         UnsubscribeFromStageKit();
+        _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
         RestoreColors(_devices);
 
         lock (_socketLock)

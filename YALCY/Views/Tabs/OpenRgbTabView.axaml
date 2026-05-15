@@ -33,6 +33,15 @@
             <Button Content="Connect to OpenRGB server" Command="{Binding ConnectToOpenRgbServerCommand}"
                     Margin="10,0,0,0" Grid.Column="4" HorizontalAlignment="Right" />
         </Grid>
+        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
+            <RadioButton Content="Strobe command"
+                         GroupName="OpenRgbStrobeMode"
+                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+            <RadioButton Content="Manual flash strobe"
+                         GroupName="OpenRgbStrobeMode"
+                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+        </StackPanel>
         <!-- Status Message -->
         <TextBlock Text="{Binding OpenRgbStatus}" />
         <!-- Data Grid -->

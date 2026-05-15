@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             x:Class="YALCY.Views.Tabs.HomeAssistantTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <StackPanel Margin="5" Spacing="8">
+        <ToggleButton ToolTip.Tip="{Binding HomeAssistantEnabledSetting.ToolTip}"
+                      Content="{Binding HomeAssistantEnabledSetting.ToggleButtonContent}"
+                      IsChecked="{Binding HomeAssistantEnabledSetting.IsEnabled, Mode=TwoWay}"
+                      Margin="5" />
+
+        <TextBlock Text="Setup needed:" Margin="5,0,5,0" />
+        <TextBlock Text="1) Enter your Home Assistant URL, for example http://homeassistant.local:8123."
+                   Margin="5,0,5,0"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="2) Paste a long-lived access token from your Home Assistant profile."
+                   Margin="5,0,5,0"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="3) Discover or manually add light entities, then assign only the lights YALCY should control."
+                   Margin="5,0,5,0"
+                   TextWrapping="Wrap" />
+
+        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
+            <RadioButton Content="Strobe command"
+                         GroupName="HomeAssistantStrobeMode"
+                         IsChecked="{Binding HomeAssistantStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+            <RadioButton Content="Manual flash strobe"
+                         GroupName="HomeAssistantStrobeMode"
+                         IsChecked="{Binding HomeAssistantStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="170,*" Margin="5,0,5,0" RowDefinitions="Auto,Auto">
+            <TextBlock Grid.Row="0"
+                       Grid.Column="0"
+                       Text="Home Assistant URL"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,6" />
+            <TextBox Grid.Row="0"
+                     Grid.Column="1"
+                     Text="{Binding HomeAssistantUrl, Mode=TwoWay}"
+                     Watermark="http://homeassistant.local:8123"
+                     Margin="0,0,0,6" />
+
+            <TextBlock Grid.Row="1"
+                       Grid.Column="0"
+                       Text="Access token"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0" />
+            <TextBox Grid.Row="1"
+                     Grid.Column="1"
+                     Text="{Binding HomeAssistantAccessToken, Mode=TwoWay}"
+                     Watermark="Long-lived access token" />
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,0" Spacing="8">
+            <Button Content="Discover HA lights"
+                    Command="{Binding DiscoverHomeAssistantLightsCommand}" />
+            <TextBox Text="{Binding HomeAssistantEntityToAdd, Mode=TwoWay}"
+                     Watermark="light.living_room"
+                     Width="260" />
+            <Button Content="Add entity"
+                    Command="{Binding AddHomeAssistantEntityCommand}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding HomeAssistantStatus}" Margin="5,0,5,0" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding HomeAssistantMessage}" Margin="5,0,5,0" Foreground="Red" TextWrapping="Wrap" />
+
+        <ScrollViewer Margin="5,0,5,0"
+                      MaxHeight="510"
+                      VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding HomeAssistantLights}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HomeAssistantLightViewModel">
+                        <Border Background="{Binding RowBackground}"
+                                CornerRadius="3"
+                                Padding="8,6"
+                                Margin="0,0,0,3">
+                            <Grid ColumnDefinitions="*,90,180">
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding DisplayName}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding State}"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,8,0" />
+                                <ComboBox Grid.Column="2"
+                                          ItemsSource="{Binding AvailableStageLights}"
+                                          SelectedItem="{Binding SelectedStageLight, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </StackPanel>
+</UserControl>

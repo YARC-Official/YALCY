@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using OpenRGB.NET;
+using YALCY.Integrations;
 using YALCY.Integrations.StageKit;
 using YALCY.Udp;
 using YALCY.Usb;
@@ -16,10 +17,9 @@ namespace YALCY.Integrations.OpenRGB;
 
 public class OpenRgbTalker
 {
-    private CancellationTokenSource _strobeCts = new();
     private CancellationTokenSource _fogCts = new();
-    private Task _strobeTask = Task.CompletedTask;
     private Task _fogTask = Task.CompletedTask;
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"OpenRGB manual strobe error: {ex.Message}"));
 
     public List<Device> OffList = new();
     public List<Device> LightPodList = new();
@@ -122,11 +122,11 @@ public class OpenRgbTalker
             }
             
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Off);
-            await _strobeCts.CancelAsync();
+            _manualStrobeFlasher.Stop(SetStrobeFlashStateAsync);
             await _fogCts.CancelAsync();
             try
             {
-                Task.WaitAll(_strobeTask, _fogTask);
+                Task.WaitAll(_fogTask);
             }
             catch (AggregateException ex)
             {
@@ -140,7 +140,6 @@ public class OpenRgbTalker
             }
             finally
             {
-                _strobeCts.Dispose();
                 _fogCts.Dispose();
                 client?.Dispose();
                 client = null;
@@ -197,19 +196,19 @@ public class OpenRgbTalker
                     break;
 
                 case StageKitTalker.CommandId.StrobeSlow:
-                    StartStrobeEffect(1, UdpIntake.BeatsPerMinute.Value);
+                    StartStrobeEffect(commandId, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.StrobeMedium:
-                    StartStrobeEffect(2, UdpIntake.BeatsPerMinute.Value);
+                    StartStrobeEffect(commandId, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.StrobeFast:
-                    StartStrobeEffect(3, UdpIntake.BeatsPerMinute.Value);
+                    StartStrobeEffect(commandId, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.StrobeFastest:
-                    StartStrobeEffect(4, UdpIntake.BeatsPerMinute.Value);
+                    StartStrobeEffect(commandId, UdpIntake.BeatsPerMinute.Value);
                     break;
 
                 case StageKitTalker.CommandId.DisableAll:
@@ -236,52 +235,33 @@ public class OpenRgbTalker
         }
     }
 
-    private void StartStrobeEffect(int speed, float bpm)
+    private void StartStrobeEffect(StageKitTalker.CommandId commandId, float bpm)
     {
         StopStrobeEffect();
-        int interval;
-        switch (speed)
+
+        if (_mainViewModel?.OpenRgbStrobeMode == StrobeOutputModes.ManualFlash)
         {
-            case 1: // Slow (16th note)
-                interval = CalculateDelay(16, bpm);
-                break;
-            case 2: // Medium (24th note)
-                interval = CalculateDelay(24, bpm);
-                break;
-            case 3: // Fast (32nd note)
-                interval = CalculateDelay(32, bpm);
-                break;
-            case 4: // Fastest (64th note)
-                interval = CalculateDelay(64, bpm);
-                break;
-            default: // Off
-                return;
+            _manualStrobeFlasher.Start(commandId, bpm, SetStrobeFlashStateAsync);
+            return;
         }
 
-        _strobeCts = new CancellationTokenSource();
-        _strobeTask = Task.Run(async () =>
-        {
-            while (!_strobeCts.Token.IsCancellationRequested)
-            {
-                foreach (var device in StrobeList)
-                {
-                    ToggleDeviceLeds(device, true);
-                }
-
-                await Task.Delay(interval, _strobeCts.Token);
-                foreach (var device in StrobeList)
-                {
-                    ToggleDeviceLeds(device, false);
-                }
-
-                await Task.Delay(interval, _strobeCts.Token);
-            }
-        }, _strobeCts.Token);
+        _ = SetStrobeFlashStateAsync(true, CancellationToken.None);
     }
 
     private void StopStrobeEffect()
     {
-        _strobeCts.Cancel();
+        _manualStrobeFlasher.Stop(SetStrobeFlashStateAsync);
+        _ = SetStrobeFlashStateAsync(false, CancellationToken.None);
+    }
+
+    private Task SetStrobeFlashStateAsync(bool isOn, CancellationToken cancellationToken)
+    {
+        foreach (var device in StrobeList)
+        {
+            ToggleDeviceLeds(device, isOn);
+        }
+
+        return Task.CompletedTask;
     }
 
     private void StartBreathingEffect()
@@ -366,9 +346,4 @@ public class OpenRgbTalker
         client.UpdateLeds(device.Index, colors);
     }
 
-    private int CalculateDelay(int noteValue, float bpm)
-    {
-        if (bpm <= 0) return 100;
-        return (int)(60000.0 / bpm * 4 / noteValue);
-    }
 }

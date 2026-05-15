@@ -5,6 +5,7 @@ using System.Linq;
 using HueApi.Models.Clip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using YALCY.Integrations.HomeAssistant;
 using YALCY.Integrations.Lifx;
 using YALCY.ViewModels;
 
@@ -16,6 +17,7 @@ public class SettingsContainer
     public List<DmxSingleSetting> CurrentSingleSettings { get; set; }
     public List<DmxChannelSetting> CurrentChannelSettings { get; set; }
     public List<LifxZoneAssignmentSetting> LifxZoneAssignments { get; set; }
+    public List<HomeAssistantAssignmentSetting> HomeAssistantAssignments { get; set; }
     public DmxDimmerChannelSetting CurrentMasterDimmerChannelSettings { get; set; }
     public DmxDimmerValueSetting CurrentMasterDimmerValueChannelSettings { get; set; }
     public RegisterEntertainmentResult HueAuthResult { get; set; }
@@ -24,6 +26,15 @@ public class SettingsContainer
     public ushort OpenRgbServerPort { get; set; }
     public string? OpenRgbServerIp { get; set; }
     public string? SacnAdapterIp { get; set; }
+    public string? HomeAssistantUrl { get; set; }
+    public string? HomeAssistantAccessToken { get; set; }
+    public int? DmxStrobeMode { get; set; }
+    public int? SerialStrobeMode { get; set; }
+    public int? Rb3eStrobeMode { get; set; }
+    public int? HueStrobeMode { get; set; }
+    public int? LifxStrobeMode { get; set; }
+    public int? OpenRgbStrobeMode { get; set; }
+    public int? HomeAssistantStrobeMode { get; set; }
     public bool CloseToTrayOnClose { get; set; }
 }
 
@@ -47,6 +58,7 @@ internal static class SettingsManager
         CurrentChannelSettings = new List<DmxChannelSetting>(),
         CurrentSingleSettings = new List<DmxSingleSetting>(),
         LifxZoneAssignments = new List<LifxZoneAssignmentSetting>(),
+        HomeAssistantAssignments = new List<HomeAssistantAssignmentSetting>(),
         CurrentMasterDimmerChannelSettings =
             new DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106),
         CurrentMasterDimmerValueChannelSettings =
@@ -57,6 +69,15 @@ internal static class SettingsManager
         OpenRgbServerPort = 0,
         OpenRgbServerIp = "",
         SacnAdapterIp = "",
+        HomeAssistantUrl = "http://homeassistant.local:8123",
+        HomeAssistantAccessToken = "",
+        DmxStrobeMode = StrobeOutputModes.StrobeCommand,
+        SerialStrobeMode = StrobeOutputModes.StrobeCommand,
+        Rb3eStrobeMode = StrobeOutputModes.StrobeCommand,
+        HueStrobeMode = StrobeOutputModes.StrobeCommand,
+        LifxStrobeMode = StrobeOutputModes.StrobeCommand,
+        OpenRgbStrobeMode = StrobeOutputModes.ManualFlash,
+        HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand,
         CloseToTrayOnClose = false,
     };
 
@@ -68,6 +89,7 @@ internal static class SettingsManager
     public static bool SerialEnabledSettingIsEnabled { get; set; }
     public static bool OpenRgbEnabledSettingIsEnabled { get; set; }
     public static bool LifxEnabledSettingIsEnabled { get; set; }
+    public static bool HomeAssistantEnabledSettingIsEnabled { get; set; }
     public static int BpmChannelSettingValue { get; private set; }
     public static int CueChangeChannelSettingValue { get; private set; }
     public static int PostProcessingChannelSettingValue { get; private set; }
@@ -105,9 +127,20 @@ internal static class SettingsManager
     public static ushort OpenRgbServerPort { get; set; }
     public static string? OpenRgbServerIp { get; set; }
     public static string? SacnAdapterIp { get; set; }
+    public static string? HomeAssistantUrl { get; set; }
+    public static string? HomeAssistantAccessToken { get; set; }
+    public static int DmxStrobeMode { get; set; }
+    public static int SerialStrobeMode { get; set; }
+    public static int Rb3eStrobeMode { get; set; }
+    public static int HueStrobeMode { get; set; }
+    public static int LifxStrobeMode { get; set; }
+    public static int OpenRgbStrobeMode { get; set; }
+    public static int HomeAssistantStrobeMode { get; set; }
     public static bool CloseToTrayOnClose { get; set; }
     public static IReadOnlyList<LifxZoneAssignmentSetting> LifxZoneAssignments { get; private set; } =
         Array.Empty<LifxZoneAssignmentSetting>();
+    public static IReadOnlyList<HomeAssistantAssignmentSetting> HomeAssistantAssignments { get; private set; } =
+        Array.Empty<HomeAssistantAssignmentSetting>();
 
     public static void SaveSettings(MainWindowViewModel mainViewModel)
     {
@@ -128,6 +161,7 @@ internal static class SettingsManager
         settings.CurrentEnableSettings.Add(mainViewModel.OpenRgbEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.SerialEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.LifxEnabledSetting);
+        settings.CurrentEnableSettings.Add(mainViewModel.HomeAssistantEnabledSetting);
 
         settings.CurrentSingleSettings.Add(mainViewModel.BpmChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.CueChangeChannelSetting);
@@ -165,10 +199,21 @@ internal static class SettingsManager
         settings.HueBridgeIP = mainViewModel.HueBridgeIp;
         settings.UdpListenPort = mainViewModel.UdpListenPort;
         settings.LifxZoneAssignments = new List<LifxZoneAssignmentSetting>(mainViewModel.GetLifxZoneAssignments());
+        settings.HomeAssistantAssignments =
+            new List<HomeAssistantAssignmentSetting>(mainViewModel.GetHomeAssistantAssignments());
 
         settings.OpenRgbServerIp = mainViewModel.OpenRgbServerIp;
         settings.OpenRgbServerPort = mainViewModel.OpenRgbServerPort;
         settings.SacnAdapterIp = mainViewModel.SelectedSacnAdapter?.IpAddress;
+        settings.HomeAssistantUrl = mainViewModel.HomeAssistantUrl;
+        settings.HomeAssistantAccessToken = mainViewModel.HomeAssistantAccessToken;
+        settings.DmxStrobeMode = mainViewModel.DmxStrobeMode;
+        settings.SerialStrobeMode = mainViewModel.SerialStrobeMode;
+        settings.Rb3eStrobeMode = mainViewModel.Rb3eStrobeMode;
+        settings.HueStrobeMode = mainViewModel.HueStrobeMode;
+        settings.LifxStrobeMode = mainViewModel.LifxStrobeMode;
+        settings.OpenRgbStrobeMode = mainViewModel.OpenRgbStrobeMode;
+        settings.HomeAssistantStrobeMode = mainViewModel.HomeAssistantStrobeMode;
         settings.CloseToTrayOnClose = mainViewModel.CloseToTrayOnClose;
 
         LifxZoneAssignments = settings.LifxZoneAssignments
@@ -177,6 +222,15 @@ internal static class SettingsManager
                 Serial = assignment.Serial,
                 ZoneIndex = assignment.ZoneIndex,
                 StageLight = LifxStageAssignments.Normalize(assignment.StageLight)
+            })
+            .ToList();
+
+        HomeAssistantAssignments = settings.HomeAssistantAssignments
+            .Where(assignment => !string.IsNullOrWhiteSpace(assignment.EntityId))
+            .Select(assignment => new HomeAssistantAssignmentSetting
+            {
+                EntityId = assignment.EntityId.Trim(),
+                StageLight = HomeAssistantStageAssignments.Normalize(assignment.StageLight)
             })
             .ToList();
 
@@ -230,6 +284,10 @@ internal static class SettingsManager
 
                     case "LIFX Enabled":
                         LifxEnabledSettingIsEnabled = enable.IsEnabled;
+                        break;
+
+                    case "Home Assistant Enabled":
+                        HomeAssistantEnabledSettingIsEnabled = enable.IsEnabled;
                         break;
                 }
             }
@@ -373,10 +431,30 @@ internal static class SettingsManager
                     StageLight = LifxStageAssignments.Normalize(assignment.StageLight)
                 })
                 .ToList();
+            HomeAssistantAssignments = (container.HomeAssistantAssignments ?? new List<HomeAssistantAssignmentSetting>())
+                .Where(assignment => !string.IsNullOrWhiteSpace(assignment.EntityId))
+                .Select(assignment => new HomeAssistantAssignmentSetting
+                {
+                    EntityId = assignment.EntityId.Trim(),
+                    StageLight = HomeAssistantStageAssignments.Normalize(assignment.StageLight)
+                })
+                .ToList();
 
             OpenRgbServerIp = container.OpenRgbServerIp;
             OpenRgbServerPort = container.OpenRgbServerPort;
             SacnAdapterIp = container.SacnAdapterIp;
+            HomeAssistantUrl = string.IsNullOrWhiteSpace(container.HomeAssistantUrl)
+                ? "http://homeassistant.local:8123"
+                : container.HomeAssistantUrl;
+            HomeAssistantAccessToken = container.HomeAssistantAccessToken ?? "";
+            DmxStrobeMode = StrobeOutputModes.Normalize(container.DmxStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            SerialStrobeMode = StrobeOutputModes.Normalize(container.SerialStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            Rb3eStrobeMode = StrobeOutputModes.Normalize(container.Rb3eStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            HueStrobeMode = StrobeOutputModes.Normalize(container.HueStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            LifxStrobeMode = StrobeOutputModes.Normalize(container.LifxStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            OpenRgbStrobeMode = StrobeOutputModes.Normalize(container.OpenRgbStrobeMode ?? StrobeOutputModes.ManualFlash);
+            HomeAssistantStrobeMode =
+                StrobeOutputModes.Normalize(container.HomeAssistantStrobeMode ?? StrobeOutputModes.StrobeCommand);
             CloseToTrayOnClose = container.CloseToTrayOnClose;
         }
         else // File is either garbage or doesn't exist. Load defaults.
@@ -391,6 +469,7 @@ internal static class SettingsManager
             OpenRgbEnabledSettingIsEnabled = true;
             SerialEnabledSettingIsEnabled = true;
             LifxEnabledSettingIsEnabled = false;
+            HomeAssistantEnabledSettingIsEnabled = false;
 
             BpmChannelSettingValue = 57;
             CueChangeChannelSettingValue = 58;
@@ -431,10 +510,20 @@ internal static class SettingsManager
 
             UdpListenPort = 36107;
             LifxZoneAssignments = Array.Empty<LifxZoneAssignmentSetting>();
+            HomeAssistantAssignments = Array.Empty<HomeAssistantAssignmentSetting>();
 
             OpenRgbServerIp = "127.0.0.1";
             OpenRgbServerPort = 6742;
             SacnAdapterIp = "";
+            HomeAssistantUrl = "http://homeassistant.local:8123";
+            HomeAssistantAccessToken = "";
+            DmxStrobeMode = StrobeOutputModes.StrobeCommand;
+            SerialStrobeMode = StrobeOutputModes.StrobeCommand;
+            Rb3eStrobeMode = StrobeOutputModes.StrobeCommand;
+            HueStrobeMode = StrobeOutputModes.StrobeCommand;
+            LifxStrobeMode = StrobeOutputModes.StrobeCommand;
+            OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
+            HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
             CloseToTrayOnClose = false;
         }
     }

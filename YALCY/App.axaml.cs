@@ -115,7 +115,7 @@ public class App : Application
         mainViewModel.UsbDeviceMonitor.StartUsbDeviceMonitor(mainViewModel);
         mainViewModel.DmxTalker.EnableDmxTalker(mainViewModel.DmxEnabledSetting.IsEnabled, mainViewModel);
         mainViewModel.SerialTalker.EnableSerialTalker(mainViewModel.SerialEnabledSetting.IsEnabled, mainViewModel);
-        mainViewModel.Rb3ETalker.EnableRb3eTalker(mainViewModel.Rb3eEnabledSetting.IsEnabled);
+        mainViewModel.Rb3ETalker.EnableRb3eTalker(mainViewModel.Rb3eEnabledSetting.IsEnabled, mainViewModel);
         mainViewModel.StageKitTalker.EnableStageKitTalker(mainViewModel.StageKitEnabledSetting.IsEnabled);
 
         _ = InitializeAsync(mainViewModel);
@@ -139,6 +139,17 @@ public class App : Application
         catch (Exception ex)
         {
             Console.WriteLine($"Error initializing LIFX: {ex.Message}");
+        }
+
+        try
+        {
+            await mainViewModel.HomeAssistantTalker.EnableHomeAssistant(
+                mainViewModel.HomeAssistantEnabledSetting.IsEnabled,
+                mainViewModel);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing Home Assistant: {ex.Message}");
         }
 
         try

@@ -76,6 +76,17 @@ public class HeadlessHost : IDisposable
             Console.WriteLine("  LIFX: Disabled");
         }
 
+        // Initialize Home Assistant
+        if (ViewModel.HomeAssistantEnabledSetting.IsEnabled)
+        {
+            await ViewModel.HomeAssistantTalker.EnableHomeAssistant(true, ViewModel);
+            Console.WriteLine("  Home Assistant: Enabled");
+        }
+        else
+        {
+            Console.WriteLine("  Home Assistant: Disabled");
+        }
+
         // Initialize Serial
         if (ViewModel.SerialEnabledSetting.IsEnabled)
         {
@@ -101,7 +112,7 @@ public class HeadlessHost : IDisposable
         // Initialize RB3E
         if (ViewModel.Rb3eEnabledSetting.IsEnabled)
         {
-            ViewModel.Rb3ETalker.EnableRb3eTalker(true);
+            ViewModel.Rb3ETalker.EnableRb3eTalker(true, ViewModel);
             Console.WriteLine("  RB3E: Enabled");
         }
         else

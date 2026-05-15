@@ -110,6 +110,9 @@
             <TabItem Header="LIFX">
                 <tabs:LifxTabView />
             </TabItem>
+            <TabItem Header="Home Assistant">
+                <tabs:HomeAssistantTabView />
+            </TabItem>
             <TabItem Header="openRGB">
                 <tabs:OpenRgbTabView />
             </TabItem>
