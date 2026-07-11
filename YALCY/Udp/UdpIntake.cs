@@ -5,6 +5,8 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Threading;
 using ReactiveUI;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
@@ -13,15 +15,19 @@ namespace YALCY.Udp;
 
 public partial class UdpIntake : ReactiveObject
 {
-    public const int MIN_PACKET_SIZE = 47;
-    private const int CURRENT_PACKET_SIZE = (int)ByteIndexName.CameraCutSubject + 1;
+    public const int LEGACY_PACKET_SIZE = (int)ByteIndexName.CameraCutSubject + 1;
+    public const int MIN_PACKET_SIZE = LEGACY_PACKET_SIZE;
+    private const int PLAYER_STAR_POWER_COUNT_SIZE = sizeof(ushort);
+    private const int PLAYER_STAR_POWER_ENTRY_SIZE = 2;
+    private const int CURRENT_FIXED_PACKET_SIZE = (int)ByteIndexName.PlayerStarPowerCount + PLAYER_STAR_POWER_COUNT_SIZE;
     public event Action<byte[]> PacketProcessed;
     private MainWindowViewModel? _mainViewModel;
+    private readonly List<PlayerStarPowerPacketMembers> _playerStarPowerMembers = new();
 
     public interface IDatapacketMember
     {
         string Name { get; }
-        byte Index { get; }
+        int Index { get; }
         string ValueDescription { get; }
         object Value { get; }
     }
@@ -33,7 +39,7 @@ public partial class UdpIntake : ReactiveObject
         private readonly Func<T, string> _descriptionFunc;
         private readonly Action<T> _onValueChangedAction;
 
-        public DatapacketMember(string name, byte byteNumber, Func<T, string> descriptionFunc)
+        public DatapacketMember(string name, int byteNumber, Func<T, string> descriptionFunc)
         {
             Name = name;
             Index = byteNumber;
@@ -42,7 +48,7 @@ public partial class UdpIntake : ReactiveObject
         }
 
         public string Name { get; set; }
-        public byte Index { get; set; }
+        public int Index { get; set; }
         public string ValueDescription { get; private set; }
 
         public T Value
@@ -66,6 +72,20 @@ public partial class UdpIntake : ReactiveObject
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+    }
+
+    private sealed class PlayerStarPowerPacketMembers
+    {
+        public PlayerStarPowerPacketMembers(
+            DatapacketMember<byte> amount,
+            DatapacketMember<bool> isActive)
+        {
+            Amount = amount;
+            IsActive = isActive;
+        }
+
+        public DatapacketMember<byte> Amount { get; }
+        public DatapacketMember<bool> IsActive { get; }
     }
 
     public DatapacketMember<uint> Header { get; private set; } = new ("Header", (byte)ByteIndexName.Header, GetHeaderByteDescription);
@@ -104,6 +124,9 @@ public partial class UdpIntake : ReactiveObject
 
     public DatapacketMember<byte> CameraCutSubject { get; private set; } = new("Camera cut subject",
         (byte)ByteIndexName.CameraCutSubject, GetCameraCutSubjectDescription);
+
+    public DatapacketMember<ushort> PlayerStarPowerCount { get; private set; } = new("Player count",
+        (byte)ByteIndexName.PlayerStarPowerCount, GetPlayerStarPowerCountDescription);
 
 
     private static UdpClient? _udpClient;
@@ -246,6 +269,40 @@ public partial class UdpIntake : ReactiveObject
             CameraCutPriority.Value = reader.ReadByte(); //46
             CameraCutSubject.Value = reader.ReadByte(); //47
 
+            if (DatagramVersion.Value >= (byte)DatagramVersionByte.PlayerStarPower)
+            {
+                if (data.Length < CURRENT_FIXED_PACKET_SIZE)
+                {
+                    Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {CURRENT_FIXED_PACKET_SIZE} for player star power count)");
+                    Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+                    return;
+                }
+
+                PlayerStarPowerCount.Value = reader.ReadUInt16(); //48-49
+                var expectedPacketSize = GetExpectedPacketSize(PlayerStarPowerCount.Value);
+
+                if (data.Length < expectedPacketSize)
+                {
+                    Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {expectedPacketSize} for {PlayerStarPowerCount.Value} player star power entr{(PlayerStarPowerCount.Value == 1 ? "y" : "ies")})");
+                    Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+                    return;
+                }
+
+                EnsurePlayerStarPowerMemberCount(PlayerStarPowerCount.Value);
+
+                for (var i = 0; i < PlayerStarPowerCount.Value; i++)
+                {
+                    var playerStarPower = _playerStarPowerMembers[i];
+                    playerStarPower.Amount.Value = reader.ReadByte();
+                    playerStarPower.IsActive.Value = reader.ReadByte() != 0;
+                }
+            }
+            else
+            {
+                PlayerStarPowerCount.Value = 0;
+                EnsurePlayerStarPowerMemberCount(0);
+            }
+
         }
         PacketProcessed?.Invoke(data);
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connected);
@@ -272,12 +329,105 @@ public partial class UdpIntake : ReactiveObject
         var datagramVersion = data.Length > (int)ByteIndexName.DatagramVersion
             ? data[(int)ByteIndexName.DatagramVersion].ToString()
             : "n/a";
+        var playerStarPowerCount = data.Length >= CURRENT_FIXED_PACKET_SIZE
+            ? BitConverter.ToUInt16(data, (int)ByteIndexName.PlayerStarPowerCount).ToString()
+            : "n/a";
         var previewLength = Math.Min(data.Length, 16);
         var preview = previewLength > 0
             ? BitConverter.ToString(data, 0, previewLength)
             : "<empty>";
 
-        return $"length={data.Length}, minAccepted={MIN_PACKET_SIZE}, parserBytes={CURRENT_PACKET_SIZE}, header={header}, expectedHeader=0x{PACKET_HEADER:X8}, datagramVersion={datagramVersion}, preview={preview}";
+        return $"length={data.Length}, minAccepted={MIN_PACKET_SIZE}, fixedParserBytes={CURRENT_FIXED_PACKET_SIZE}, header={header}, expectedHeader=0x{PACKET_HEADER:X8}, datagramVersion={datagramVersion}, playerStarPowerCount={playerStarPowerCount}, preview={preview}";
+    }
+
+    private static int GetExpectedPacketSize(ushort playerStarPowerCount)
+    {
+        return CURRENT_FIXED_PACKET_SIZE + (playerStarPowerCount * PLAYER_STAR_POWER_ENTRY_SIZE);
+    }
+
+    private void EnsurePlayerStarPowerMemberCount(ushort playerStarPowerCount)
+    {
+        while (_playerStarPowerMembers.Count < playerStarPowerCount)
+        {
+            var playerIndex = _playerStarPowerMembers.Count;
+            var packetIndex = CURRENT_FIXED_PACKET_SIZE + (playerIndex * PLAYER_STAR_POWER_ENTRY_SIZE);
+            var playerNumber = playerIndex + 1;
+            var members = new PlayerStarPowerPacketMembers(
+                new DatapacketMember<byte>($"Player {playerNumber} star power", packetIndex, GetPlayerStarPowerAmountDescription),
+                new DatapacketMember<bool>($"Player {playerNumber} star power active", packetIndex + 1, GetPlayerStarPowerActiveDescription));
+
+            _playerStarPowerMembers.Add(members);
+            AddPlayerStarPowerMemberToView(members.Amount);
+            AddPlayerStarPowerMemberToView(members.IsActive);
+        }
+
+        while (_playerStarPowerMembers.Count > playerStarPowerCount)
+        {
+            var memberIndex = _playerStarPowerMembers.Count - 1;
+            var members = _playerStarPowerMembers[memberIndex];
+            _playerStarPowerMembers.RemoveAt(memberIndex);
+            RemovePlayerStarPowerMemberFromView(members.Amount);
+            RemovePlayerStarPowerMemberFromView(members.IsActive);
+        }
+    }
+
+    private void AddPlayerStarPowerMemberToView(IDatapacketMember member)
+    {
+        if (_mainViewModel == null)
+        {
+            return;
+        }
+
+        void Add()
+        {
+            if (!_mainViewModel.CombinedCollection.Contains(member))
+            {
+                _mainViewModel.CombinedCollection.Add(member);
+            }
+        }
+
+        if (Application.Current?.ApplicationLifetime == null)
+        {
+            Add();
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Add();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(Add);
+        }
+    }
+
+    private void RemovePlayerStarPowerMemberFromView(IDatapacketMember member)
+    {
+        if (_mainViewModel == null)
+        {
+            return;
+        }
+
+        void Remove()
+        {
+            _mainViewModel.CombinedCollection.Remove(member);
+        }
+
+        if (Application.Current?.ApplicationLifetime == null)
+        {
+            Remove();
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Remove();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(Remove);
+        }
     }
 
     /// <summary>

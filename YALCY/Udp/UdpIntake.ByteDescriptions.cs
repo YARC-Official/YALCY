@@ -270,7 +270,28 @@ public partial class UdpIntake
 
     public static string GetDatagramVersionByteDescription(byte byteValue)
     {
-        return byteValue == (int)DatagramVersionByte.Version ? "Current Version" : "Unknown";
+        return byteValue switch
+        {
+            (int)DatagramVersionByte.PlayerStarPower => "Current Version",
+            (int)DatagramVersionByte.CameraCut => "Legacy Version",
+            _ => "Unknown"
+        };
+    }
+
+    public static string GetPlayerStarPowerCountDescription(ushort playerCount)
+    {
+        return playerCount == 1 ? "1 player" : $"{playerCount} players";
+    }
+
+    public static string GetPlayerStarPowerAmountDescription(byte amount)
+    {
+        var percentage = Math.Round((amount / (double)byte.MaxValue) * 100);
+        return $"{percentage}%";
+    }
+
+    public static string GetPlayerStarPowerActiveDescription(bool isActive)
+    {
+        return isActive ? "Active" : "Inactive";
     }
 
     public static string GetHeaderByteDescription(uint byteValue)

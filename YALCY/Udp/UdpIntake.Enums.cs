@@ -43,6 +43,7 @@ public partial class UdpIntake
         CameraCutConstraint = 44,
         CameraCutPriority = 45,
         CameraCutSubject = 46,
+        PlayerStarPowerCount = 47,
     }
 
     public enum CameraCutPriorityByte
@@ -171,7 +172,8 @@ public partial class UdpIntake
 
     private enum DatagramVersionByte
     {
-        Version = 3,
+        CameraCut = 3,
+        PlayerStarPower = 4,
     }
 
     private enum PlatformByte

@@ -13,6 +13,7 @@ public partial class MainWindowViewModel
     public ObservableCollection<UdpIntake.DatapacketMember<byte>> LightingMessageBytes { get; private set; }
     public ObservableCollection<UdpIntake.DatapacketMember<bool>> LightingMessageBools { get; private set; }
     public ObservableCollection<UdpIntake.DatapacketMember<uint>> LightingMessageUints { get; private set; }
+    public ObservableCollection<UdpIntake.DatapacketMember<ushort>> LightingMessageUshorts { get; private set; }
     public ObservableCollection<UdpIntake.DatapacketMember<float>> LightingMessageFloats { get; private set; }
     public ObservableCollection<UdpIntake.IDatapacketMember> CombinedCollection { get; set; }
     private ushort _udpListenPort;
@@ -32,6 +33,9 @@ public partial class MainWindowViewModel
 
         LightingMessageUints = new ObservableCollection<UdpIntake.DatapacketMember<uint>>();
         LightingMessageUints.Add(UdpIntake.Header);
+
+        LightingMessageUshorts = new ObservableCollection<UdpIntake.DatapacketMember<ushort>>();
+        LightingMessageUshorts.Add(UdpIntake.PlayerStarPowerCount);
 
         LightingMessageBytes= new ObservableCollection<UdpIntake.DatapacketMember<byte>>();
         LightingMessageBytes.Add(UdpIntake.DatagramVersion);
@@ -72,7 +76,7 @@ public partial class MainWindowViewModel
 
 
 
-        CombinedCollection = new ObservableCollection<UdpIntake.IDatapacketMember>(LightingMessageUints.Concat(LightingMessageBytes.Cast<UdpIntake.IDatapacketMember>()).Concat(LightingMessageBools).Concat(LightingMessageFloats));
+        CombinedCollection = new ObservableCollection<UdpIntake.IDatapacketMember>(LightingMessageUints.Concat(LightingMessageBytes.Cast<UdpIntake.IDatapacketMember>()).Concat(LightingMessageUshorts).Concat(LightingMessageBools).Concat(LightingMessageFloats));
 
     }
 }
