@@ -69,10 +69,10 @@ public partial class StatusFooter : UserControl
 
     private void OnStatusColorChanged(string integrationName, string color)
     {
-        // Verificar se a nova cor é diferente da atual para evitar mudanças desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         _statusColors[integrationName] = color;
@@ -128,10 +128,10 @@ public partial class StatusFooter : UserControl
     {
         string color = GetStatusColor(status);
         
-        // Verificar se a nova cor é diferente da atual para evitar chamadas desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         StatusColorChanged?.Invoke(integrationName, color);
@@ -141,10 +141,10 @@ public partial class StatusFooter : UserControl
     {
         string color = GetStatusColor(isEnabled ? IntegrationStatus.Connecting : IntegrationStatus.Off);
         
-        // Verificar se a nova cor é diferente da atual para evitar chamadas desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         StatusColorChanged?.Invoke(integrationName, color); 
@@ -152,10 +152,10 @@ public partial class StatusFooter : UserControl
 
     public static void SetStatusColor(string integrationName, string color)
     {
-        // Verificar se a nova cor é diferente da atual para evitar chamadas desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         StatusColorChanged?.Invoke(integrationName, color);

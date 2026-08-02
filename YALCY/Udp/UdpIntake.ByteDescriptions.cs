@@ -218,8 +218,12 @@ public partial class UdpIntake
             false => "Off",
             true => "On",
         };
-        OnFogState?.Invoke(byteValue);
         return fogStateDescription;
+    }
+
+    public static string GetFogRemainingCentisecondsDescription(ushort value)
+    {
+        return value == ushort.MaxValue ? "Until fog-off" : $"{value / 100.0:0.00} seconds";
     }
 
     public static string GetDrumsByteDescription(byte byteValue)

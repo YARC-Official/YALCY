@@ -33,17 +33,18 @@ public partial class UdpIntake
         LightingCue = 34,
         PostProcessing = 35,
         FogState = 36,
-        StrobeState = 37,
-        Beat = 38,
-        Keyframe = 39,
-        BonusEffect = 40,
-        AutoGen = 41,
-        Spotlight = 42,
-        Singalong = 43,
-        CameraCutConstraint = 44,
-        CameraCutPriority = 45,
-        CameraCutSubject = 46,
-        PlayerStarPowerCount = 47,
+        FogRemainingCentiseconds = 37,
+        StrobeState = 39,
+        Beat = 40,
+        Keyframe = 41,
+        BonusEffect = 42,
+        AutoGen = 43,
+        Spotlight = 44,
+        Singalong = 45,
+        CameraCutConstraint = 46,
+        CameraCutPriority = 47,
+        CameraCutSubject = 48,
+        PlayerStarPowerCount = 49,
     }
 
     public enum CameraCutPriorityByte
@@ -174,6 +175,7 @@ public partial class UdpIntake
     {
         CameraCut = 3,
         PlayerStarPower = 4,
+        FogRemainingDuration = 5,
     }
 
     private enum PlatformByte

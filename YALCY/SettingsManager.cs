@@ -23,6 +23,7 @@ public class SettingsContainer
     public RegisterEntertainmentResult HueAuthResult { get; set; }
     public string? HueBridgeIP { get; set; }
     public ushort UdpListenPort { get; set; }
+    public int? FogDurationPercent { get; set; }
     public ushort OpenRgbServerPort { get; set; }
     public string? OpenRgbServerIp { get; set; }
     public string? SacnAdapterIp { get; set; }
@@ -66,6 +67,7 @@ internal static class SettingsManager
         HueAuthResult = new RegisterEntertainmentResult(),
         HueBridgeIP = "",
         UdpListenPort = 0,
+        FogDurationPercent = 100,
         OpenRgbServerPort = 0,
         OpenRgbServerIp = "",
         SacnAdapterIp = "",
@@ -124,6 +126,7 @@ internal static class SettingsManager
     public static string? HueAuthResultIp { get; private set; }
     public static string? HueBridgeIp { get; private set; }
     public static ushort UdpListenPort { get; set; }
+    public static int FogDurationPercent { get; set; }
     public static ushort OpenRgbServerPort { get; set; }
     public static string? OpenRgbServerIp { get; set; }
     public static string? SacnAdapterIp { get; set; }
@@ -198,6 +201,7 @@ internal static class SettingsManager
         settings.HueAuthResult = mainViewModel.HueAuthResult;
         settings.HueBridgeIP = mainViewModel.HueBridgeIp;
         settings.UdpListenPort = mainViewModel.UdpListenPort;
+        settings.FogDurationPercent = mainViewModel.FogDurationPercent;
         settings.LifxZoneAssignments = new List<LifxZoneAssignmentSetting>(mainViewModel.GetLifxZoneAssignments());
         settings.HomeAssistantAssignments =
             new List<HomeAssistantAssignmentSetting>(mainViewModel.GetHomeAssistantAssignments());
@@ -422,6 +426,7 @@ internal static class SettingsManager
             HueBridgeIp = container.HueBridgeIP;
 
             UdpListenPort = container.UdpListenPort;
+            FogDurationPercent = Math.Clamp(container.FogDurationPercent ?? 100, 0, 100);
             LifxZoneAssignments = (container.LifxZoneAssignments ?? new List<LifxZoneAssignmentSetting>())
                 .Where(assignment => !string.IsNullOrWhiteSpace(assignment.Serial) && assignment.ZoneIndex >= 0)
                 .Select(assignment => new LifxZoneAssignmentSetting
@@ -509,6 +514,7 @@ internal static class SettingsManager
             HueBridgeIp = "";
 
             UdpListenPort = 36107;
+            FogDurationPercent = 100;
             LifxZoneAssignments = Array.Empty<LifxZoneAssignmentSetting>();
             HomeAssistantAssignments = Array.Empty<HomeAssistantAssignmentSetting>();
 

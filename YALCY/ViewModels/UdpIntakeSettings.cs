@@ -17,15 +17,28 @@ public partial class MainWindowViewModel
     public ObservableCollection<UdpIntake.DatapacketMember<float>> LightingMessageFloats { get; private set; }
     public ObservableCollection<UdpIntake.IDatapacketMember> CombinedCollection { get; set; }
     private ushort _udpListenPort;
+    private int _fogDurationPercent;
     public ushort UdpListenPort
     {
         get => _udpListenPort;
         set => this.RaiseAndSetIfChanged(ref _udpListenPort, value);
     }
 
+    public int FogDurationPercent
+    {
+        get => _fogDurationPercent;
+        set
+        {
+            var normalized = Math.Clamp(value, 0, 100);
+            this.RaiseAndSetIfChanged(ref _fogDurationPercent, normalized);
+            UdpIntake.FogDurationPercent = normalized;
+        }
+    }
+
     private void FeedInUdpSettings()
     {
         UdpListenPort = SettingsManager.UdpListenPort;
+        FogDurationPercent = SettingsManager.FogDurationPercent;
     }
 
     private void InitializeUdpIntakeCollections()
@@ -36,6 +49,7 @@ public partial class MainWindowViewModel
 
         LightingMessageUshorts = new ObservableCollection<UdpIntake.DatapacketMember<ushort>>();
         LightingMessageUshorts.Add(UdpIntake.PlayerStarPowerCount);
+        LightingMessageUshorts.Add(UdpIntake.FogRemainingCentiseconds);
 
         LightingMessageBytes= new ObservableCollection<UdpIntake.DatapacketMember<byte>>();
         LightingMessageBytes.Add(UdpIntake.DatagramVersion);
