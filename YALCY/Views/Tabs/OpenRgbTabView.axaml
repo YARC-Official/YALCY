@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:openrgb="clr-namespace:YALCY.ViewModels.OpenRGB"
              xmlns:tabs="clr-namespace:YALCY.Views.Tabs"
              x:Class="YALCY.Views.Tabs.OpenRgbTabView"
              x:DataType="vm:MainWindowViewModel"
@@ -73,7 +74,7 @@
                     CornerRadius="12"
                     Padding="20"
                     Margin="0,0,16,0">
-                <Grid x:Name="ConnectionPanelStack" RowDefinitions="Auto,Auto,Auto,Auto">
+                <Grid x:Name="ConnectionPanelStack" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                     <!-- Card Header -->
                     <StackPanel Grid.Row="0" x:Name="HeaderPanel" Orientation="Horizontal" Spacing="12" Margin="0,0,0,16">
                         <StackPanel VerticalAlignment="Center">
@@ -81,10 +82,18 @@
                                        FontSize="15" 
                                        FontWeight="Bold" 
                                        Foreground="#FFFFFF"/>
-                            <TextBlock Text="Configure OpenRGB server" 
+                            <TextBlock x:Name="HeaderSubtitle"
+                                       Text="Configure OpenRGB server" 
                                        FontSize="11" 
                                        Foreground="#888888"/>
                         </StackPanel>
+                        <!-- Compact Mode Vertical Divider -->
+                        <Border x:Name="CompactDivider"
+                                Width="1"
+                                Background="#2A2D4A"
+                                VerticalAlignment="Stretch"
+                                Margin="4,0"
+                                IsVisible="False"/>
                     </StackPanel>
                     
                     <!-- Setup Info -->
@@ -115,21 +124,23 @@
                     </Border>
                     
                     <!-- Connection Form -->
-                    <StackPanel Grid.Row="2" x:Name="ConnectionForm" Spacing="14">
-                        <StackPanel x:Name="ServerIpPanel">
+                    <StackPanel Grid.Row="2" x:Name="ConnectionForm" Orientation="Horizontal">
+                        <StackPanel x:Name="ServerIpPanel" Margin="0,0,10,8">
                             <TextBlock x:Name="ServerIpLabel" Text="Server IP" 
                                        FontSize="11" 
                                        FontWeight="SemiBold"
                                        Foreground="#AAAAAA"
                                        Margin="0,0,0,6"/>
-                            <TextBox Text="{Binding OpenRgbServerIp}" 
+                            <TextBox x:Name="ServerIpInput"
+                                     Text="{Binding OpenRgbServerIp}" 
                                      Watermark="127.0.0.1"
                                      CornerRadius="7"
                                      Height="36"
+                                     Width="140"
                                      VerticalContentAlignment="Center"/>
                         </StackPanel>
                         
-                        <StackPanel x:Name="ServerPortPanel">
+                        <StackPanel x:Name="ServerPortPanel" Margin="0,0,10,8">
                             <TextBlock x:Name="ServerPortLabel" Text="Port" 
                                        FontSize="11" 
                                        FontWeight="SemiBold"
@@ -141,32 +152,42 @@
                                            Value="{Binding OpenRgbServerPort, Mode=TwoWay}"
                                            CornerRadius="7"
                                            Height="36"
+                                           Width="90"
+                                           ShowButtonSpinner="False"
+                                           FormatString="0"
                                            VerticalContentAlignment="Center" />
                         </StackPanel>
 
-                        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
-                        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
-                            <RadioButton Content="Strobe command"
-                                         GroupName="OpenRgbStrobeMode"
-                                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
-                            <RadioButton Content="Manual flash strobe"
-                                         GroupName="OpenRgbStrobeMode"
-                                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
-                        </StackPanel>
-                        
                         <Button x:Name="ConnectButton" Content="🔗 Connect" 
                                 Command="{Binding ConnectToOpenRgbServerCommand}"
-                                HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 VerticalContentAlignment="Center"
-                                Height="38"
+                                VerticalAlignment="Bottom"
+                                Height="36"
+                                Padding="14,0"
                                 FontWeight="SemiBold"
                                 CornerRadius="7"
-                                Margin="0,4,0,0"/>
+                                Margin="0,0,12,8"/>
+                    </StackPanel>
+
+                    <!-- Strobe Behavior -->
+                    <StackPanel Grid.Row="3" x:Name="StrobeModePanel" Margin="0,0,10,8" VerticalAlignment="Bottom">
+                        <TextBlock x:Name="StrobeModeLabel" Text="Strobe behavior" FontSize="11" FontWeight="SemiBold" Foreground="#AAAAAA" Margin="0,0,0,6" />
+                        <StackPanel x:Name="StrobeModeRadioGroup" Orientation="Horizontal">
+                            <RadioButton Content="Strobe command"
+                                         GroupName="OpenRgbStrobeMode"
+                                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
+                                         FontSize="11"
+                                         Margin="0,0,10,0" />
+                            <RadioButton Content="Manual flash strobe"
+                                         GroupName="OpenRgbStrobeMode"
+                                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                                         FontSize="11"/>
+                        </StackPanel>
                     </StackPanel>
                     
                     <!-- Status -->
-                    <Border Grid.Row="3" x:Name="StatusPanel" Margin="0,16,0,0" 
+                    <Border Grid.Row="4" x:Name="StatusPanel" Margin="0,16,0,0" 
                             Background="#090b13"
                             BorderBrush="#222643"
                             BorderThickness="1" 
@@ -180,7 +201,8 @@
                                        FontSize="11" 
                                        Foreground="#BBBBBB"
                                        VerticalAlignment="Center"
-                                       TextWrapping="Wrap"/>
+                                       TextTrimming="CharacterEllipsis"
+                                       TextWrapping="NoWrap"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -214,287 +236,508 @@
                     <!-- Devices List -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding DevicesWithZones}" Margin="0,0,0,10">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <!-- Modern Device Card -->
-                                    <Border Background="#1A1D35" 
-                                            BorderBrush="#4A4E7A" 
-                                            BorderThickness="2" 
-                                            CornerRadius="16"
-                                            Margin="0,0,0,20"
-                                            Padding="0">
-                                        <StackPanel>
-                                            <!-- Device Header with Gradient -->
-                                            <Border Background="#252B48"
-                                                    CornerRadius="16,16,0,0"
-                                                    Padding="24,20"
-                                                    BorderBrush="#4A4E7A"
-                                                    BorderThickness="0,0,0,2">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    
-                                                    <!-- Device Icon with SVG -->
-                                                    <Border Grid.Column="0" 
-                                                            Background="#6366F1"
-                                                            Width="56" 
-                                                            Height="56"
-                                                            CornerRadius="12"
-                                                            Margin="0,0,18,0"
-                                                            VerticalAlignment="Center">
-                                                        <Viewbox Width="28" Height="28"
-                                                                 HorizontalAlignment="Center"
-                                                                 VerticalAlignment="Center"
-                                                                 Stretch="Uniform">
-                                                            <Canvas Width="24" Height="24">
-                                                                <Path Fill="#FFFFFF"
-                                                                      Data="{Binding Device.Type, Converter={StaticResource DeviceTypeToIconConverter}}"/>
-                                                            </Canvas>
-                                                        </Viewbox>
-                                                    </Border>
-                                                    
-                                                    <StackPanel Grid.Column="1" 
-                                                                VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Device.Name}" 
-                                                                   FontSize="18" 
-                                                                   FontWeight="ExtraBold" 
-                                                                   Foreground="#FFFFFF"
-                                                                   Margin="0,0,0,8"
-                                                                   TextTrimming="CharacterEllipsis"/>
-                                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                                            <Border Background="#6366F1" 
-                                                                    CornerRadius="6" 
-                                                                    Padding="10,5">
-                                                                <TextBlock Text="{Binding Device.Type}" 
-                                                                           FontSize="10" 
-                                                                           FontWeight="Bold"
-                                                                           Foreground="#FFFFFF"/>
-                                                            </Border>
-                                                            <Border Background="#1F2339" 
-                                                                    CornerRadius="6" 
-                                                                    Padding="10,5">
-                                                                <TextBlock Text="{Binding Device.Vendor}" 
-                                                                           FontSize="10" 
-                                                                           Foreground="#A5A8C8"
-                                                                           FontWeight="SemiBold"/>
-                                                            </Border>
-                                                            <Button Command="{Binding IdentifyDeviceCommand}"
-                                                                    Background="#14162B"
-                                                                    CornerRadius="6"
-                                                                    Height="24"
-                                                                    Padding="8,0"
-                                                                    VerticalContentAlignment="Center"
-                                                                    VerticalAlignment="Center"
-                                                                    ToolTip.Tip="Flash all LEDs on this device to identify it in real world">
-                                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                                    <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center"/>
-                                                                    <TextBlock Text="Identify" 
-                                                                               FontSize="10" 
-                                                                               FontWeight="Bold" 
-                                                                               Foreground="#8B8FB5" 
-                                                                               VerticalAlignment="Center"/>
-                                                                </StackPanel>
-                                                            </Button>
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                    
-                                                    <!-- Zones Counter Badge -->
-                                                    <Border Grid.Column="2" 
-                                                            Background="#6366F1"
-                                                            CornerRadius="10" 
-                                                            Padding="16,10"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalAlignment="Right">
-                                                        <StackPanel Spacing="2">
-                                                            <TextBlock Text="{Binding Zones.Count}" 
-                                                                       FontSize="22" 
-                                                                       FontWeight="Black" 
-                                                                       Foreground="#FFFFFF"
-                                                                       HorizontalAlignment="Center"/>
-                                                            <TextBlock Text="ZONES" 
-                                                                       FontSize="9" 
-                                                                       Foreground="#E0E1FF" 
-                                                                       FontWeight="Bold"
-                                                                       HorizontalAlignment="Center"
-                                                                       Opacity="0.8"/>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </Grid>
-                                            </Border>
-                                            
-                                            <!-- Zones Grid Layout -->
-                                            <ItemsControl ItemsSource="{Binding Zones}" Margin="20,16,20,20">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <!-- Modern Zone Card -->
-                                                        <Border Background="#1F2339" 
-                                                                BorderBrush="#3F4363" 
-                                                                BorderThickness="1" 
-                                                                CornerRadius="12" 
-                                                                Margin="0,0,0,10"
-                                                                Padding="0">
-                                                            <Grid>
-                                                                <Grid.RowDefinitions>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                </Grid.RowDefinitions>
-                                                                
-                                                                <!-- Zone Header -->
-                                                                <Border Grid.Row="0" 
-                                                                        Background="#252B48"
-                                                                        CornerRadius="12,12,0,0"
-                                                                        Padding="16,12"
-                                                                        BorderBrush="#3F4363"
-                                                                        BorderThickness="0,0,0,1">
-                                                                    <Grid>
-                                                                        <Grid.ColumnDefinitions>
-                                                                            <ColumnDefinition Width="*"/>
-                                                                            <ColumnDefinition Width="Auto"/>
-                                                                        </Grid.ColumnDefinitions>
-                                                                        
-                                                                        <StackPanel Grid.Column="0" 
-                                                                                    Orientation="Horizontal" 
-                                                                                    Spacing="12">
-                                                                            <Border Background="#6366F1"
-                                                                                    Width="32"
-                                                                                    Height="32"
-                                                                                    CornerRadius="8">
-                                                                                <TextBlock Text="{Binding ZoneIndex}" 
-                                                                                           FontSize="14" 
-                                                                                           FontWeight="Black" 
-                                                                                           Foreground="#FFFFFF"
-                                                                                           HorizontalAlignment="Center"
-                                                                                           VerticalAlignment="Center"/>
-                                                                            </Border>
-                                                                            <TextBlock Text="{Binding Zone.Name}" 
-                                                                                       FontSize="14" 
-                                                                                       FontWeight="Bold" 
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- Modern Device Card -->
+                                <Border Background="#1A1D35" 
+                                        BorderBrush="#4A4E7A" 
+                                        BorderThickness="2" 
+                                        CornerRadius="16"
+                                        Margin="0,0,0,20"
+                                        Padding="0">
+                                    <StackPanel>
+                                         <!-- Device Header with Gradient -->
+                                         <Border Background="#252B48"
+                                                 CornerRadius="16,16,0,0"
+                                                 Padding="20,16"
+                                                 BorderBrush="#4A4E7A"
+                                                 BorderThickness="0,0,0,2">
+                                             <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                                 <!-- Left Info Column -->
+                                                 <Grid Grid.Column="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center" Margin="0,0,16,0">
+                                                     <!-- Device Icon -->
+                                                     <Border Grid.Column="0"
+                                                             Background="#6366F1" 
+                                                             Width="50" 
+                                                             Height="50"
+                                                             CornerRadius="12"
+                                                             VerticalAlignment="Center"
+                                                             Margin="0,0,16,0">
+                                                         <Viewbox Width="26" Height="26"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"
+                                                                  Stretch="Uniform">
+                                                             <Canvas Width="24" Height="24">
+                                                                 <Path Fill="#FFFFFF"
+                                                                       Data="{Binding Device.Type, Converter={StaticResource DeviceTypeToIconConverter}}"/>
+                                                             </Canvas>
+                                                         </Viewbox>
+                                                     </Border>
+                                                     
+                                                     <!-- Title & Sub-Badges -->
+                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                         <TextBlock Text="{Binding Device.Name}" 
+                                                                    FontSize="17" 
+                                                                    FontWeight="ExtraBold" 
+                                                                    Foreground="#FFFFFF"
+                                                                    Margin="0,0,0,6"
+                                                                    TextTrimming="CharacterEllipsis"
+                                                                    ToolTip.Tip="{Binding Device.Name}"/>
+                                                         <WrapPanel Orientation="Horizontal">
+                                                             <Border Background="#6366F1" 
+                                                                     CornerRadius="6" 
+                                                                     Padding="8,4"
+                                                                     Margin="0,2,6,2">
+                                                                 <TextBlock Text="{Binding Device.Type}" 
+                                                                            FontSize="10" 
+                                                                            FontWeight="Bold"
+                                                                            Foreground="#FFFFFF"/>
+                                                             </Border>
+                                                             <Border Background="#1F2339" 
+                                                                     CornerRadius="6" 
+                                                                     Padding="8,4"
+                                                                     Margin="0,2,6,2">
+                                                                 <TextBlock Text="{Binding Device.Vendor}" 
+                                                                            FontSize="10" 
+                                                                            Foreground="#A5A8C8"
+                                                                            FontWeight="SemiBold"/>
+                                                             </Border>
+                                                             <Button Command="{Binding IdentifyDeviceCommand}"
+                                                                     Background="#14162B"
+                                                                     CornerRadius="6"
+                                                                     Height="24"
+                                                                     Padding="8,0"
+                                                                     Margin="0,2,0,2"
+                                                                     VerticalContentAlignment="Center"
+                                                                     VerticalAlignment="Center"
+                                                                     ToolTip.Tip="Flash all LEDs on this device to identify it in real world">
+                                                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                     <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center"/>
+                                                                     <TextBlock Text="Identify" 
+                                                                                FontSize="10" 
+                                                                                FontWeight="Bold" 
+                                                                                Foreground="#8B8FB5" 
+                                                                                VerticalAlignment="Center"/>
+                                                                 </StackPanel>
+                                                             </Button>
+                                                         </WrapPanel>
+                                                     </StackPanel>
+                                                 </Grid>
+                                                 
+                                                 <!-- Right Docked Zones Counter Badge -->
+                                                 <Border Grid.Column="1"
+                                                         Background="#6366F1"
+                                                         CornerRadius="10" 
+                                                         Padding="14,8"
+                                                         VerticalAlignment="Center"
+                                                         HorizontalAlignment="Right">
+                                                     <StackPanel Spacing="1">
+                                                         <TextBlock Text="{Binding Zones.Count}" 
+                                                                    FontSize="20" 
+                                                                    FontWeight="Black" 
+                                                                    Foreground="#FFFFFF"
+                                                                    HorizontalAlignment="Center"/>
+                                                         <TextBlock Text="ZONES" 
+                                                                    FontSize="8" 
+                                                                    Foreground="#E0E1FF" 
+                                                                    FontWeight="Bold"
+                                                                    HorizontalAlignment="Center"
+                                                                    Opacity="0.8"/>
+                                                     </StackPanel>
+                                                 </Border>
+                                             </Grid>
+                                         </Border>
+                                        
+                                        <!-- Zones Grid Layout -->
+                                        <ItemsControl ItemsSource="{Binding Zones}" Margin="16,14,16,16">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <!-- Modern Zone Card -->
+                                                    <Border Background="#1F2339" 
+                                                            BorderBrush="#3F4363" 
+                                                            BorderThickness="1" 
+                                                            CornerRadius="12" 
+                                                            Margin="0,0,0,10"
+                                                            Padding="0">
+                                                        <StackPanel>
+                                                            <!-- Zone Header -->
+                                                            <Border Background="#252B48"
+                                                                    CornerRadius="12,12,0,0"
+                                                                    Padding="14,10"
+                                                                    BorderBrush="#3F4363"
+                                                                    BorderThickness="0,0,0,1">
+                                                                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                                                    <StackPanel Grid.Column="0"
+                                                                                Orientation="Horizontal" 
+                                                                                Spacing="10"
+                                                                                VerticalAlignment="Center"
+                                                                                Margin="0,2,14,2">
+                                                                        <Border Background="#6366F1"
+                                                                                Width="28"
+                                                                                Height="28"
+                                                                                CornerRadius="7">
+                                                                            <TextBlock Text="{Binding ZoneIndex}" 
+                                                                                       FontSize="13" 
+                                                                                       FontWeight="Black" 
                                                                                        Foreground="#FFFFFF"
+                                                                                       HorizontalAlignment="Center"
                                                                                        VerticalAlignment="Center"/>
-                                                                        </StackPanel>
-                                                                        
-                                                                        <StackPanel Grid.Column="1" 
-                                                                                    Orientation="Horizontal" 
-                                                                                    Spacing="8"
-                                                                                    VerticalAlignment="Center">
-                                                                            <Button Command="{Binding IdentifyZoneCommand}"
-                                                                                    Background="#14162B"
-                                                                                    CornerRadius="6"
-                                                                                    MinHeight="28"
-                                                                                    Height="28"
-                                                                                    Padding="10,0"
-                                                                                    VerticalContentAlignment="Center"
-                                                                                    VerticalAlignment="Center"
-                                                                                    ToolTip.Tip="Flash zone LEDs 4 times to identify physical location">
-                                                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                                                    <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center"/>
-                                                                                    <TextBlock Text="Identify" 
-                                                                                               FontSize="10" 
-                                                                                               FontWeight="Bold" 
-                                                                                               Foreground="#8B8FB5" 
-                                                                                               VerticalAlignment="Center"/>
-                                                                                </StackPanel>
-                                                                            </Button>
-                                                                            <Border Background="#14162B" 
-                                                                                    CornerRadius="6" 
-                                                                                    MinHeight="28"
-                                                                                    Height="28"
-                                                                                    Padding="10,0"
-                                                                                    VerticalAlignment="Center">
-                                                                                <TextBlock Text="{Binding Zone.Type}" 
+                                                                        </Border>
+                                                                        <TextBlock Text="{Binding Zone.Name}" 
+                                                                                   FontSize="14" 
+                                                                                   FontWeight="Bold" 
+                                                                                   Foreground="#FFFFFF"
+                                                                                   VerticalAlignment="Center"
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                    </StackPanel>
+                                                                    
+                                                                    <WrapPanel Grid.Column="1" 
+                                                                               Orientation="Horizontal" 
+                                                                               HorizontalAlignment="Right"
+                                                                               VerticalAlignment="Center">
+                                                                        <Button Command="{Binding IdentifyZoneCommand}"
+                                                                                Background="#14162B"
+                                                                                CornerRadius="6"
+                                                                                MinHeight="26"
+                                                                                Height="26"
+                                                                                Padding="8,0"
+                                                                                Margin="0,2,6,2"
+                                                                                VerticalContentAlignment="Center"
+                                                                                VerticalAlignment="Center"
+                                                                                ToolTip.Tip="Flash zone LEDs 4 times to identify physical location">
+                                                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                                <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center"/>
+                                                                                <TextBlock Text="Identify" 
+                                                                                           FontSize="10" 
+                                                                                           FontWeight="Bold" 
+                                                                                           Foreground="#8B8FB5" 
+                                                                                           VerticalAlignment="Center"/>
+                                                                            </StackPanel>
+                                                                        </Button>
+                                                                        <Border Background="#14162B" 
+                                                                                CornerRadius="6" 
+                                                                                MinHeight="26"
+                                                                                Height="26"
+                                                                                Padding="8,0"
+                                                                                Margin="0,2,6,2"
+                                                                                VerticalAlignment="Center">
+                                                                            <TextBlock Text="{Binding Zone.Type}" 
+                                                                                       FontSize="10" 
+                                                                                       FontWeight="Bold"
+                                                                                       Foreground="#8B8FB5"
+                                                                                       VerticalAlignment="Center" />
+                                                                        </Border>
+                                                                        <Border Background="#14162B" 
+                                                                                CornerRadius="6" 
+                                                                                MinHeight="26"
+                                                                                Height="26"
+                                                                                Padding="8,0"
+                                                                                Margin="0,2,0,2"
+                                                                                VerticalAlignment="Center">
+                                                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                <TextBlock Text="{Binding Zone.LedCount}" 
                                                                                            FontSize="10" 
                                                                                            FontWeight="Bold"
                                                                                            Foreground="#8B8FB5"
-                                                                                           VerticalAlignment="Center" />
-                                                                            </Border>
-                                                                            <Border Background="#14162B" 
-                                                                                    CornerRadius="6" 
-                                                                                    MinHeight="28"
-                                                                                    Height="28"
-                                                                                    Padding="10,0"
-                                                                                    VerticalAlignment="Center">
-                                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                                                    <TextBlock Text="{Binding Zone.LedCount}" 
-                                                                                               FontSize="10" 
-                                                                                               FontWeight="Bold"
-                                                                                               Foreground="#8B8FB5"
-                                                                                               VerticalAlignment="Center"/>
-                                                                                    <TextBlock Text=" LEDs" 
-                                                                                               FontSize="10"
-                                                                                               Foreground="#8B8FB5"
-                                                                                               VerticalAlignment="Center"/>
-                                                                                </StackPanel>
-                                                                            </Border>
-                                                                        </StackPanel>
-                                                                    </Grid>
-                                                                </Border>
-                                                                
-                                                                <!-- Function Selector with Visual Pills -->
-                                                                <Border Grid.Row="1" 
-                                                                        Background="#14162B"
-                                                                        CornerRadius="0,0,12,12"
-                                                                        Padding="16,14">
-                                                                    <Grid>
-                                                                        <Grid.ColumnDefinitions>
-                                                                            <ColumnDefinition Width="Auto"/>
-                                                                            <ColumnDefinition Width="*"/>
-                                                                        </Grid.ColumnDefinitions>
-                                                                        
-                                                                        <TextBlock Grid.Column="0"
-                                                                                   Text="MODE" 
-                                                                                   FontSize="10" 
-                                                                                   Foreground="#6B6F8F" 
-                                                                                   VerticalAlignment="Center"
-                                                                                   FontWeight="Black"
-                                                                                   Margin="0,0,16,0"
-                                                                                   LetterSpacing="1"/>
-                                                                        
-                                                                        <StackPanel Grid.Column="1" 
-                                                                                    Orientation="Horizontal" 
-                                                                                    Spacing="6">
-                                                                            <RadioButton Content="Off" 
-                                                                                         GroupName="{Binding GetZoneKeyProperty}"
-                                                                                         IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
-                                                                                         Foreground="#D1D5FB"
-                                                                                         FontSize="11"
-                                                                                         FontWeight="SemiBold"
-                                                                                         Padding="12,6"
-                                                                                         CornerRadius="7"/>
-                                                                            
-                                                                            <RadioButton Content="LightPod" 
-                                                                                         GroupName="{Binding GetZoneKeyProperty}"
-                                                                                         IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
-                                                                                         Foreground="#D1D5FB"
-                                                                                         FontSize="11"
-                                                                                         FontWeight="SemiBold"
-                                                                                         Padding="12,6"
-                                                                                         CornerRadius="7"/>
-                                                                            
-                                                                            <RadioButton Content="Strobe" 
-                                                                                         GroupName="{Binding GetZoneKeyProperty}"
-                                                                                         IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}"
-                                                                                         Foreground="#D1D5FB"
-                                                                                         FontSize="11"
-                                                                                         FontWeight="SemiBold"
-                                                                                         Padding="12,6"
-                                                                                         CornerRadius="7"/>
-                                                                            
-                                                                            <RadioButton Content="Fogger" 
-                                                                                         GroupName="{Binding GetZoneKeyProperty}"
-                                                                                         IsChecked="{Binding Category, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=3}"
-                                                                                         Foreground="#D1D5FB"
-                                                                                         FontSize="11"
-                                                                                         FontWeight="SemiBold"
-                                                                                         Padding="12,6"
-                                                                                         CornerRadius="7"/>
-                                                                        </StackPanel>
-                                                                    </Grid>
-                                                                </Border>
-                                                            </Grid>
-                                                        </Border>
+                                                                                           VerticalAlignment="Center"/>
+                                                                                <TextBlock Text=" LEDs" 
+                                                                                           FontSize="10"
+                                                                                           Foreground="#8B8FB5"
+                                                                                           VerticalAlignment="Center"/>
+                                                                            </StackPanel>
+                                                                        </Border>
+                                                                    </WrapPanel>
+                                                                </Grid>
+                                                            </Border>
+
+                                                            <!-- Function Selector with Visual Pills -->
+                                                            <Border Background="#14162B"
+                                                                    CornerRadius="0,0,12,12"
+                                                                    Padding="14,10">
+                                                                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                                                     <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                                         <TextBlock Text="MODE" 
+                                                                                    FontSize="10" 
+                                                                                    Foreground="#6B6F8F" 
+                                                                                    VerticalAlignment="Center"
+                                                                                    FontWeight="Black"
+                                                                                    Margin="0,4,14,4"
+                                                                                    LetterSpacing="1"/>
+                                                                         
+                                                                         <RadioButton Content="Off" 
+                                                                                      GroupName="{Binding GetZoneKeyProperty}"
+                                                                                      IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
+                                                                                      Foreground="#D1D5FB"
+                                                                                      FontSize="11"
+                                                                                      FontWeight="SemiBold"
+                                                                                      Padding="10,5"
+                                                                                      CornerRadius="7"
+                                                                                      Margin="0,2,4,2"/>
+                                                                         
+                                                                         <RadioButton Content="LightPod" 
+                                                                                      GroupName="{Binding GetZoneKeyProperty}"
+                                                                                      IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                                                                                      Foreground="#D1D5FB"
+                                                                                      FontSize="11"
+                                                                                      FontWeight="SemiBold"
+                                                                                      Padding="10,5"
+                                                                                      CornerRadius="7"
+                                                                                      Margin="0,2,4,2"/>
+                                                                         
+                                                                         <RadioButton Content="Strobe" 
+                                                                                      GroupName="{Binding GetZoneKeyProperty}"
+                                                                                      IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}"
+                                                                                      Foreground="#D1D5FB"
+                                                                                      FontSize="11"
+                                                                                      FontWeight="SemiBold"
+                                                                                      Padding="10,5"
+                                                                                      CornerRadius="7"
+                                                                                      Margin="0,2,4,2"/>
+                                                                         
+                                                                         <RadioButton Content="Fogger" 
+                                                                                       GroupName="{Binding GetZoneKeyProperty}"
+                                                                                       IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=3}"
+                                                                                       Foreground="#D1D5FB"
+                                                                                       FontSize="11"
+                                                                                       FontWeight="SemiBold"
+                                                                                       Padding="10,5"
+                                                                                       CornerRadius="7"
+                                                                                       Margin="0,2,4,2"/>
+                                                                         
+                                                                         <RadioButton Content="LightPod + Strobe" 
+                                                                                       GroupName="{Binding GetZoneKeyProperty}"
+                                                                                       IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=4}"
+                                                                                       Foreground="#D1D5FB"
+                                                                                       FontSize="11"
+                                                                                       FontWeight="SemiBold"
+                                                                                       Padding="10,5"
+                                                                                       CornerRadius="7"
+                                                                                       Margin="0,2,4,2"/>
+                                                                     </WrapPanel>
+
+                                                                     <Button Grid.Column="1" Command="{Binding ToggleCustomizeLedsCommand}"
+                                                                             Background="#1F2339"
+                                                                             Foreground="#A5B4FC"
+                                                                             FontSize="11"
+                                                                             FontWeight="Bold"
+                                                                             Padding="10,5"
+                                                                             CornerRadius="7"
+                                                                             HorizontalAlignment="Right"
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,2,0,2">
+                                                                         <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                             <TextBlock Text="⚙️" FontSize="11" VerticalAlignment="Center"/>
+                                                                             <TextBlock Text="Customize LEDs" VerticalAlignment="Center"/>
+                                                                         </StackPanel>
+                                                                     </Button>
+                                                                 </Grid>
+                                                            </Border>
+
+                                                            <!-- Expandable LED Customization Drawer (2D Matrix & Linear Layout) -->
+                                                            <Border IsVisible="{Binding IsCustomizingLeds}"
+                                                                    Background="#0B0D1B"
+                                                                    BorderBrush="#252A4A"
+                                                                    BorderThickness="0,1,0,0"
+                                                                    Padding="18,16"
+                                                                    CornerRadius="0,0,12,12">
+                                                                     <StackPanel Spacing="14">
+                                                                         <!-- Top Toolbar: Title & Presets -->
+                                                                         <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                                                              <TextBlock Grid.Column="0"
+                                                                                         Text="STAGEKIT LED MATRIX" 
+                                                                                         FontSize="11" 
+                                                                                         FontWeight="Black" 
+                                                                                         Foreground="#818CF8"
+                                                                                         LetterSpacing="1"
+                                                                                         VerticalAlignment="Center"
+                                                                                         TextTrimming="CharacterEllipsis"
+                                                                                         Margin="0,4,16,4"/>
+
+                                                                              <!-- Quick Action Presets (Docked Right) -->
+                                                                              <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                                                  <Button Content="🔄 Default" Command="{Binding SetDefaultCommand}" Background="#334155" Foreground="#F8FAFC" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="⚡ Auto Divide" Command="{Binding AutoDivideCommand}" Background="#1E293B" Foreground="#CBD5E1" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="🔢 Auto Sequential" Command="{Binding AutoSequentialCommand}" Background="#1E293B" Foreground="#CBD5E1" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="🔵 All Blue" Command="{Binding SetAllBlueCommand}" Background="#1E3A8A" Foreground="#93C5FD" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="🔴 All Red" Command="{Binding SetAllRedCommand}" Background="#881337" Foreground="#FCA5A5" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="🟢 All Green" Command="{Binding SetAllGreenCommand}" Background="#064E3B" Foreground="#6EE7B7" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="🟡 All Yellow" Command="{Binding SetAllYellowCommand}" Background="#78350F" Foreground="#FDE047" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                              </WrapPanel>
+                                                                          </Grid>
+
+                                                                         <!-- Paint Palette Bar (Inline Expanding Accordion Palette) -->
+                                                                         <Border Background="#14172E" BorderBrush="#252A4A" BorderThickness="1" CornerRadius="8" Padding="10,8">
+                                                                             <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                                                 <TextBlock Text="🎨 Paint Tool:" FontSize="10" FontWeight="Bold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                                                 
+                                                                                 <!-- OFF Button -->
+                                                                                 <Button Content="⬛ Off" Command="{Binding SelectPaintGroupCommand}" CommandParameter="OFF" Background="{Binding OffBg}" Foreground="{Binding OffFg}" BorderBrush="{Binding OffBorder}" BorderThickness="2" FontSize="10" FontWeight="Bold" Padding="10,5" Margin="2" CornerRadius="6"/>
+
+                                                                                 <!-- BLUE Container (Inline Expanding) -->
+                                                                                 <Button IsVisible="{Binding !IsBlueSelected}" Content="🔵 Blue" Command="{Binding SelectPaintGroupCommand}" CommandParameter="BLUE" Background="{Binding BlueBg}" Foreground="{Binding BlueFg}" BorderBrush="{Binding BlueBorder}" BorderThickness="2" FontSize="10" FontWeight="Bold" Padding="10,5" Margin="2" CornerRadius="6"/>
+                                                                                 <Border IsVisible="{Binding IsBlueSelected}" Background="#1E3A8A" BorderBrush="#FFFFFF" BorderThickness="2" CornerRadius="6" Padding="4,2" Margin="2">
+                                                                                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                         <Button Content="🔵 Blue" Command="{Binding SelectPaintGroupCommand}" CommandParameter="BLUE" Background="#FFFFFF" Foreground="#000000" FontSize="10" FontWeight="Black" Padding="8,4" CornerRadius="4" Margin="1"/>
+                                                                                         <Rectangle Width="1" Fill="#3B82F6" Margin="2,2"/>
+                                                                                         <Button Content="1" Command="{Binding SelectSubChannelCommand}" CommandParameter="1" Background="{Binding Sub1Bg}" Foreground="{Binding Sub1Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="2" Command="{Binding SelectSubChannelCommand}" CommandParameter="2" Background="{Binding Sub2Bg}" Foreground="{Binding Sub2Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="3" Command="{Binding SelectSubChannelCommand}" CommandParameter="3" Background="{Binding Sub3Bg}" Foreground="{Binding Sub3Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="4" Command="{Binding SelectSubChannelCommand}" CommandParameter="4" Background="{Binding Sub4Bg}" Foreground="{Binding Sub4Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="5" Command="{Binding SelectSubChannelCommand}" CommandParameter="5" Background="{Binding Sub5Bg}" Foreground="{Binding Sub5Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="6" Command="{Binding SelectSubChannelCommand}" CommandParameter="6" Background="{Binding Sub6Bg}" Foreground="{Binding Sub6Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="7" Command="{Binding SelectSubChannelCommand}" CommandParameter="7" Background="{Binding Sub7Bg}" Foreground="{Binding Sub7Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="8" Command="{Binding SelectSubChannelCommand}" CommandParameter="8" Background="{Binding Sub8Bg}" Foreground="{Binding Sub8Fg}" BorderBrush="#3B82F6" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                     </WrapPanel>
+                                                                                 </Border>
+
+                                                                                 <!-- RED Container (Inline Expanding) -->
+                                                                                 <Button IsVisible="{Binding !IsRedSelected}" Content="🔴 Red" Command="{Binding SelectPaintGroupCommand}" CommandParameter="RED" Background="{Binding RedBg}" Foreground="{Binding RedFg}" BorderBrush="{Binding RedBorder}" BorderThickness="2" FontSize="10" FontWeight="Bold" Padding="10,5" Margin="2" CornerRadius="6"/>
+                                                                                 <Border IsVisible="{Binding IsRedSelected}" Background="#881337" BorderBrush="#FFFFFF" BorderThickness="2" CornerRadius="6" Padding="4,2" Margin="2">
+                                                                                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                         <Button Content="🔴 Red" Command="{Binding SelectPaintGroupCommand}" CommandParameter="RED" Background="#FFFFFF" Foreground="#000000" FontSize="10" FontWeight="Black" Padding="8,4" CornerRadius="4" Margin="1"/>
+                                                                                         <Rectangle Width="1" Fill="#EF4444" Margin="2,2"/>
+                                                                                         <Button Content="1" Command="{Binding SelectSubChannelCommand}" CommandParameter="1" Background="{Binding Sub1Bg}" Foreground="{Binding Sub1Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="2" Command="{Binding SelectSubChannelCommand}" CommandParameter="2" Background="{Binding Sub2Bg}" Foreground="{Binding Sub2Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="3" Command="{Binding SelectSubChannelCommand}" CommandParameter="3" Background="{Binding Sub3Bg}" Foreground="{Binding Sub3Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="4" Command="{Binding SelectSubChannelCommand}" CommandParameter="4" Background="{Binding Sub4Bg}" Foreground="{Binding Sub4Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="5" Command="{Binding SelectSubChannelCommand}" CommandParameter="5" Background="{Binding Sub5Bg}" Foreground="{Binding Sub5Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="6" Command="{Binding SelectSubChannelCommand}" CommandParameter="6" Background="{Binding Sub6Bg}" Foreground="{Binding Sub6Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="7" Command="{Binding SelectSubChannelCommand}" CommandParameter="7" Background="{Binding Sub7Bg}" Foreground="{Binding Sub7Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="8" Command="{Binding SelectSubChannelCommand}" CommandParameter="8" Background="{Binding Sub8Bg}" Foreground="{Binding Sub8Fg}" BorderBrush="#EF4444" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                     </WrapPanel>
+                                                                                 </Border>
+
+                                                                                 <!-- GREEN Container (Inline Expanding) -->
+                                                                                 <Button IsVisible="{Binding !IsGreenSelected}" Content="🟢 Green" Command="{Binding SelectPaintGroupCommand}" CommandParameter="GREEN" Background="{Binding GreenBg}" Foreground="{Binding GreenFg}" BorderBrush="{Binding GreenBorder}" BorderThickness="2" FontSize="10" FontWeight="Bold" Padding="10,5" Margin="2" CornerRadius="6"/>
+                                                                                 <Border IsVisible="{Binding IsGreenSelected}" Background="#064E3B" BorderBrush="#FFFFFF" BorderThickness="2" CornerRadius="6" Padding="4,2" Margin="2">
+                                                                                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                         <Button Content="🟢 Green" Command="{Binding SelectPaintGroupCommand}" CommandParameter="GREEN" Background="#FFFFFF" Foreground="#000000" FontSize="10" FontWeight="Black" Padding="8,4" CornerRadius="4" Margin="1"/>
+                                                                                         <Rectangle Width="1" Fill="#10B981" Margin="2,2"/>
+                                                                                         <Button Content="1" Command="{Binding SelectSubChannelCommand}" CommandParameter="1" Background="{Binding Sub1Bg}" Foreground="{Binding Sub1Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="2" Command="{Binding SelectSubChannelCommand}" CommandParameter="2" Background="{Binding Sub2Bg}" Foreground="{Binding Sub2Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="3" Command="{Binding SelectSubChannelCommand}" CommandParameter="3" Background="{Binding Sub3Bg}" Foreground="{Binding Sub3Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="4" Command="{Binding SelectSubChannelCommand}" CommandParameter="4" Background="{Binding Sub4Bg}" Foreground="{Binding Sub4Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="5" Command="{Binding SelectSubChannelCommand}" CommandParameter="5" Background="{Binding Sub5Bg}" Foreground="{Binding Sub5Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="6" Command="{Binding SelectSubChannelCommand}" CommandParameter="6" Background="{Binding Sub6Bg}" Foreground="{Binding Sub6Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="7" Command="{Binding SelectSubChannelCommand}" CommandParameter="7" Background="{Binding Sub7Bg}" Foreground="{Binding Sub7Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="8" Command="{Binding SelectSubChannelCommand}" CommandParameter="8" Background="{Binding Sub8Bg}" Foreground="{Binding Sub8Fg}" BorderBrush="#10B981" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                     </WrapPanel>
+                                                                                 </Border>
+
+                                                                                 <!-- YELLOW Container (Inline Expanding) -->
+                                                                                 <Button IsVisible="{Binding !IsYellowSelected}" Content="🟡 Yellow" Command="{Binding SelectPaintGroupCommand}" CommandParameter="YELLOW" Background="{Binding YellowBg}" Foreground="{Binding YellowFg}" BorderBrush="{Binding YellowBorder}" BorderThickness="2" FontSize="10" FontWeight="Bold" Padding="10,5" Margin="2" CornerRadius="6"/>
+                                                                                 <Border IsVisible="{Binding IsYellowSelected}" Background="#78350F" BorderBrush="#FFFFFF" BorderThickness="2" CornerRadius="6" Padding="4,2" Margin="2">
+                                                                                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                         <Button Content="🟡 Yellow" Command="{Binding SelectPaintGroupCommand}" CommandParameter="YELLOW" Background="#FFFFFF" Foreground="#000000" FontSize="10" FontWeight="Black" Padding="8,4" CornerRadius="4" Margin="1"/>
+                                                                                         <Rectangle Width="1" Fill="#F59E0B" Margin="2,2"/>
+                                                                                         <Button Content="1" Command="{Binding SelectSubChannelCommand}" CommandParameter="1" Background="{Binding Sub1Bg}" Foreground="{Binding Sub1Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="2" Command="{Binding SelectSubChannelCommand}" CommandParameter="2" Background="{Binding Sub2Bg}" Foreground="{Binding Sub2Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="3" Command="{Binding SelectSubChannelCommand}" CommandParameter="3" Background="{Binding Sub3Bg}" Foreground="{Binding Sub3Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="4" Command="{Binding SelectSubChannelCommand}" CommandParameter="4" Background="{Binding Sub4Bg}" Foreground="{Binding Sub4Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="5" Command="{Binding SelectSubChannelCommand}" CommandParameter="5" Background="{Binding Sub5Bg}" Foreground="{Binding Sub5Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="6" Command="{Binding SelectSubChannelCommand}" CommandParameter="6" Background="{Binding Sub6Bg}" Foreground="{Binding Sub6Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="7" Command="{Binding SelectSubChannelCommand}" CommandParameter="7" Background="{Binding Sub7Bg}" Foreground="{Binding Sub7Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                         <Button Content="8" Command="{Binding SelectSubChannelCommand}" CommandParameter="8" Background="{Binding Sub8Bg}" Foreground="{Binding Sub8Fg}" BorderBrush="#F59E0B" BorderThickness="1" FontSize="9" FontWeight="Black" Padding="7,3" CornerRadius="3" Margin="1"/>
+                                                                                     </WrapPanel>
+                                                                                 </Border>
+                                                                             </WrapPanel>
+                                                                         </Border>
+
+                                                                         <!-- 2D Matrix Physical Keyboard Grid & Linear Strips -->
+                                                                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="320">
+                                                                             <StackPanel HorizontalAlignment="Center">
+                                                                                 <!-- 2D Matrix Layout (Keyboards / Keypads) -->
+                                                                                 <ItemsControl ItemsSource="{Binding MatrixRows}" IsVisible="{Binding IsMatrixLayout}">
+                                                                                     <ItemsControl.ItemTemplate>
+                                                                                         <DataTemplate>
+                                                                                             <ItemsControl ItemsSource="{Binding Cells}">
+                                                                                                 <ItemsControl.ItemsPanel>
+                                                                                                     <ItemsPanelTemplate>
+                                                                                                         <StackPanel Orientation="Horizontal"/>
+                                                                                                     </ItemsPanelTemplate>
+                                                                                                 </ItemsControl.ItemsPanel>
+                                                                                                 <ItemsControl.ItemTemplate>
+                                                                                                     <DataTemplate>
+                                                                                                         <!-- Dynamic Matrix Cell Tile (Identical to OpenRGB Grid Layout) -->
+                                                                                                         <Panel Width="{Binding KeyWidth}" Height="{Binding KeyHeight}" Margin="1">
+                                                                                                             <!-- Valid Key -->
+                                                                                                             <Button IsVisible="{Binding HasKey}"
+                                                                                                                     Command="{Binding $parent[Border;1].DataContext.PaintCellCommand}"
+                                                                                                                     CommandParameter="{Binding}"
+                                                                                                                     Background="{Binding AreaColorHex}"
+                                                                                                                     BorderBrush="{Binding AreaBorderHex}"
+                                                                                                                     BorderThickness="1"
+                                                                                                                     CornerRadius="4"
+                                                                                                                     Padding="0"
+                                                                                                                     HorizontalAlignment="Stretch"
+                                                                                                                     VerticalAlignment="Stretch"
+                                                                                                                     ToolTip.Tip="{Binding FullToolTip}">
+                                                                                                                 <Grid RowDefinitions="*,*" VerticalAlignment="Center">
+                                                                                                                     <TextBlock Grid.Row="0" Text="{Binding DisplayLabel}" 
+                                                                                                                                FontSize="9" 
+                                                                                                                                FontWeight="Bold" 
+                                                                                                                                Foreground="{Binding AreaTextHex}" 
+                                                                                                                                HorizontalAlignment="Center"/>
+                                                                                                                     <TextBlock Grid.Row="1" Text="{Binding ChannelBadge}" 
+                                                                                                                                FontSize="7" 
+                                                                                                                                FontWeight="Black" 
+                                                                                                                                Foreground="{Binding AreaTextHex}" 
+                                                                                                                                Opacity="0.8"
+                                                                                                                                HorizontalAlignment="Center"/>
+                                                                                                                 </Grid>
+                                                                                                             </Button>
+                                                                                                             <!-- Spacer for empty cell -->
+                                                                                                             <Border IsVisible="{Binding !HasKey}" Width="{Binding KeyWidth}" Height="{Binding KeyHeight}" Background="Transparent"/>
+                                                                                                         </Panel>
+                                                                                                     </DataTemplate>
+                                                                                                 </ItemsControl.ItemTemplate>
+                                                                                             </ItemsControl>
+                                                                                         </DataTemplate>
+                                                                                     </ItemsControl.ItemTemplate>
+                                                                                 </ItemsControl>
+
+                                                                                 <!-- Linear LED Strip Layout (Fans, ARGB Strips) -->
+                                                                                 <ItemsControl ItemsSource="{Binding LinearCells}" IsVisible="{Binding !IsMatrixLayout}">
+                                                                                     <ItemsControl.ItemsPanel>
+                                                                                         <ItemsPanelTemplate>
+                                                                                             <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                                                                                         </ItemsPanelTemplate>
+                                                                                     </ItemsControl.ItemsPanel>
+                                                                                     <ItemsControl.ItemTemplate>
+                                                                                         <DataTemplate>
+                                                                                             <Button Command="{Binding $parent[Border;1].DataContext.PaintCellCommand}"
+                                                                                                     CommandParameter="{Binding}"
+                                                                                                     Background="{Binding AreaColorHex}"
+                                                                                                     BorderBrush="{Binding AreaBorderHex}"
+                                                                                                     BorderThickness="2"
+                                                                                                     CornerRadius="5"
+                                                                                                     Width="34" Height="34"
+                                                                                                     Margin="2"
+                                                                                                     Padding="0"
+                                                                                                     ToolTip.Tip="{Binding FullToolTip}">
+                                                                                                 <Grid RowDefinitions="*,*" VerticalAlignment="Center">
+                                                                                                     <TextBlock Grid.Row="0" Text="{Binding LedIndex, StringFormat='#{0}'}" 
+                                                                                                                FontSize="8" 
+                                                                                                                FontWeight="Black" 
+                                                                                                                Foreground="{Binding AreaTextHex}" 
+                                                                                                                HorizontalAlignment="Center"/>
+                                                                                                     <TextBlock Grid.Row="1" Text="{Binding ChannelBadge}" 
+                                                                                                                FontSize="7.5" 
+                                                                                                                FontWeight="Bold" 
+                                                                                                                Foreground="{Binding AreaTextHex}" 
+                                                                                                                Opacity="0.85"
+                                                                                                                HorizontalAlignment="Center"/>
+                                                                                                 </Grid>
+                                                                                             </Button>
+                                                                                         </DataTemplate>
+                                                                                     </ItemsControl.ItemTemplate>
+                                                                                 </ItemsControl>
+                                                                             </StackPanel>
+                                                                         </ScrollViewer>
+                                                                     </StackPanel>
+                                                                 </Border>
+                                                                </StackPanel>
+                                                            </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>

@@ -10,6 +10,7 @@ using YALCY.Integrations.StageKit;
 using YALCY.Udp;
 using YALCY.Usb;
 using YALCY.ViewModels;
+using YALCY.ViewModels.OpenRGB;
 using YALCY.Views.Components;
 using Device = OpenRGB.NET.Device;
 
@@ -40,6 +41,11 @@ public class OpenRgbTalker
     public Dictionary<string, ZoneInfo> StrobeZones { get; } = new();
     public Dictionary<string, ZoneInfo> FoggerZones { get; } = new();
     public Dictionary<string, Color[]> LightPodZoneStates { get; } = new();
+
+    // Hybrid LightPod + Strobe tracking collections
+    public HashSet<int> LightPodStrobeDevices { get; } = new();
+    public HashSet<string> LightPodStrobeZones { get; } = new();
+    private volatile bool _isStrobeActive;
 
     // Identification tracking to suppress background effect updates during test flashes
     private readonly HashSet<int> _identifyingDevices = new();
@@ -166,29 +172,27 @@ public class OpenRgbTalker
         }
         else
         {
-            if (client == null) return;
-
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Off);
             _manualStrobeFlasher.Stop(SetStrobeFlashStateAsync);
-            await _fogCts.CancelAsync();
+
+            StopBreathingEffect();
 
             try
             {
-                Task.WaitAll(_fogTask);
-            }
-            catch (AggregateException ex)
-            {
-                foreach (var inner in ex.InnerExceptions)
+                if (_fogTask != null && !_fogTask.IsCompleted)
                 {
-                    if (_mainViewModel != null)
-                    {
-                        _mainViewModel.OpenRgbStatus = $"Task error: {inner.Message}";
-                    }
+                    await _fogTask;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_mainViewModel != null)
+                {
+                    _mainViewModel.OpenRgbStatus = $"Task error: {ex.Message}";
                 }
             }
             finally
             {
-                _fogCts.Dispose();
                 client?.Dispose();
                 client = null;
             }
@@ -237,6 +241,8 @@ public class OpenRgbTalker
             StrobeZones.Clear();
             FoggerZones.Clear();
             LightPodZoneStates.Clear();
+            LightPodStrobeDevices.Clear();
+            LightPodStrobeZones.Clear();
             _deviceColorBuffers.Clear();
         }
     }
@@ -431,6 +437,7 @@ public class OpenRgbTalker
 
     private Task SetStrobeFlashStateAsync(bool isOn, CancellationToken cancellationToken)
     {
+        _isStrobeActive = isOn;
         Device[] strobeDevices;
         ZoneInfo[] strobeZones;
         lock (Lock)
@@ -442,14 +449,60 @@ public class OpenRgbTalker
         foreach (var device in strobeDevices)
         {
             if (IsDeviceIdentifying(device.Index)) continue;
-            ToggleDeviceLeds(device, isOn);
+
+            if (LightPodStrobeDevices.Contains(device.Index))
+            {
+                Color[]? lpColors;
+                lock (Lock)
+                {
+                    LightPodStates.TryGetValue(device.Index, out lpColors);
+                    lpColors = lpColors?.ToArray();
+                }
+                if (lpColors != null)
+                {
+                    Color[] blended = new Color[lpColors.Length];
+                    for (int i = 0; i < lpColors.Length; i++)
+                    {
+                        var c = lpColors[i];
+                        blended[i] = (c.R != 0 || c.G != 0 || c.B != 0) ? c : (isOn ? new Color(255, 255, 255) : new Color(0, 0, 0));
+                    }
+                    client?.UpdateLeds(device.Index, blended);
+                }
+            }
+            else
+            {
+                ToggleDeviceLeds(device, isOn);
+            }
         }
 
         foreach (var zoneInfo in strobeZones)
         {
             var zoneKey = $"{zoneInfo.Device.Index}_{zoneInfo.ZoneIndex}";
             if (IsZoneIdentifying(zoneKey) || IsDeviceIdentifying(zoneInfo.Device.Index)) continue;
-            ToggleZoneLeds(zoneInfo, isOn);
+
+            if (LightPodStrobeZones.Contains(zoneKey))
+            {
+                Color[]? lpColors;
+                lock (Lock)
+                {
+                    LightPodZoneStates.TryGetValue(zoneKey, out lpColors);
+                    lpColors = lpColors?.ToArray();
+                }
+                if (lpColors != null)
+                {
+                    Color[] blended = new Color[lpColors.Length];
+                    for (int i = 0; i < lpColors.Length; i++)
+                    {
+                        var c = lpColors[i];
+                        blended[i] = (c.R != 0 || c.G != 0 || c.B != 0) ? c : (isOn ? new Color(255, 255, 255) : new Color(0, 0, 0));
+                    }
+                    UpdateZoneLedsSafely(zoneInfo.Device, zoneInfo.ZoneIndex, blended);
+                }
+            }
+            else
+            {
+                ToggleZoneLeds(zoneInfo, isOn);
+            }
         }
 
         return Task.CompletedTask;
@@ -459,30 +512,43 @@ public class OpenRgbTalker
     {
         StopBreathingEffect();
         _fogCts = new CancellationTokenSource();
+        var token = _fogCts.Token;
         _fogTask = Task.Run(async () =>
         {
-            while (!_fogCts.Token.IsCancellationRequested)
+            try
             {
-                for (int brightness = 0; brightness <= 255; brightness += 5)
+                while (!token.IsCancellationRequested)
                 {
-                    SetDeviceBrightness((byte)brightness);
-                    SetZoneBrightness((byte)brightness);
-                    await Task.Delay(30, _fogCts.Token);
-                }
+                    for (int brightness = 0; brightness <= 255; brightness += 5)
+                    {
+                        SetDeviceBrightness((byte)brightness);
+                        SetZoneBrightness((byte)brightness);
+                        await Task.Delay(30, token);
+                    }
 
-                for (int brightness = 255; brightness >= 0; brightness -= 5)
-                {
-                    SetDeviceBrightness((byte)brightness);
-                    SetZoneBrightness((byte)brightness);
-                    await Task.Delay(30, _fogCts.Token);
+                    for (int brightness = 255; brightness >= 0; brightness -= 5)
+                    {
+                        SetDeviceBrightness((byte)brightness);
+                        SetZoneBrightness((byte)brightness);
+                        await Task.Delay(30, token);
+                    }
                 }
             }
-        }, _fogCts.Token);
+            catch (OperationCanceledException) { }
+            catch (ObjectDisposedException) { }
+        }, token);
     }
 
     private void StopBreathingEffect()
     {
-        _fogCts.Cancel();
+        try
+        {
+            if (_fogCts != null && !_fogCts.IsCancellationRequested)
+            {
+                _fogCts.Cancel();
+            }
+        }
+        catch (ObjectDisposedException) { }
     }
 
     private void SetDeviceBrightness(byte brightness)
@@ -542,6 +608,9 @@ public class OpenRgbTalker
 
     #endregion
 
+    // Custom per-LED StageKit area mapping (Key: $"{deviceIndex}_{zoneIndex}" or $"dev_{deviceIndex}")
+    public Dictionary<string, int[]> CustomLedMappings { get; } = new();
+
     #region LightPod High-Performance Coalesced Flush Engine
 
     private void UpdateLightPodColor(byte parameter, Color color, int areaOffset)
@@ -562,18 +631,38 @@ public class OpenRgbTalker
         {
             var keysPerArea = Math.Max(1, device.Leds.Length / numAreas);
             Color[]? colors;
+            int[]? customMap;
             lock (Lock)
             {
                 if (!LightPodStates.TryGetValue(device.Index, out colors)) continue;
+                CustomLedMappings.TryGetValue($"dev_{device.Index}", out customMap);
             }
 
-            for (int area = areaOffset; area < areaOffset + 8; area++)
+            if (customMap != null && customMap.Length == device.Leds.Length)
             {
-                for (int key = 0; key < keysPerArea; key++)
+                for (int ledIndex = 0; ledIndex < device.Leds.Length; ledIndex++)
                 {
-                    var ledIndex = area * keysPerArea + key;
-                    if (ledIndex >= device.Leds.Length) continue;
-                    colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                    int area = customMap[ledIndex];
+                    if (area < 0)
+                    {
+                        colors[ledIndex] = new Color(0, 0, 0);
+                    }
+                    else if (area >= areaOffset && area < areaOffset + 8)
+                    {
+                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                    }
+                }
+            }
+            else
+            {
+                for (int area = areaOffset; area < areaOffset + 8; area++)
+                {
+                    for (int key = 0; key < keysPerArea; key++)
+                    {
+                        var ledIndex = area * keysPerArea + key;
+                        if (ledIndex >= device.Leds.Length) continue;
+                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                    }
                 }
             }
         }
@@ -586,23 +675,59 @@ public class OpenRgbTalker
 
             var keysPerArea = Math.Max(1, (int)zoneInfo.Zone.LedCount / numAreas);
             Color[]? colors;
+            int[]? customMap;
             lock (Lock)
             {
                 if (!LightPodZoneStates.TryGetValue(zoneKey, out colors)) continue;
+                CustomLedMappings.TryGetValue(zoneKey, out customMap);
             }
 
-            for (int area = areaOffset; area < areaOffset + 8; area++)
+            if (customMap != null && customMap.Length == (int)zoneInfo.Zone.LedCount)
             {
-                for (int key = 0; key < keysPerArea; key++)
+                for (int ledIndex = 0; ledIndex < (int)zoneInfo.Zone.LedCount; ledIndex++)
                 {
-                    var ledIndex = area * keysPerArea + key;
-                    if (ledIndex >= zoneInfo.Zone.LedCount) continue;
-                    colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                    int area = customMap[ledIndex];
+                    if (area < 0)
+                    {
+                        colors[ledIndex] = new Color(0, 0, 0);
+                    }
+                    else if (area >= areaOffset && area < areaOffset + 8)
+                    {
+                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                    }
+                }
+            }
+            else
+            {
+                for (int area = areaOffset; area < areaOffset + 8; area++)
+                {
+                    for (int key = 0; key < keysPerArea; key++)
+                    {
+                        var ledIndex = area * keysPerArea + key;
+                        if (ledIndex >= zoneInfo.Zone.LedCount) continue;
+                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                    }
                 }
             }
         }
 
         // Offload TCP socket flush to background task with frame coalescing
+        TriggerLightPodFlush();
+    }
+
+    public void ResetLightPodColors()
+    {
+        lock (Lock)
+        {
+            foreach (var colors in LightPodStates.Values)
+            {
+                Array.Clear(colors, 0, colors.Length);
+            }
+            foreach (var colors in LightPodZoneStates.Values)
+            {
+                Array.Clear(colors, 0, colors.Length);
+            }
+        }
         TriggerLightPodFlush();
     }
 
@@ -640,6 +765,18 @@ public class OpenRgbTalker
                             if (!LightPodStates.TryGetValue(device.Index, out colors)) continue;
                             colors = colors.ToArray();
                         }
+
+                        if (LightPodStrobeDevices.Contains(device.Index) && _isStrobeActive)
+                        {
+                            Color[] blended = new Color[colors.Length];
+                            for (int i = 0; i < colors.Length; i++)
+                            {
+                                var c = colors[i];
+                                blended[i] = (c.R != 0 || c.G != 0 || c.B != 0) ? c : new Color(255, 255, 255);
+                            }
+                            colors = blended;
+                        }
+
                         client?.UpdateLeds(device.Index, colors);
                     }
                     catch (Exception ex)
@@ -662,6 +799,18 @@ public class OpenRgbTalker
                             if (!LightPodZoneStates.TryGetValue(zoneKey, out colors)) continue;
                             colors = colors.ToArray();
                         }
+
+                        if (LightPodStrobeZones.Contains(zoneKey) && _isStrobeActive)
+                        {
+                            Color[] blended = new Color[colors.Length];
+                            for (int i = 0; i < colors.Length; i++)
+                            {
+                                var c = colors[i];
+                                blended[i] = (c.R != 0 || c.G != 0 || c.B != 0) ? c : new Color(255, 255, 255);
+                            }
+                            colors = blended;
+                        }
+
                         UpdateZoneLedsSafely(zoneInfo.Device, zoneInfo.ZoneIndex, colors);
                     }
                     catch (Exception ex)
@@ -687,13 +836,14 @@ public class OpenRgbTalker
     public void IdentifyDevice(Device device)
     {
         if (client == null) return;
+        lock (Lock)
+        {
+            if (_identifyingDevices.Contains(device.Index)) return;
+            _identifyingDevices.Add(device.Index);
+        }
+
         Task.Run(async () =>
         {
-            lock (Lock)
-            {
-                _identifyingDevices.Add(device.Index);
-            }
-
             try
             {
                 var whiteColors = Enumerable.Repeat(new Color(255, 255, 255), device.Leds.Length).ToArray();
@@ -701,9 +851,9 @@ public class OpenRgbTalker
 
                 for (int i = 0; i < 4; i++)
                 {
-                    client.UpdateLeds(device.Index, whiteColors);
+                    client?.UpdateLeds(device.Index, whiteColors);
                     await Task.Delay(180);
-                    client.UpdateLeds(device.Index, blackColors);
+                    client?.UpdateLeds(device.Index, blackColors);
                     await Task.Delay(180);
                 }
             }
@@ -725,13 +875,14 @@ public class OpenRgbTalker
     {
         if (client == null) return;
         var key = $"{device.Index}_{zoneIndex}";
+        lock (Lock)
+        {
+            if (_identifyingZones.Contains(key)) return;
+            _identifyingZones.Add(key);
+        }
+
         Task.Run(async () =>
         {
-            lock (Lock)
-            {
-                _identifyingZones.Add(key);
-            }
-
             try
             {
                 var whiteColors = Enumerable.Repeat(new Color(255, 255, 255), (int)zone.LedCount).ToArray();

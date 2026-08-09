@@ -3,6 +3,7 @@ using System.Windows.Input;
 using Avalonia.Threading;
 using OpenRGB.NET;
 using ReactiveUI;
+using YALCY.ViewModels.OpenRGB;
 
 namespace YALCY.ViewModels;
 

@@ -13,6 +13,7 @@ public partial class OpenRgbTabView : UserControl
     public OpenRgbTabView()
     {
         InitializeComponent();
+        this.AttachedToVisualTree += (s, e) => UpdateLayoutState(this.Bounds.Width);
         this.SizeChanged += OpenRgbTabView_SizeChanged;
     }
 
@@ -27,12 +28,10 @@ public partial class OpenRgbTabView : UserControl
 
         if (isCompact)
         {
-            // --- Compact Mode (Stacked Vertically) ---
+            // --- Compact Mode (2 Rows Layout) ---
 
-            // Grid Layout: Row 0 = Connection (Auto), Row 1 = Devices (*)
             ContentGrid.RowDefinitions[0].Height = GridLength.Auto;
             ContentGrid.RowDefinitions[1].Height = new GridLength(1, GridUnitType.Star);
-
             ContentGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
             ContentGrid.ColumnDefinitions[1].Width = GridLength.Auto;
 
@@ -44,79 +43,93 @@ public partial class OpenRgbTabView : UserControl
             Grid.SetColumn(DevicesCard, 0);
             Grid.SetColumnSpan(DevicesCard, 2);
 
-            // Connection Card Margin
-            ConnectionCard.Margin = new Thickness(0, 0, 0, 16);
+            ConnectionCard.Margin = new Thickness(0, 0, 0, 10);
+            ConnectionCard.Padding = new Thickness(16, 12);
 
-            // Connection Card Internals (Horizontal Layout - Single Row Grid)
-            // Grid: Header | Form | Status
-            ConnectionPanelStack.RowDefinitions.Clear();
-            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            
+            // 2-row grid:
+            //   Row 0: [Title + Divider] | [IP + Port + Connect Button]
+            //   Row 1: [Strobe Options]  | [Status Indicator Pill]
             ConnectionPanelStack.ColumnDefinitions.Clear();
-            ConnectionPanelStack.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto)); // Header
-            ConnectionPanelStack.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(1, GridUnitType.Star))); // Spacer/Form
-            ConnectionPanelStack.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto)); // Status
+            ConnectionPanelStack.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));                      // Col 0: Title / Strobe
+            ConnectionPanelStack.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(1, GridUnitType.Star))); // Col 1: Form / Status
 
-            // Reposition Children
+            ConnectionPanelStack.RowDefinitions.Clear();
+            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Row 0: Title + Form
+            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Row 1: Strobe + Status
+
+            // --- Row 0: Title + Form ---
+            CompactDivider.IsVisible = true;
+            HeaderSubtitle.IsVisible = false;
+            HeaderPanel.Margin = new Thickness(0, 0, 16, 0);
+            HeaderPanel.VerticalAlignment = VerticalAlignment.Center;
+            HeaderPanel.Spacing = 14;
             Grid.SetRow(HeaderPanel, 0);
             Grid.SetColumn(HeaderPanel, 0);
-            
-            Grid.SetRow(RequirementsPanel, 0); // Hidden anyway
-            
-            Grid.SetRow(ConnectionForm, 0);
-            Grid.SetColumn(ConnectionForm, 1);
-            
-            Grid.SetRow(StatusPanel, 0);
-            Grid.SetColumn(StatusPanel, 2);
+            Grid.SetColumnSpan(HeaderPanel, 1);
 
-            // Alignment & Spacing
-            ConnectionPanelStack.HorizontalAlignment = HorizontalAlignment.Stretch;
-
-            // Header
-            HeaderPanel.Margin = new Thickness(0, 0, 24, 0);
-            HeaderPanel.VerticalAlignment = VerticalAlignment.Center;
-
-            // Hide Requirements
             RequirementsPanel.IsVisible = false;
 
-            // Form (Horizontal)
             ConnectionForm.Orientation = Orientation.Horizontal;
-            ConnectionForm.Spacing = 12;
             ConnectionForm.Margin = new Thickness(0);
             ConnectionForm.VerticalAlignment = VerticalAlignment.Center;
-            ConnectionForm.HorizontalAlignment = HorizontalAlignment.Left; // Keep close to header
+            ConnectionForm.HorizontalAlignment = HorizontalAlignment.Left;
+            Grid.SetRow(ConnectionForm, 0);
+            Grid.SetColumn(ConnectionForm, 1);
+            Grid.SetColumnSpan(ConnectionForm, 1);
 
-            // Reduce widths for better fit
-            ServerIpPanel.Width = 160;
-            ServerIpLabel.IsVisible = true;
-            
-            ServerPortPanel.Width = 100;
+            ServerIpLabel.IsVisible = false;
+            ServerIpPanel.Width = double.NaN;
+            ServerIpPanel.Margin = new Thickness(0, 0, 10, 0);
+            ServerIpPanel.VerticalAlignment = VerticalAlignment.Center;
+            ServerIpInput.Width = 130;
+            ServerIpInput.Height = 32;
+
+            ServerPortLabel.IsVisible = false;
+            ServerPortPanel.Width = double.NaN;
+            ServerPortPanel.Margin = new Thickness(0, 0, 12, 0);
+            ServerPortPanel.VerticalAlignment = VerticalAlignment.Center;
+            ServerPortInput.Width = 75;
+            ServerPortInput.Height = 32;
             ServerPortInput.ShowButtonSpinner = false;
 
-            ConnectButton.Width = 120;
-            ConnectButton.Margin = new Thickness(0, 0, 0, 0);
-            ConnectButton.VerticalAlignment = VerticalAlignment.Bottom; // Align with textboxes
-            ConnectButton.Height = 36; // Match TextBox height
+            ConnectButton.Width = double.NaN;
+            ConnectButton.Margin = new Thickness(0);
+            ConnectButton.VerticalAlignment = VerticalAlignment.Center;
+            ConnectButton.Height = 32;
+            ConnectButton.Padding = new Thickness(14, 0);
 
-            // Status
-            StatusPanel.Margin = new Thickness(0, 0, 0, 0); 
+            // --- Row 1: Strobe Options (Left) + Status Pill (Right) ---
+            StrobeModePanel.IsVisible = true;
+            StrobeModeLabel.IsVisible = false;
+            StrobeModePanel.Margin = new Thickness(0, 10, 0, 0);
+            StrobeModePanel.VerticalAlignment = VerticalAlignment.Center;
+            StrobeModePanel.HorizontalAlignment = HorizontalAlignment.Left;
+            Grid.SetRow(StrobeModePanel, 1);
+            Grid.SetColumn(StrobeModePanel, 0);
+            Grid.SetColumnSpan(StrobeModePanel, 1);
+
+            StatusPanel.Margin = new Thickness(16, 10, 0, 0);
             StatusPanel.VerticalAlignment = VerticalAlignment.Center;
-            StatusPanel.Padding = new Thickness(12, 6);
-            StatusText.IsVisible = false; // Hide status text in compact mode
+            StatusPanel.HorizontalAlignment = HorizontalAlignment.Right;
+            StatusPanel.Padding = new Thickness(12, 5);
+            StatusPanel.CornerRadius = new CornerRadius(6);
+            StatusText.IsVisible = true;
+            StatusText.MaxWidth = 320;
+            StatusText.TextTrimming = TextTrimming.CharacterEllipsis;
+            Grid.SetRow(StatusPanel, 1);
+            Grid.SetColumn(StatusPanel, 1);
+            Grid.SetColumnSpan(StatusPanel, 1);
+
+            ConnectionPanelStack.HorizontalAlignment = HorizontalAlignment.Stretch;
         }
         else
         {
-            // --- Wide Mode (Sidebar + Main) ---
+            // --- Wide Mode (Left Sidebar + Main Devices Area) ---
 
-            // Grid Layout: Col 0 = Connection (400), Col 1 = Devices (*)
-            
-            // Note: In XAML we defined Row 0 = *, Row 1 = Auto.
-            // For Wide mode, we want both in Row 0, spanning full height (or Auto if content dictates, but usually *)
-            
             ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
-            ContentGrid.RowDefinitions[1].Height = GridLength.Auto; // Unused row
+            ContentGrid.RowDefinitions[1].Height = GridLength.Auto;
 
-            ContentGrid.ColumnDefinitions[0].Width = new GridLength(400);
+            ContentGrid.ColumnDefinitions[0].Width = new GridLength(380);
             ContentGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
 
             Grid.SetRow(ConnectionCard, 0);
@@ -127,63 +140,92 @@ public partial class OpenRgbTabView : UserControl
             Grid.SetColumn(DevicesCard, 1);
             Grid.SetColumnSpan(DevicesCard, 1);
 
-            // Connection Card Margin
             ConnectionCard.Margin = new Thickness(0, 0, 16, 0);
+            ConnectionCard.Padding = new Thickness(20);
 
-            // Connection Card Internals (Vertical Layout - Stacked Grid)
-            ConnectionPanelStack.ColumnDefinitions.Clear(); // Single column (implicit or explicit)
-            
+            // Connection Card Internals (Single column, 5 stacked rows)
+            ConnectionPanelStack.ColumnDefinitions.Clear();
+            ConnectionPanelStack.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(1, GridUnitType.Star)));
+
             ConnectionPanelStack.RowDefinitions.Clear();
-            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Header
-            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Req
-            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Form
-            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Status
+            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Row 0: Header
+            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Row 1: Requirements
+            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Row 2: Form
+            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Row 3: Strobe
+            ConnectionPanelStack.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // Row 4: Status
 
-            // Reposition Children
             Grid.SetRow(HeaderPanel, 0);
             Grid.SetColumn(HeaderPanel, 0);
-            
+            Grid.SetColumnSpan(HeaderPanel, 1);
+
+            HeaderSubtitle.IsVisible = true;
+            HeaderPanel.Margin = new Thickness(0, 0, 0, 16);
+            HeaderPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            HeaderPanel.Spacing = 12;
+
+            CompactDivider.IsVisible = false;
+
+            RequirementsPanel.IsVisible = true;
+
             Grid.SetRow(RequirementsPanel, 1);
             Grid.SetColumn(RequirementsPanel, 0);
-            
+            Grid.SetColumnSpan(RequirementsPanel, 1);
+
             Grid.SetRow(ConnectionForm, 2);
             Grid.SetColumn(ConnectionForm, 0);
-            
-            Grid.SetRow(StatusPanel, 3);
+            Grid.SetColumnSpan(ConnectionForm, 1);
+
+            Grid.SetRow(StrobeModePanel, 3);
+            Grid.SetColumn(StrobeModePanel, 0);
+            Grid.SetColumnSpan(StrobeModePanel, 1);
+
+            Grid.SetRow(StatusPanel, 4);
             Grid.SetColumn(StatusPanel, 0);
+            Grid.SetColumnSpan(StatusPanel, 1);
 
             ConnectionPanelStack.HorizontalAlignment = HorizontalAlignment.Stretch;
 
-            // Header
-            HeaderPanel.Margin = new Thickness(0, 0, 0, 16);
-            HeaderPanel.VerticalAlignment = VerticalAlignment.Stretch; // Default
-
-            // Show Requirements
-            RequirementsPanel.IsVisible = true;
-
-            // Form (Vertical)
             ConnectionForm.Orientation = Orientation.Vertical;
-            ConnectionForm.Spacing = 14;
-            ConnectionForm.Margin = new Thickness(0); 
-            ConnectionForm.VerticalAlignment = VerticalAlignment.Stretch;
-            ConnectionForm.HorizontalAlignment = HorizontalAlignment.Stretch; // Default
+            ConnectionForm.Margin = new Thickness(0, 0, 0, 16);
+            ConnectionForm.VerticalAlignment = VerticalAlignment.Top;
+            ConnectionForm.HorizontalAlignment = HorizontalAlignment.Stretch;
 
-            ServerIpPanel.Width = double.NaN; // Auto
             ServerIpLabel.IsVisible = true;
+            ServerIpPanel.Width = double.NaN;
+            ServerIpPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            ServerIpPanel.Margin = new Thickness(0, 0, 0, 14);
+            ServerIpInput.Width = double.NaN;
+            ServerIpInput.HorizontalAlignment = HorizontalAlignment.Stretch;
+            ServerIpInput.Height = 36;
 
+            ServerPortLabel.IsVisible = true;
             ServerPortPanel.Width = double.NaN;
-            ServerPortInput.ShowButtonSpinner = true;
+            ServerPortPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            ServerPortPanel.Margin = new Thickness(0, 0, 0, 16);
+            ServerPortInput.Width = double.NaN;
+            ServerPortInput.HorizontalAlignment = HorizontalAlignment.Stretch;
+            ServerPortInput.Height = 36;
+            ServerPortInput.ShowButtonSpinner = false;
 
             ConnectButton.Width = double.NaN;
-            ConnectButton.Margin = new Thickness(0, 4, 0, 0);
+            ConnectButton.Margin = new Thickness(0);
             ConnectButton.VerticalAlignment = VerticalAlignment.Stretch;
+            ConnectButton.HorizontalAlignment = HorizontalAlignment.Stretch;
             ConnectButton.Height = 38;
+            ConnectButton.Padding = new Thickness(14, 0);
 
-            // Status
-            StatusPanel.Margin = new Thickness(0, 16, 0, 0);
+            StrobeModeLabel.IsVisible = true;
+            StrobeModePanel.IsVisible = true;
+            StrobeModePanel.Margin = new Thickness(0, 0, 0, 18);
+            StrobeModePanel.HorizontalAlignment = HorizontalAlignment.Left;
+
+            StatusPanel.Margin = new Thickness(0);
             StatusPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            StatusPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             StatusPanel.Padding = new Thickness(12);
-            StatusText.IsVisible = true; // Show text in wide mode
+            StatusPanel.CornerRadius = new CornerRadius(8);
+            StatusText.IsVisible = true;
+            StatusText.MaxWidth = double.PositiveInfinity;
         }
     }
 }
