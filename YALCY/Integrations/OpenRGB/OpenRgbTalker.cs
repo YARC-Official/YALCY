@@ -26,6 +26,9 @@ public class OpenRgbTalker
     private CancellationTokenSource cts = new();
     private Task updateTask = Task.CompletedTask;
 
+    // Shared lock for device/zone list and state mutations and snapshots
+    public readonly object Lock = new();
+
     // Legacy device-based lists (kept for backward compatibility)
     public List<Device> OffList = new();
     public List<Device> LightPodList = new();
@@ -79,20 +82,17 @@ public class OpenRgbTalker
         try
         {
             // Clear all device lists to prevent duplicates on reconnection
-            OffList.Clear();
-            LightPodList.Clear();
-            StrobeList.Clear();
-            FoggerList.Clear();
-            lock (LightPodStates)
+            lock (Lock)
             {
+                OffList.Clear();
+                LightPodList.Clear();
+                StrobeList.Clear();
+                FoggerList.Clear();
                 LightPodStates.Clear();
-            }
-            OffZones.Clear();
-            LightPodZones.Clear();
-            StrobeZones.Clear();
-            FoggerZones.Clear();
-            lock (LightPodZoneStates)
-            {
+                OffZones.Clear();
+                LightPodZones.Clear();
+                StrobeZones.Clear();
+                FoggerZones.Clear();
                 LightPodZoneStates.Clear();
             }
             
@@ -127,10 +127,12 @@ public class OpenRgbTalker
 
             foreach (var device in devices)
             {
-                OffList.Add(device);
                 OpenRgbDeviceInserted?.Invoke(device);
-                mainViewModel.DeviceCategories.Add(new DeviceCategory(device, 0, mainViewModel));
-                mainViewModel.DevicesWithZones.Add(new DeviceWithZones(device, mainViewModel));
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    mainViewModel.DeviceCategories.Add(new DeviceCategory(device, 0, mainViewModel));
+                    mainViewModel.DevicesWithZones.Add(new DeviceWithZones(device, mainViewModel));
+                });
             }
 
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
@@ -182,34 +184,44 @@ public class OpenRgbTalker
 
     private void OnDeviceLisUpdate(object o, EventArgs e)
     {
-        // I thought EventsArgs would be useful to see if it was an add or remove event but not sure if
-        // that is true.
+        // Fetch latest controller data
         var devices = client.GetAllControllerData();
-        OffList.Clear();
-        Dispatcher.UIThread.InvokeAsync(MainWindowViewModel.ClearOpenRgbVisualList);
+
+        // Clear all device/zone lists and state under lock to prevent race conditions / stale mappings
+        lock (Lock)
+        {
+            OffList.Clear();
+            LightPodList.Clear();
+            StrobeList.Clear();
+            FoggerList.Clear();
+            LightPodStates.Clear();
+            OffZones.Clear();
+            LightPodZones.Clear();
+            StrobeZones.Clear();
+            FoggerZones.Clear();
+            LightPodZoneStates.Clear();
+        }
+
+        // Marshal UI visual collection clearing and repopulation atomically to the UI thread
         Dispatcher.UIThread.InvokeAsync(() => 
         {
+            MainWindowViewModel.ClearOpenRgbVisualList();
             if (_mainViewModel != null)
             {
                 _mainViewModel.DeviceCategories.Clear();
                 _mainViewModel.ClearDevicesWithZones();
             }
-        });
-        
-        foreach (var dev in devices)
-        {
-            OffList.Add(dev);
-            OpenRgbDeviceInserted?.Invoke(dev);
             
-            Dispatcher.UIThread.InvokeAsync(() => 
+            foreach (var dev in devices)
             {
+                OpenRgbDeviceInserted?.Invoke(dev);
                 if (_mainViewModel != null)
                 {
                     _mainViewModel.DeviceCategories.Add(new DeviceCategory(dev, 0, _mainViewModel));
                     _mainViewModel.DevicesWithZones.Add(new DeviceWithZones(dev, _mainViewModel));
                 }
-            });
-        }
+            }
+        });
     }
 
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
@@ -313,25 +325,39 @@ public class OpenRgbTalker
         {
             while (!cts.Token.IsCancellationRequested)
             {
+                Device[] strobeDevices;
+                ZoneInfo[] strobeZones;
+                lock (Lock)
+                {
+                    strobeDevices = StrobeList.ToArray();
+                    strobeZones = StrobeZones.Values.ToArray();
+                }
+
                 // Support both legacy device-based and new zone-based strobes
-                foreach (var device in StrobeList)
+                foreach (var device in strobeDevices)
                 {
                     ToggleDeviceLeds(device, true);
                 }
                 
-                foreach (var zoneInfo in StrobeZones.Values)
+                foreach (var zoneInfo in strobeZones)
                 {
                     ToggleZoneLeds(zoneInfo, true);
                 }
 
                 await Task.Delay(interval);
-                
-                foreach (var device in StrobeList)
+
+                lock (Lock)
+                {
+                    strobeDevices = StrobeList.ToArray();
+                    strobeZones = StrobeZones.Values.ToArray();
+                }
+
+                foreach (var device in strobeDevices)
                 {
                     ToggleDeviceLeds(device, false);
                 }
                 
-                foreach (var zoneInfo in StrobeZones.Values)
+                foreach (var zoneInfo in strobeZones)
                 {
                     ToggleZoneLeds(zoneInfo, false);
                 }
@@ -378,7 +404,13 @@ public class OpenRgbTalker
 
     private void SetDeviceBrightness(byte brightness)
     {
-        foreach (var device in FoggerList)
+        Device[] foggerDevices;
+        lock (Lock)
+        {
+            foggerDevices = FoggerList.ToArray();
+        }
+
+        foreach (var device in foggerDevices)
         {
             var colors = Enumerable.Repeat(new Color(brightness, brightness, brightness), device.Leds.Length).ToArray();
             client.UpdateLeds(device.Index, colors);
@@ -387,7 +419,13 @@ public class OpenRgbTalker
     
     private void SetZoneBrightness(byte brightness)
     {
-        foreach (var zoneInfo in FoggerZones.Values)
+        ZoneInfo[] foggerZones;
+        lock (Lock)
+        {
+            foggerZones = FoggerZones.Values.ToArray();
+        }
+
+        foreach (var zoneInfo in foggerZones)
         {
             var color = new Color(brightness, brightness, brightness);
             var colors = Enumerable.Repeat(color, (int)zoneInfo.Zone.LedCount).ToArray();
@@ -397,20 +435,27 @@ public class OpenRgbTalker
 
     private void UpdateLightPodColor(byte parameter, Color color, int areaOffset)
     {
-        if (LightPodList.Count == 0 && LightPodZones.Count == 0)
+        Device[] lightPodDevices;
+        KeyValuePair<string, ZoneInfo>[] lightPodZones;
+        lock (Lock)
         {
-            return;
+            if (LightPodList.Count == 0 && LightPodZones.Count == 0)
+            {
+                return;
+            }
+            lightPodDevices = LightPodList.ToArray();
+            lightPodZones = LightPodZones.ToArray();
         }
 
         const int numAreas = 32;
         
         // Legacy device-based lightpods
-        foreach (var device in LightPodList)
+        foreach (var device in lightPodDevices)
         {
             // Adjust the number of LEDs per area, ensuring at least one LED per area
             var keysPerArea = Math.Max(1, device.Leds.Length / numAreas);
             Color[]? colors;
-            lock (LightPodStates)
+            lock (Lock)
             {
                 if (!LightPodStates.TryGetValue(device.Index, out colors)) continue;
             }
@@ -431,14 +476,14 @@ public class OpenRgbTalker
         }
         
         // New zone-based lightpods
-        foreach (var kvp in LightPodZones)
+        foreach (var kvp in lightPodZones)
         {
             var zoneInfo = kvp.Value;
             var zoneKey = kvp.Key;
             
             var keysPerArea = Math.Max(1, zoneInfo.Zone.LedCount / numAreas);
             Color[]? colors;
-            lock (LightPodZoneStates)
+            lock (Lock)
             {
                 if (!LightPodZoneStates.TryGetValue(zoneKey, out colors)) continue;
             }

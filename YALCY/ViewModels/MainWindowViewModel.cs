@@ -311,6 +311,7 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
         get => _category;
         set
         {
+            if (_category == value) return;
             RemoveFromCategoryList(_category);
             _category = value;
             UpdateDeviceCategoryList(_category);
@@ -340,27 +341,27 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
 
         var key = GetZoneKey();
         
-        switch (category)
+        lock (_viewModel.OpenRgbTalker.Lock)
         {
-            case 0:
-                _viewModel.OpenRgbTalker.OffZones.Remove(key);
-                break;
+            switch (category)
+            {
+                case 0:
+                    _viewModel.OpenRgbTalker.OffZones.Remove(key);
+                    break;
 
-            case 1:
-                _viewModel.OpenRgbTalker.LightPodZones.Remove(key);
-                lock (_viewModel.OpenRgbTalker.LightPodZoneStates)
-                {
+                case 1:
+                    _viewModel.OpenRgbTalker.LightPodZones.Remove(key);
                     _viewModel.OpenRgbTalker.LightPodZoneStates.Remove(key);
-                }
-                break;
+                    break;
 
-            case 2:
-                _viewModel.OpenRgbTalker.StrobeZones.Remove(key);
-                break;
+                case 2:
+                    _viewModel.OpenRgbTalker.StrobeZones.Remove(key);
+                    break;
 
-            case 3:
-                _viewModel.OpenRgbTalker.FoggerZones.Remove(key);
-                break;
+                case 3:
+                    _viewModel.OpenRgbTalker.FoggerZones.Remove(key);
+                    break;
+            }
         }
     }
 
@@ -371,32 +372,32 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
         var key = GetZoneKey();
         var zoneInfo = new ZoneInfo { Device = Device, ZoneIndex = ZoneIndex, Zone = Zone };
         
-        switch (category)
+        lock (_viewModel.OpenRgbTalker.Lock)
         {
-            case 0:
-                _viewModel.OpenRgbTalker.OffZones[key] = zoneInfo;
-                break;
+            switch (category)
+            {
+                case 0:
+                    _viewModel.OpenRgbTalker.OffZones[key] = zoneInfo;
+                    break;
 
-            case 1:
-                _viewModel.OpenRgbTalker.LightPodZones[key] = zoneInfo;
-                lock (_viewModel.OpenRgbTalker.LightPodZoneStates)
-                {
+                case 1:
+                    _viewModel.OpenRgbTalker.LightPodZones[key] = zoneInfo;
                     if (!_viewModel.OpenRgbTalker.LightPodZoneStates.ContainsKey(key))
                     {
                         // Initialize the light pod state for this zone
                         int ledCount = (int)Zone.LedCount;
                         _viewModel.OpenRgbTalker.LightPodZoneStates[key] = new Color[ledCount];
                     }
-                }
-                break;
+                    break;
 
-            case 2:
-                _viewModel.OpenRgbTalker.StrobeZones[key] = zoneInfo;
-                break;
+                case 2:
+                    _viewModel.OpenRgbTalker.StrobeZones[key] = zoneInfo;
+                    break;
 
-            case 3:
-                _viewModel.OpenRgbTalker.FoggerZones[key] = zoneInfo;
-                break;
+                case 3:
+                    _viewModel.OpenRgbTalker.FoggerZones[key] = zoneInfo;
+                    break;
+            }
         }
     }
 
@@ -426,6 +427,7 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
         get => _category;
         set
         {
+            if (_category == value) return;
             RemoveFromCategoryList(_category);
             _category = value;
             UpdateDeviceCategoryList(_category);
@@ -451,27 +453,27 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
     {
         if (_viewModel == null) return;
 
-        switch (category)
+        lock (_viewModel.OpenRgbTalker.Lock)
         {
-            case 0:
-                _viewModel.OpenRgbTalker.OffList.Remove(Device);
-                break;
+            switch (category)
+            {
+                case 0:
+                    _viewModel.OpenRgbTalker.OffList.Remove(Device);
+                    break;
 
-            case 1:
-                _viewModel.OpenRgbTalker.LightPodList.Remove(Device);
-                lock (_viewModel.OpenRgbTalker.LightPodStates)
-                {
+                case 1:
+                    _viewModel.OpenRgbTalker.LightPodList.Remove(Device);
                     _viewModel.OpenRgbTalker.LightPodStates.Remove(Device.Index);
-                }
-                break;
+                    break;
 
-            case 2:
-                _viewModel.OpenRgbTalker.StrobeList.Remove(Device);
-                break;
+                case 2:
+                    _viewModel.OpenRgbTalker.StrobeList.Remove(Device);
+                    break;
 
-            case 3:
-                _viewModel.OpenRgbTalker.FoggerList.Remove(Device);
-                break;
+                case 3:
+                    _viewModel.OpenRgbTalker.FoggerList.Remove(Device);
+                    break;
+            }
         }
     }
 
@@ -479,32 +481,32 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
     {
         if (_viewModel == null) return;
 
-        // Add the device to the correct list based on the category
-        switch (category)
+        lock (_viewModel.OpenRgbTalker.Lock)
         {
-            case 0:
-                _viewModel.OpenRgbTalker.OffList.Add(Device);
-                break;
+            // Add the device to the correct list based on the category
+            switch (category)
+            {
+                case 0:
+                    _viewModel.OpenRgbTalker.OffList.Add(Device);
+                    break;
 
-            case 1:
-                _viewModel.OpenRgbTalker.LightPodList.Add(Device);
-                lock (_viewModel.OpenRgbTalker.LightPodStates)
-                {
+                case 1:
+                    _viewModel.OpenRgbTalker.LightPodList.Add(Device);
                     if (!_viewModel.OpenRgbTalker.LightPodStates.ContainsKey(Device.Index))
                     {
                         // Initialize the light pod state for this device
                         _viewModel.OpenRgbTalker.LightPodStates[Device.Index] = new Color[Device.Leds.Length];
                     }
-                }
-                break;
+                    break;
 
-            case 2:
-                _viewModel.OpenRgbTalker.StrobeList.Add(Device);
-                break;
+                case 2:
+                    _viewModel.OpenRgbTalker.StrobeList.Add(Device);
+                    break;
 
-            case 3:
-                _viewModel.OpenRgbTalker.FoggerList.Add(Device);
-                break;
+                case 3:
+                    _viewModel.OpenRgbTalker.FoggerList.Add(Device);
+                    break;
+            }
         }
     }
 
