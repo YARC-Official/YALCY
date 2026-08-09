@@ -6,8 +6,19 @@
              x:Class="YALCY.Views.Tabs.Rb3eTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
-    <!-- Toggle Button -->
-    <ToggleButton ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
-                  Content="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
-                  IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
+    <StackPanel Margin="5">
+        <!-- Toggle Button -->
+        <ToggleButton ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
+                      Content="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
+                      IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
+        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
+            <RadioButton Content="Strobe command"
+                         GroupName="Rb3eStrobeMode"
+                         IsChecked="{Binding Rb3eStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+            <RadioButton Content="Manual flash strobe"
+                         GroupName="Rb3eStrobeMode"
+                         IsChecked="{Binding Rb3eStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+        </StackPanel>
+    </StackPanel>
 </UserControl>

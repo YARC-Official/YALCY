@@ -21,9 +21,9 @@ public class UsbDeviceMonitor
     private CancellationTokenSource? _updateCts;
     private EventHandler<DeviceListChangedEventArgs>? _changedHandler;
 
-    private static List<HidDevice> _perviousHidDevices = new();
-    private static List<SerialDevice> _perviousSerialDevices = new();
-    private static List<BleDevice> _perviousBLEDevices = new();
+    private static List<HidDevice> _previousHidDevices = new();
+    private static List<SerialDevice> _previousSerialDevices = new();
+    private static List<BleDevice> _previousBLEDevices = new();
 
     private static List<HidDevice> _connectedHidDevices = new();
     private static List<SerialDevice> _connectedSerialDevices = new();
@@ -115,9 +115,9 @@ public class UsbDeviceMonitor
 
             lock (DeviceStateLock)
             {
-                previousHidDevices = _perviousHidDevices.ToList();
-                previousSerialDevices = _perviousSerialDevices.ToList();
-                previousBleDevices = _perviousBLEDevices.ToList();
+                previousHidDevices = _previousHidDevices.ToList();
+                previousSerialDevices = _previousSerialDevices.ToList();
+                previousBleDevices = _previousBLEDevices.ToList();
             }
 
             var removedSerialDevices = previousSerialDevices
@@ -143,9 +143,9 @@ public class UsbDeviceMonitor
 
             lock (DeviceStateLock)
             {
-                _perviousHidDevices = newHidDevices;
-                _perviousSerialDevices = newSerialDevices;
-                _perviousBLEDevices = newBleDevices;
+                _previousHidDevices = newHidDevices;
+                _previousSerialDevices = newSerialDevices;
+                _previousBLEDevices = newBleDevices;
                 _connectedHidDevices = newHidDevices.Where(IsStageKitHidDevice).ToList();
                 _connectedSerialDevices = newSerialDevices;
                 _connectedBLEDevices = newBleDevices;

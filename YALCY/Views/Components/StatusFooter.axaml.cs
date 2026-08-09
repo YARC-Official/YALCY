@@ -29,6 +29,8 @@ public partial class StatusFooter : UserControl
         { "RB3E", "#808080" },
         { "Serial", "#808080" },
         { "Hue", "#808080" },
+        { "LIFX", "#808080" },
+        { "HomeAssistant", "#808080" },
         { "OpenRGB", "#808080" }
     };
 
@@ -39,6 +41,8 @@ public partial class StatusFooter : UserControl
     private Ellipse? _rb3eStatusEllipse;
     private Ellipse? _serialStatusEllipse;
     private Ellipse? _hueStatusEllipse;
+    private Ellipse? _lifxStatusEllipse;
+    private Ellipse? _homeAssistantStatusEllipse;
     private Ellipse? _openRgbStatusEllipse;
 
     public StatusFooter()
@@ -52,6 +56,8 @@ public partial class StatusFooter : UserControl
         _rb3eStatusEllipse = this.FindControl<Ellipse>("Rb3eStatusEllipse");
         _serialStatusEllipse = this.FindControl<Ellipse>("SerialStatusEllipse");
         _hueStatusEllipse = this.FindControl<Ellipse>("HueStatusEllipse");
+        _lifxStatusEllipse = this.FindControl<Ellipse>("LifxStatusEllipse");
+        _homeAssistantStatusEllipse = this.FindControl<Ellipse>("HomeAssistantStatusEllipse");
         _openRgbStatusEllipse = this.FindControl<Ellipse>("OpenRgbStatusEllipse");
         
         // Subscribe to status change events
@@ -63,10 +69,10 @@ public partial class StatusFooter : UserControl
 
     private void OnStatusColorChanged(string integrationName, string color)
     {
-        // Verificar se a nova cor é diferente da atual para evitar mudanças desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         _statusColors[integrationName] = color;
@@ -101,6 +107,8 @@ public partial class StatusFooter : UserControl
             "RB3E" => _rb3eStatusEllipse,
             "SERIAL" => _serialStatusEllipse,
             "HUE" => _hueStatusEllipse,
+            "LIFX" => _lifxStatusEllipse,
+            "HOMEASSISTANT" => _homeAssistantStatusEllipse,
             "OPENRGB" => _openRgbStatusEllipse,
             _ => null
         };
@@ -120,10 +128,10 @@ public partial class StatusFooter : UserControl
     {
         string color = GetStatusColor(status);
         
-        // Verificar se a nova cor é diferente da atual para evitar chamadas desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         StatusColorChanged?.Invoke(integrationName, color);
@@ -133,10 +141,10 @@ public partial class StatusFooter : UserControl
     {
         string color = GetStatusColor(isEnabled ? IntegrationStatus.Connecting : IntegrationStatus.Off);
         
-        // Verificar se a nova cor é diferente da atual para evitar chamadas desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         StatusColorChanged?.Invoke(integrationName, color); 
@@ -144,10 +152,10 @@ public partial class StatusFooter : UserControl
 
     public static void SetStatusColor(string integrationName, string color)
     {
-        // Verificar se a nova cor é diferente da atual para evitar chamadas desnecessárias
+        // Avoid unnecessary updates when the color has not changed.
         if (_statusColors.TryGetValue(integrationName, out string currentColor) && currentColor == color)
         {
-            return; // Cor já é a mesma, não precisa mudar
+            return; // The color is already correct.
         }
         
         StatusColorChanged?.Invoke(integrationName, color);
@@ -165,9 +173,9 @@ public partial class StatusFooter : UserControl
         };
     }
 
-    // Cleanup when control is disposed
-    ~StatusFooter()
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         StatusColorChanged -= OnStatusColorChanged;
+        base.OnDetachedFromVisualTree(e);
     }
 }

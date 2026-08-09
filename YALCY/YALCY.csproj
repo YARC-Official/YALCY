@@ -38,14 +38,14 @@
         <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.11" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.11" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.8" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.9" />
         <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.3.0.6" />
         <PackageReference Include="Haukcode.sACN" Version="2.0.75" />
         <PackageReference Include="HidSharp" Version="2.6.4" />
         <PackageReference Include="HueApi" Version="3.1.2" />
         <PackageReference Include="HueApi.ColorConverters" Version="3.1.0" />
         <PackageReference Include="HueApi.Entertainment" Version="3.1.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.5-beta1" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="OpenRGB.NET" Version="3.1.1" />
         <PackageReference Include="System.IO.Ports" Version="10.0.2" />
         <PackageReference Include="System.Management" Version="10.0.2" />

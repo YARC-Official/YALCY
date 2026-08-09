@@ -588,7 +588,6 @@ namespace YALCY.Integrations.StageKit;
         private void HandleBeatlineEvent(byte eventName)
         {
             if (eventName != (byte)Udp.UdpIntake.BeatByte.Measure || StageKitTalker.PreviousLightingCue is not Dischord) return;
-            if (StageKitTalker.PreviousLightingCue is not Dischord) return;
             _enableBlueLedVocals = true;
         }
     }

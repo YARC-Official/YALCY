@@ -66,6 +66,11 @@ namespace YALCY.ViewModels;
             new Point(49, -24)    // LED 7 (red) - Farthest Top Left
         };
 
+        private static readonly Lazy<Bitmap> BlueLedBitmap = new(() => new Bitmap(AssetLoader.Open(new Uri("avares://YALCY/Resources/StageKit/BlueLed.png"))));
+        private static readonly Lazy<Bitmap> GreenLedBitmap = new(() => new Bitmap(AssetLoader.Open(new Uri("avares://YALCY/Resources/StageKit/GreenLed.png"))));
+        private static readonly Lazy<Bitmap> YellowLedBitmap = new(() => new Bitmap(AssetLoader.Open(new Uri("avares://YALCY/Resources/StageKit/YellowLed.png"))));
+        private static readonly Lazy<Bitmap> RedLedBitmap = new(() => new Bitmap(AssetLoader.Open(new Uri("avares://YALCY/Resources/StageKit/RedLed.png"))));
+
         static LedDisplay()
         {
             AffectsRender<LedDisplay>(ColorProperty);
@@ -74,7 +79,8 @@ namespace YALCY.ViewModels;
         public LedDisplay()
         {
             LedStates = new bool[8];
-            UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            AttachedToVisualTree += (_, _) => UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            DetachedFromVisualTree += (_, _) => UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
         }
 
         public int Color
@@ -99,36 +105,34 @@ namespace YALCY.ViewModels;
 
             if (LedStates == null) return;
 
-            // Determine the image source based on the color
-            Uri? imageSource = null;
+            // Determine the cached bitmap and positions based on the color
+            Bitmap? bitmap = null;
             Point[] ledPositions = null;
 
             switch (Color)
             {
                 case 0:
-                    imageSource = new Uri("avares://YALCY/Resources/StageKit/BlueLed.png");
+                    bitmap = BlueLedBitmap.Value;
                     ledPositions = _blueLedPositions;
                     break;
 
                 case 1:
-                    imageSource = new Uri("avares://YALCY/Resources/StageKit/GreenLed.png");
+                    bitmap = GreenLedBitmap.Value;
                     ledPositions = _greenLedPositions;
                     break;
 
                 case 2:
-                    imageSource = new Uri("avares://YALCY/Resources/StageKit/YellowLed.png");
+                    bitmap = YellowLedBitmap.Value;
                     ledPositions = _yellowLedPositions;
                     break;
 
                 case 3:
-                    imageSource = new Uri("avares://YALCY/Resources/StageKit/RedLed.png");
+                    bitmap = RedLedBitmap.Value;
                     ledPositions = _redLedPositions;
                     break;
             }
 
-            if (imageSource == null) return;
-
-            var bitmap = new Bitmap(AssetLoader.Open(imageSource));
+            if (bitmap == null) return;
 
             // Calculate half the size of the image for centering
             var halfWidth = bitmap.Size.Width / 2;

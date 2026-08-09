@@ -46,7 +46,8 @@ namespace YALCY.Integrations.StageKit;
                     }
 
                     var stepsPerBeats = _patternList.Length * _cyclesPerBeat;
-                    var secondsPerBeat = 60f / UdpIntake.BeatsPerMinute.Value;
+                    var bpm = UdpIntake.BeatsPerMinute.Value;
+                    var secondsPerBeat = bpm > 0 ? 60f / bpm : 0.5f;
                     await Task.Delay(TimeSpan.FromSeconds(  secondsPerBeat / stepsPerBeats   ), cancellationToken: _cancellationTokenSource.Token);
                 }
             });
@@ -189,6 +190,8 @@ namespace YALCY.Integrations.StageKit;
         {
             _enabled = false;
             Udp.UdpIntake.OnBeat -= HandleBeatlineEvent;
+            Udp.UdpIntake.OnKeyFrame -= HandleKeyFrameEvent;
+            Udp.UdpIntake.OnDrum -= HandleDrumEvent;
         }
     }
 

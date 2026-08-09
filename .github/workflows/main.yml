@@ -97,6 +97,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs: [build-windows, build-linux, build-macos]
+    permissions:
+      contents: write
     outputs:
       next_version: ${{ steps.next_version.outputs.next_version }}
 
@@ -169,7 +171,8 @@ jobs:
   create-dmg:
     runs-on: macos-latest
     needs: release
-
+    permissions:
+      contents: write
     steps:
       - name: Download macOS Binaries
         uses: actions/download-artifact@v4

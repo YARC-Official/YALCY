@@ -5,6 +5,8 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Threading;
 using ReactiveUI;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
@@ -13,14 +15,25 @@ namespace YALCY.Udp;
 
 public partial class UdpIntake : ReactiveObject
 {
-    public const int MIN_PACKET_SIZE = 44;
-    public Action<byte[]> PacketProcessed;
+    public const int LEGACY_PACKET_SIZE = 47;
+    public const int MIN_PACKET_SIZE = LEGACY_PACKET_SIZE;
+    private const int PLAYER_STAR_POWER_COUNT_SIZE = sizeof(ushort);
+    private const int PLAYER_STAR_POWER_ENTRY_SIZE = 2;
+    private const int V4_FIXED_PACKET_SIZE = LEGACY_PACKET_SIZE + PLAYER_STAR_POWER_COUNT_SIZE;
+    private const int FOG_DURATION_SIZE = sizeof(ushort);
+    private const int CURRENT_FIXED_PACKET_SIZE = (int)ByteIndexName.PlayerStarPowerCount + PLAYER_STAR_POWER_COUNT_SIZE;
+    public event Action<byte[]> PacketProcessed;
     private MainWindowViewModel? _mainViewModel;
+    private readonly List<PlayerStarPowerPacketMembers> _playerStarPowerMembers = new();
+    private CancellationTokenSource? _fogDurationCts;
+    private bool _rawFogState;
+    private bool _effectiveFogState;
+    public static int FogDurationPercent { get; set; } = 100;
 
     public interface IDatapacketMember
     {
         string Name { get; }
-        byte Index { get; }
+        int Index { get; }
         string ValueDescription { get; }
         object Value { get; }
     }
@@ -32,7 +45,7 @@ public partial class UdpIntake : ReactiveObject
         private readonly Func<T, string> _descriptionFunc;
         private readonly Action<T> _onValueChangedAction;
 
-        public DatapacketMember(string name, byte byteNumber, Func<T, string> descriptionFunc)
+        public DatapacketMember(string name, int byteNumber, Func<T, string> descriptionFunc)
         {
             Name = name;
             Index = byteNumber;
@@ -41,7 +54,7 @@ public partial class UdpIntake : ReactiveObject
         }
 
         public string Name { get; set; }
-        public byte Index { get; set; }
+        public int Index { get; set; }
         public string ValueDescription { get; private set; }
 
         public T Value
@@ -67,6 +80,20 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
+    private sealed class PlayerStarPowerPacketMembers
+    {
+        public PlayerStarPowerPacketMembers(
+            DatapacketMember<byte> amount,
+            DatapacketMember<bool> isActive)
+        {
+            Amount = amount;
+            IsActive = isActive;
+        }
+
+        public DatapacketMember<byte> Amount { get; }
+        public DatapacketMember<bool> IsActive { get; }
+    }
+
     public DatapacketMember<uint> Header { get; private set; } = new ("Header", (byte)ByteIndexName.Header, GetHeaderByteDescription);
     public DatapacketMember<byte> DatagramVersion { get; private set; } = new ("Datagram Version", (byte)ByteIndexName.DatagramVersion, GetDatagramVersionByteDescription);
     public DatapacketMember<byte> Platform { get; private set; } = new ("Platform", (byte)ByteIndexName.Platform, GetPlatformByteDescription);
@@ -86,6 +113,7 @@ public partial class UdpIntake : ReactiveObject
     public DatapacketMember<byte> LightingCue { get; private set; } = new ("Lighting cue", (byte)ByteIndexName.LightingCue, GetCueByteDescription);
     public DatapacketMember<byte> PostProcessing { get; private set; } = new ("Post processing", (byte)ByteIndexName.PostProcessing, GetPostProcessingByteDescription);
     public DatapacketMember<bool> FogState { get; private set; } = new ("Fog state", (byte)ByteIndexName.FogState, GetFogStateByteDescription);
+    public DatapacketMember<ushort> FogRemainingCentiseconds { get; private set; } = new ("Fog remaining", (byte)ByteIndexName.FogRemainingCentiseconds, GetFogRemainingCentisecondsDescription);
     public DatapacketMember<byte> StrobeState { get; private set; } = new ("Strobe state", (byte)ByteIndexName.StrobeState, GetStrobeByteDescription);
     public DatapacketMember<byte> Beat { get; private set; } = new ("Beat", (byte)ByteIndexName.Beat, GetBeatlineByteDescription);
     public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", (byte)ByteIndexName.Keyframe, GetKeyFrameDescription);
@@ -94,12 +122,26 @@ public partial class UdpIntake : ReactiveObject
     public DatapacketMember<byte> Spotlight { get; private set; } = new ("Spotlight", (byte)ByteIndexName.Spotlight, GetPerformerDescription);
     public DatapacketMember<byte> Singalong { get; private set; } = new ("Singalong", (byte)ByteIndexName.Singalong, GetPerformerDescription);
 
+    public DatapacketMember<byte> CameraCutConstraint { get; private set; } = new("Camera cut constraint",
+        (byte)ByteIndexName.CameraCutConstraint, GetCameraCutConstraintDescription);
+
+    public DatapacketMember<byte> CameraCutPriority { get; private set; } = new("Camera cut Priority",
+        (byte)ByteIndexName.CameraCutPriority, GetCameraCutPriorityDescription);
+
+
+    public DatapacketMember<byte> CameraCutSubject { get; private set; } = new("Camera cut subject",
+        (byte)ByteIndexName.CameraCutSubject, GetCameraCutSubjectDescription);
+
+    public DatapacketMember<ushort> PlayerStarPowerCount { get; private set; } = new("Player count",
+        (byte)ByteIndexName.PlayerStarPowerCount, GetPlayerStarPowerCountDescription);
+
+
     private static UdpClient? _udpClient;
     private static CancellationTokenSource? _cancellationTokenSource;
     private static DateTime _lastPacketReceived = DateTime.MinValue;
     private static Timer? _healthCheckTimer;
-    private const int HEALTH_CHECK_INTERVAL_MS = 1000; // Verifica a cada 1 segundo
-    private const int PACKET_TIMEOUT_MS = 3000; // Timeout de 3 segundos
+    private const int HEALTH_CHECK_INTERVAL_MS = 1000; // Check once per second
+    private const int PACKET_TIMEOUT_MS = 3000; // Three-second timeout
 
     public async Task EnableUdpIntake(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
@@ -129,7 +171,7 @@ public partial class UdpIntake : ReactiveObject
                 _udpClient = new UdpClient(_mainViewModel.UdpListenPort);
                 _udpClient.Client.ReceiveBufferSize = 8192; // Increase buffer size
                 
-                // Inicializa o timer de verificação de saúde da conexão
+                // Initialize the connection health-check timer.
                 _lastPacketReceived = DateTime.Now;
                 _healthCheckTimer = new Timer(HealthCheckCallback, null, HEALTH_CHECK_INTERVAL_MS, HEALTH_CHECK_INTERVAL_MS);
             }
@@ -149,7 +191,7 @@ public partial class UdpIntake : ReactiveObject
                     {
                         var result = await _udpClient.ReceiveAsync().ConfigureAwait(false);
 
-                        // Atualiza o timestamp do último pacote recebido
+                        // Update the timestamp of the most recently received packet.
                         _lastPacketReceived = DateTime.Now;
 
                         // Process packets in a separate task
@@ -183,6 +225,7 @@ public partial class UdpIntake : ReactiveObject
     if (data.Length < MIN_PACKET_SIZE)
     {
         Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {MIN_PACKET_SIZE})");
+        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
         return;
     }
 
@@ -196,10 +239,12 @@ public partial class UdpIntake : ReactiveObject
             if (Header.Value != PACKET_HEADER)
             {
                 Console.WriteLine($"Invalid packet header: {Header.Value}");
+                Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
                 return;
             }
 
             DatagramVersion.Value = reader.ReadByte(); // 5
+            UpdateVersionedMemberIndexes(DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration);
             Platform.Value = reader.ReadByte(); // 6
             CurrentScene.Value = reader.ReadByte(); // 7
             Paused.Value = reader.ReadByte(); // 8
@@ -219,8 +264,18 @@ public partial class UdpIntake : ReactiveObject
 
             LightingCue.Value = reader.ReadByte(); // 35
             PostProcessing.Value = reader.ReadByte(); // 36
-            FogState.Value = reader.ReadBoolean(); // 37
-            StrobeState.Value = reader.ReadByte(); // 38
+            var fogState = reader.ReadBoolean(); // Offset 36
+            if (DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration)
+            {
+                FogRemainingCentiseconds.Value = reader.ReadUInt16(); // Offsets 37-38 in v5+
+            }
+            else
+            {
+                FogRemainingCentiseconds.Value = ushort.MaxValue;
+            }
+            FogState.Value = fogState;
+            UpdateEffectiveFogState(fogState, FogRemainingCentiseconds.Value);
+            StrobeState.Value = reader.ReadByte();
             Beat.Value = reader.ReadByte(); // 39
             Keyframe.Value = reader.ReadByte(); // 40
             BonusEffect.Value = reader.ReadBoolean(); // 41
@@ -228,6 +283,47 @@ public partial class UdpIntake : ReactiveObject
             AutoGen.Value = reader.ReadBoolean(); // 42
             Spotlight.Value = reader.ReadByte(); // 43
             Singalong.Value = reader.ReadByte(); // 44
+            CameraCutConstraint.Value = reader.ReadByte(); //45
+            CameraCutPriority.Value = reader.ReadByte(); //46
+            CameraCutSubject.Value = reader.ReadByte(); //47
+
+            if (DatagramVersion.Value >= (byte)DatagramVersionByte.PlayerStarPower)
+            {
+                var fixedPacketSize = DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration
+                    ? CURRENT_FIXED_PACKET_SIZE
+                    : V4_FIXED_PACKET_SIZE;
+                if (data.Length < fixedPacketSize)
+                {
+                    Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {fixedPacketSize} for player star power count)");
+                    Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+                    return;
+                }
+
+                PlayerStarPowerCount.Value = reader.ReadUInt16();
+                var expectedPacketSize = GetExpectedPacketSize(PlayerStarPowerCount.Value, fixedPacketSize);
+
+                if (data.Length < expectedPacketSize)
+                {
+                    Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {expectedPacketSize} for {PlayerStarPowerCount.Value} player star power entr{(PlayerStarPowerCount.Value == 1 ? "y" : "ies")})");
+                    Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+                    return;
+                }
+
+                EnsurePlayerStarPowerMemberCount(PlayerStarPowerCount.Value, fixedPacketSize);
+
+                for (var i = 0; i < PlayerStarPowerCount.Value; i++)
+                {
+                    var playerStarPower = _playerStarPowerMembers[i];
+                    playerStarPower.Amount.Value = reader.ReadByte();
+                    playerStarPower.IsActive.Value = reader.ReadByte() != 0;
+                }
+            }
+            else
+            {
+                PlayerStarPowerCount.Value = 0;
+                EnsurePlayerStarPowerMemberCount(0);
+            }
+
         }
         PacketProcessed?.Invoke(data);
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connected);
@@ -235,19 +331,214 @@ public partial class UdpIntake : ReactiveObject
     catch (EndOfStreamException ex)
     {
         Console.WriteLine($"Error reading UDP data (incomplete packet): {ex.Message}");
+        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error reading UDP data: {ex.Message}");
-        Console.WriteLine($"Data length={data.Length}");
+        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
     }
 }
 
+    private static string DescribePacket(byte[] data)
+    {
+        var header = data.Length >= sizeof(uint)
+            ? $"0x{BitConverter.ToUInt32(data, 0):X8}"
+            : "n/a";
+        var datagramVersion = data.Length > (int)ByteIndexName.DatagramVersion
+            ? data[(int)ByteIndexName.DatagramVersion].ToString()
+            : "n/a";
+        var playerStarPowerCount = data.Length >= CURRENT_FIXED_PACKET_SIZE
+            ? BitConverter.ToUInt16(data, (int)ByteIndexName.PlayerStarPowerCount).ToString()
+            : "n/a";
+        var previewLength = Math.Min(data.Length, 16);
+        var preview = previewLength > 0
+            ? BitConverter.ToString(data, 0, previewLength)
+            : "<empty>";
+
+        return $"length={data.Length}, minAccepted={MIN_PACKET_SIZE}, fixedParserBytes={CURRENT_FIXED_PACKET_SIZE}, header={header}, expectedHeader=0x{PACKET_HEADER:X8}, datagramVersion={datagramVersion}, playerStarPowerCount={playerStarPowerCount}, preview={preview}";
+    }
+
+    private static int GetExpectedPacketSize(ushort playerStarPowerCount, int fixedPacketSize)
+    {
+        return fixedPacketSize + (playerStarPowerCount * PLAYER_STAR_POWER_ENTRY_SIZE);
+    }
+
+    private void UpdateVersionedMemberIndexes(bool hasFogDuration)
+    {
+        var offset = hasFogDuration ? 0 : -FOG_DURATION_SIZE;
+        StrobeState.Index = (int)ByteIndexName.StrobeState + offset;
+        Beat.Index = (int)ByteIndexName.Beat + offset;
+        Keyframe.Index = (int)ByteIndexName.Keyframe + offset;
+        BonusEffect.Index = (int)ByteIndexName.BonusEffect + offset;
+        AutoGen.Index = (int)ByteIndexName.AutoGen + offset;
+        Spotlight.Index = (int)ByteIndexName.Spotlight + offset;
+        Singalong.Index = (int)ByteIndexName.Singalong + offset;
+        CameraCutConstraint.Index = (int)ByteIndexName.CameraCutConstraint + offset;
+        CameraCutPriority.Index = (int)ByteIndexName.CameraCutPriority + offset;
+        CameraCutSubject.Index = (int)ByteIndexName.CameraCutSubject + offset;
+        PlayerStarPowerCount.Index = (int)ByteIndexName.PlayerStarPowerCount + offset;
+    }
+
+    private void EnsurePlayerStarPowerMemberCount(ushort playerStarPowerCount, int fixedPacketSize = V4_FIXED_PACKET_SIZE)
+    {
+        for (var i = 0; i < _playerStarPowerMembers.Count; i++)
+        {
+            var packetIndex = fixedPacketSize + (i * PLAYER_STAR_POWER_ENTRY_SIZE);
+            _playerStarPowerMembers[i].Amount.Index = packetIndex;
+            _playerStarPowerMembers[i].IsActive.Index = packetIndex + 1;
+        }
+
+        while (_playerStarPowerMembers.Count < playerStarPowerCount)
+        {
+            var playerIndex = _playerStarPowerMembers.Count;
+            var packetIndex = fixedPacketSize + (playerIndex * PLAYER_STAR_POWER_ENTRY_SIZE);
+            var playerNumber = playerIndex + 1;
+            var members = new PlayerStarPowerPacketMembers(
+                new DatapacketMember<byte>($"Player {playerNumber} star power", packetIndex, GetPlayerStarPowerAmountDescription),
+                new DatapacketMember<bool>($"Player {playerNumber} star power active", packetIndex + 1, GetPlayerStarPowerActiveDescription));
+
+            _playerStarPowerMembers.Add(members);
+            AddPlayerStarPowerMemberToView(members.Amount);
+            AddPlayerStarPowerMemberToView(members.IsActive);
+        }
+
+        while (_playerStarPowerMembers.Count > playerStarPowerCount)
+        {
+            var memberIndex = _playerStarPowerMembers.Count - 1;
+            var members = _playerStarPowerMembers[memberIndex];
+            _playerStarPowerMembers.RemoveAt(memberIndex);
+            RemovePlayerStarPowerMemberFromView(members.Amount);
+            RemovePlayerStarPowerMemberFromView(members.IsActive);
+        }
+    }
+
+    private void AddPlayerStarPowerMemberToView(IDatapacketMember member)
+    {
+        if (_mainViewModel == null)
+        {
+            return;
+        }
+
+        void Add()
+        {
+            if (!_mainViewModel.CombinedCollection.Contains(member))
+            {
+                _mainViewModel.CombinedCollection.Add(member);
+            }
+        }
+
+        if (Application.Current?.ApplicationLifetime == null)
+        {
+            Add();
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Add();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(Add);
+        }
+    }
+
+    private void UpdateEffectiveFogState(bool fogState, ushort remainingCentiseconds)
+    {
+        if (!fogState)
+        {
+            _rawFogState = false;
+            _fogDurationCts?.Cancel();
+            SetEffectiveFogState(false);
+            return;
+        }
+
+        if (_rawFogState)
+        {
+            return;
+        }
+
+        _rawFogState = true;
+        if (FogDurationPercent == 0 || remainingCentiseconds == 0)
+        {
+            SetEffectiveFogState(false);
+            return;
+        }
+
+        SetEffectiveFogState(true);
+        if (remainingCentiseconds == ushort.MaxValue)
+        {
+            return;
+        }
+
+        _fogDurationCts?.Cancel();
+        _fogDurationCts?.Dispose();
+        _fogDurationCts = new CancellationTokenSource();
+        var token = _fogDurationCts.Token;
+        var duration = TimeSpan.FromMilliseconds(remainingCentiseconds * 10.0 * FogDurationPercent / 100.0);
+        _ = TurnFogOffAfterAsync(duration, token);
+    }
+
+    private async Task TurnFogOffAfterAsync(TimeSpan duration, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(duration, token).ConfigureAwait(false);
+            if (!token.IsCancellationRequested && _rawFogState)
+            {
+                SetEffectiveFogState(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void SetEffectiveFogState(bool value)
+    {
+        if (_effectiveFogState == value)
+        {
+            return;
+        }
+
+        _effectiveFogState = value;
+        OnFogState?.Invoke(value);
+    }
+
+    private void RemovePlayerStarPowerMemberFromView(IDatapacketMember member)
+    {
+        if (_mainViewModel == null)
+        {
+            return;
+        }
+
+        void Remove()
+        {
+            _mainViewModel.CombinedCollection.Remove(member);
+        }
+
+        if (Application.Current?.ApplicationLifetime == null)
+        {
+            Remove();
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Remove();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(Remove);
+        }
+    }
+
     /// <summary>
-    /// Callback do timer que verifica se dados foram recebidos nos últimos 3 segundos
-    /// Se não houver dados recentes, marca o status como Error
+    /// Timer callback that checks whether any data was received in the last three seconds.
+    /// Marks the connection status as Error when no recent data is available.
     /// </summary>
     private static void HealthCheckCallback(object? state)
     {
@@ -259,7 +550,7 @@ public partial class UdpIntake : ReactiveObject
                 
                 if (timeSinceLastPacket.TotalMilliseconds > PACKET_TIMEOUT_MS)
                 {
-                    // Não recebeu dados nos últimos 3 segundos - marca como erro
+                    // No data received in the last three seconds; mark the connection as errored.
                     StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
                     Console.WriteLine($"UDP health check failed: No data received for {timeSinceLastPacket.TotalMilliseconds:F0}ms");
                 }
@@ -276,6 +567,8 @@ public partial class UdpIntake : ReactiveObject
         try
         {
             _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
             _healthCheckTimer?.Dispose();
             _healthCheckTimer = null;
             _udpClient?.Close();
@@ -290,15 +583,4 @@ public partial class UdpIntake : ReactiveObject
             StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
         }
     }
-
-    /*
-    private static void ClearByteIndexes()
-    {
-        foreach (var byteIndex in MainWindowViewModel.ByteIndexes)
-        {
-            byteIndex.CurrentValue = 0;
-            byteIndex.ValueDescription = string.Empty;
-        }
-    }
-    */
 }

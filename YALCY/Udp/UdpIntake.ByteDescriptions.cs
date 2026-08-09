@@ -12,6 +12,94 @@ public partial class UdpIntake
     public static Action<bool>? OnFogState { get; set; }
     public static Action<byte>? OnStrobeState { get; set; }
     public static Action<byte>? OnPause { get; set; }
+
+    public static string GetCameraCutSubjectDescription(byte  byteValue)
+    {
+        var cameraCutSubjectDescription = byteValue switch
+        {
+            (int)CameraCutSubjectByte.Crowd => "Crowd",
+            (int)CameraCutSubjectByte.Stage => "Stage",
+            (int)CameraCutSubjectByte.AllBehind => "All Behind",
+            (int)CameraCutSubjectByte.AllFar => "All Far",
+            (int)CameraCutSubjectByte.AllNear => "All Near",
+            (int)CameraCutSubjectByte.BehindNoDrum => "Behind No drum",
+            (int)CameraCutSubjectByte.NearNoDrum => "Near No drum",
+            (int)CameraCutSubjectByte.Guitar => "Guitar",
+            (int)CameraCutSubjectByte.GuitarBehind => "Guitar Behind",
+            (int)CameraCutSubjectByte.GuitarCloseup => "Guitar Closeup",
+            (int)CameraCutSubjectByte.GuitarCloseupHead => "Guitar Closeup Head",
+            (int)CameraCutSubjectByte.Drums => "Drums",
+            (int)CameraCutSubjectByte.DrumsKick => "Drums Kick",
+            (int)CameraCutSubjectByte.DrumsBehind => "Drums Behind",
+            (int)CameraCutSubjectByte.DrumsCloseupHand => "Drums Closeup Hand",
+            (int)CameraCutSubjectByte.DrumsCloseupHead => "Drums Closeup Head",
+            (int)CameraCutSubjectByte.Bass => "Bass",
+            (int)CameraCutSubjectByte.BassBehind => "Bass Behind",
+            (int)CameraCutSubjectByte.BassCloseup =>  "Bass Closeup",
+            (int)CameraCutSubjectByte.BassCloseupHead =>  "Bass Closeup Head",
+            (int)CameraCutSubjectByte.Vocals => "Vocals",
+            (int)CameraCutSubjectByte.VocalsCloseup => "Vocals Closeup",
+            (int)CameraCutSubjectByte.VocalsBehind =>  "Vocals Behind",
+            (int)CameraCutSubjectByte.Keys => "Keys",
+            (int)CameraCutSubjectByte.KeysBehind => "Keys Behind",
+            (int)CameraCutSubjectByte.KeysCloseupHand =>  "Keys Closeup Hand",
+            (int)CameraCutSubjectByte.KeysCloseupHead =>  "Keys Closeup Head",
+            (int)CameraCutSubjectByte.DrumsVocals => "Drums Vocals",
+            (int)CameraCutSubjectByte.BassDrums => "Drums Bass",
+            (int)CameraCutSubjectByte.DrumsGuitar => "Drums Guitar",
+            (int)CameraCutSubjectByte.BassVocalsBehind => "Bass Vocals Behind",
+            (int)CameraCutSubjectByte.BassVocals => "Bass Vocals",
+            (int)CameraCutSubjectByte.GuitarVocalsBehind => "Guitar Vocals Behind",
+            (int)CameraCutSubjectByte.GuitarVocals => "Guitar Vocals",
+            (int)CameraCutSubjectByte.KeysVocalsBehind => "Keys Vocals Behind",
+            (int)CameraCutSubjectByte.KeysVocals => "Keys Vocals",
+            (int)CameraCutSubjectByte.BassGuitarBehind => "Bass Guitar Behind",
+            (int)CameraCutSubjectByte.BassGuitar => "Bass Guitar",
+            (int)CameraCutSubjectByte.BassKeysBehind => "Bass Keys Behind",
+            (int)CameraCutSubjectByte.BassKeys => "Bass Keys",
+            (int)CameraCutSubjectByte.GuitarKeysBehind => "Guitar Keys Behind",
+            (int)CameraCutSubjectByte.GuitarKeys => "Guitar Keys",
+            (int)CameraCutSubjectByte.Random => "Random",
+        };
+        return cameraCutSubjectDescription;
+
+    }
+
+    public static string GetCameraCutPriorityDescription(byte byteValue)
+    {
+        var cameraCutPriority = byteValue switch
+        {
+            (int)CameraCutPriorityByte.Normal => "Normal",
+            (int)CameraCutPriorityByte.Directed => "Directed",
+            _ => "Unknown",
+        };
+
+        return cameraCutPriority;
+    }
+
+    public static string GetCameraCutConstraintDescription(byte byteValue)
+    {
+        var result = "";
+
+        foreach (CameraCutConstraintByte constraint in Enum.GetValues(typeof(CameraCutConstraintByte)))
+        {
+            if (constraint == CameraCutConstraintByte.None || (byteValue & (byte)constraint) == 0) continue;
+            if (result != "")
+            {
+                result += ", ";
+            }
+            result += constraint.ToString();
+        }
+
+        // If no bits are set, it means "None"
+        if (string.IsNullOrEmpty(result))
+        {
+            result = CameraCutConstraintByte.None.ToString();
+        }
+
+        return result;
+    }
+
     public static string GetVocalHarmonyByteDescription(float byteValue)
     {
         var vocalHarmonyDescription = byteValue switch
@@ -93,6 +181,7 @@ public partial class UdpIntake
             0 => "At menu",
             1 => "Unpaused",
             2 => "Paused",
+            _ => "Unknown"
         };
         OnPause?.Invoke(byteValue);
         return pauseDescription;
@@ -129,8 +218,12 @@ public partial class UdpIntake
             false => "Off",
             true => "On",
         };
-        OnFogState?.Invoke(byteValue);
         return fogStateDescription;
+    }
+
+    public static string GetFogRemainingCentisecondsDescription(ushort value)
+    {
+        return value == ushort.MaxValue ? "Until fog-off" : $"{value / 100.0:0.00} seconds";
     }
 
     public static string GetDrumsByteDescription(byte byteValue)
@@ -181,7 +274,28 @@ public partial class UdpIntake
 
     public static string GetDatagramVersionByteDescription(byte byteValue)
     {
-        return byteValue == (int)DatagramVersionByte.Version ? "Current Version" : "Unknown";
+        return byteValue switch
+        {
+            (int)DatagramVersionByte.PlayerStarPower => "Current Version",
+            (int)DatagramVersionByte.CameraCut => "Legacy Version",
+            _ => "Unknown"
+        };
+    }
+
+    public static string GetPlayerStarPowerCountDescription(ushort playerCount)
+    {
+        return playerCount == 1 ? "1 player" : $"{playerCount} players";
+    }
+
+    public static string GetPlayerStarPowerAmountDescription(byte amount)
+    {
+        var percentage = Math.Round((amount / (double)byte.MaxValue) * 100);
+        return $"{percentage}%";
+    }
+
+    public static string GetPlayerStarPowerActiveDescription(bool isActive)
+    {
+        return isActive ? "Active" : "Inactive";
     }
 
     public static string GetHeaderByteDescription(uint byteValue)
@@ -198,10 +312,10 @@ public partial class UdpIntake
     {
         var beatlineDescription = byteValue switch
         {
-            0 => "Measure",
-            1 => "Strong",
-            2 => "Weak",
-            3 => "Off",
+            (byte)BeatByte.Off => "Off",
+            (byte)BeatByte.Measure => "Measure",
+            (byte)BeatByte.Strong => "Strong",
+            (byte)BeatByte.Weak => "Weak",
             _ => "Unknown"
         };
 
@@ -281,7 +395,6 @@ public partial class UdpIntake
         {
             result = PerformerByte.None.ToString();
         }
-        OnDrum?.Invoke(byteValue);
         return result;
     }
 
@@ -319,6 +432,7 @@ public partial class UdpIntake
             (int)SceneIndexByte.Gameplay => "Gameplay",
             (int)SceneIndexByte.Score => "Score",
             (int)SceneIndexByte.Calibration => "Calibration",
+            (int)SceneIndexByte.Practice => "Practice",
             _ => "Unknown"
         };
         return sceneIndexDescription;

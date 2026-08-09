@@ -30,6 +30,7 @@ namespace Dmx.Net.Common
             if (_timer != null)
             {
                 _timer.Dispose();
+                _timer = null;
             }
         }
 

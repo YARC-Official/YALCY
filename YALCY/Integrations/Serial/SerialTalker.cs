@@ -1,7 +1,10 @@
 using System;
 using Dmx.Net.Controllers;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Timers;
 using HidSharp;
+using YALCY.Integrations;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
@@ -9,6 +12,7 @@ using YALCY.Views.Components;
 #if LINUX || MACOS
 using System.Linq;
 #endif
+using Timer = System.Timers.Timer;
 namespace YALCY.Integrations.Serial;
 
 public class SerialTalker: IDisposable
@@ -22,6 +26,8 @@ public class SerialTalker: IDisposable
     private static Timer? _checkerTimer;
     private MainWindowViewModel? _mainViewModel;
     private static bool SerialEnabled = false;
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"Serial manual strobe error: {ex.Message}"));
+
     public void EnableSerialTalker(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
         if (viewModel != null)
@@ -84,23 +90,9 @@ public class SerialTalker: IDisposable
 
         if (controller.IsOpen == false)
         {
-            try
-            {
-#if LINUX || MACOS
-                var devicePath = GetLinuxSerialDevicePath();
-                if (!string.IsNullOrWhiteSpace(devicePath))
-                {
-                    controller.Open(devicePath);
-                }
-#else
-                controller.Open(0);
-#endif
-            }
-            catch (Exception e)
-            {
-            }
+            // Don't try to reopen here - the SerialDeviceAdded watchdog handles reconnection.
+            return;
         }
-        else
         {
             switch (commandId)
             {
@@ -147,8 +139,82 @@ public class SerialTalker: IDisposable
                     }
 
                     break;
+
+                case StageKitTalker.CommandId.StrobeOff:
+                    _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+                    SetStrobeChannels(0);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeSlow:
+                    HandleStrobeCommand(commandId, 4);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeMedium:
+                    HandleStrobeCommand(commandId, 6);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeFast:
+                    HandleStrobeCommand(commandId, 8);
+                    break;
+
+                case StageKitTalker.CommandId.StrobeFastest:
+                    HandleStrobeCommand(commandId, 10);
+                    break;
+
+                case StageKitTalker.CommandId.DisableAll:
+                    _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+                    SetStrobeChannels(0);
+                    break;
             }
         }
+    }
+
+    private void HandleStrobeCommand(StageKitTalker.CommandId commandId, int commandMultiplier)
+    {
+        if (_mainViewModel == null) return;
+
+        if (_mainViewModel.SerialStrobeMode == StrobeOutputModes.ManualFlash)
+        {
+            _manualStrobeFlasher.Start(
+                commandId,
+                Udp.UdpIntake.BeatsPerMinute.Value,
+                SetStrobeChannelsForManualFlashAsync);
+            return;
+        }
+
+        _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
+        SetStrobeChannels(StrobeDmxFromBpm(Udp.UdpIntake.BeatsPerMinute.Value, commandMultiplier));
+    }
+
+    private Task SetStrobeChannelsForManualFlashAsync(bool isOn, CancellationToken cancellationToken)
+    {
+        SetStrobeChannels(isOn ? (byte)255 : (byte)0);
+        return Task.CompletedTask;
+    }
+
+    private void SetStrobeChannels(byte value)
+    {
+        if (_mainViewModel?.StrobeChannels.Channel == null || controller == null || !controller.IsOpen)
+        {
+            return;
+        }
+
+        for (int i = 0; i < 8 && i < _mainViewModel.StrobeChannels.Channel.Length; i++)
+        {
+            var channel = _mainViewModel.StrobeChannels.Channel[i];
+            if (channel > 0)
+            {
+                controller.SetChannel(channel, value);
+            }
+        }
+    }
+
+    private static byte StrobeDmxFromBpm(float bpm, int speed)
+    {
+        var f = bpm * speed / 60.0;
+        if (f <= 0) return 0;
+        if (f > 25.0) f = 25.0;
+        return (byte)Math.Round((f / 25.0) * 255.0);
     }
 
     private void Sender()
@@ -158,26 +224,28 @@ public class SerialTalker: IDisposable
             return;
         }
 
-        controller.SetChannel(_mainViewModel.GuitarNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.GuitarNotes);
-        controller.SetChannel(_mainViewModel.BassNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BassNotes);
-        controller.SetChannel(_mainViewModel.DrumNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.DrumsNotes);
-        controller.SetChannel(_mainViewModel.VocalsNoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VocalsNote);
-        controller.SetChannel(_mainViewModel.Harmony0NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony0Note);
-        controller.SetChannel(_mainViewModel.Harmony1NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony1Note);
-        controller.SetChannel(_mainViewModel.Harmony2NoteChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Harmony2Note);
+        var udpIntake = _mainViewModel.UdpIntake;
 
-        controller.SetChannel(_mainViewModel.BpmChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BeatsPerMinute);
-        controller.SetChannel(_mainViewModel.KeyFrameChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Keyframe);
-        controller.SetChannel(_mainViewModel.VenueSizeSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.VenueSize);
-        controller.SetChannel(_mainViewModel.CueChangeChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.LightingCue);
-        controller.SetChannel(_mainViewModel.PostProcessingChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PostProcessing);
-        controller.SetChannel(_mainViewModel.PauseStateSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.PauseState);
-        controller.SetChannel(_mainViewModel.BeatLineChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Beat);
-        controller.SetChannel(_mainViewModel.CurrentSingalongSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Singalong);
-        controller.SetChannel(_mainViewModel.CurrentSpotlightSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.Spotlight);
-        controller.SetChannel(_mainViewModel.SongSectionSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.SongSection);
-        controller.SetChannel(_mainViewModel.BonusEffectChannelSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.BonusEffect);
-        controller.SetChannel(_mainViewModel.CurrentSceneSetting.Value, (byte)Udp.UdpIntake.ByteIndexName.CurrentScene);
+        controller.SetChannel(_mainViewModel.GuitarNoteChannelSetting.Value, udpIntake.CurrentGuitarNotes.Value);
+        controller.SetChannel(_mainViewModel.BassNoteChannelSetting.Value, udpIntake.CurrentBassNotes.Value);
+        controller.SetChannel(_mainViewModel.DrumNoteChannelSetting.Value, udpIntake.CurrentDrumNotes.Value);
+        controller.SetChannel(_mainViewModel.VocalsNoteChannelSetting.Value, (byte)udpIntake.CurrentVocalNote.Value);
+        controller.SetChannel(_mainViewModel.Harmony0NoteChannelSetting.Value, (byte)udpIntake.CurrentHarmony0Note.Value);
+        controller.SetChannel(_mainViewModel.Harmony1NoteChannelSetting.Value, (byte)udpIntake.CurrentHarmony1Note.Value);
+        controller.SetChannel(_mainViewModel.Harmony2NoteChannelSetting.Value, (byte)udpIntake.CurrentHarmony2Note.Value);
+
+        controller.SetChannel(_mainViewModel.BpmChannelSetting.Value, (byte)Udp.UdpIntake.BeatsPerMinute.Value);
+        controller.SetChannel(_mainViewModel.KeyFrameChannelSetting.Value, udpIntake.Keyframe.Value);
+        controller.SetChannel(_mainViewModel.VenueSizeSetting.Value, Udp.UdpIntake.Venue.Value);
+        controller.SetChannel(_mainViewModel.CueChangeChannelSetting.Value, udpIntake.LightingCue.Value);
+        controller.SetChannel(_mainViewModel.PostProcessingChannelSetting.Value, udpIntake.PostProcessing.Value);
+        controller.SetChannel(_mainViewModel.PauseStateSetting.Value, udpIntake.Paused.Value);
+        controller.SetChannel(_mainViewModel.BeatLineChannelSetting.Value, udpIntake.Beat.Value);
+        controller.SetChannel(_mainViewModel.CurrentSingalongSetting.Value, udpIntake.Singalong.Value);
+        controller.SetChannel(_mainViewModel.CurrentSpotlightSetting.Value, udpIntake.Spotlight.Value);
+        controller.SetChannel(_mainViewModel.SongSectionSetting.Value, udpIntake.CurrentSongSection.Value);
+        controller.SetChannel(_mainViewModel.BonusEffectChannelSetting.Value, (byte)(udpIntake.BonusEffect.Value ? 255 : 0));
+        controller.SetChannel(_mainViewModel.CurrentSceneSetting.Value, udpIntake.CurrentScene.Value);
 
         for (int i = 0; i < 8; i++)
         {
@@ -190,6 +258,7 @@ public class SerialTalker: IDisposable
     public void Dispose()
     {
         UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
         StatusFooter.UpdateStatus("Serial", IntegrationStatus.Off);
         if (controller != null)
         {

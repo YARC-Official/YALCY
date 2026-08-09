@@ -23,6 +23,15 @@
         <TextBlock
             Text="5) Link this program to your hub. Push the button on the hub FIRST, then click the register button"
             Margin="5" />
+        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
+            <RadioButton Content="Strobe command"
+                         GroupName="HueStrobeMode"
+                         IsChecked="{Binding HueStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+            <RadioButton Content="Manual flash strobe"
+                         GroupName="HueStrobeMode"
+                         IsChecked="{Binding HueStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+        </StackPanel>
         <!-- IP Address Input -->
         <TextBlock Text="Enter Hue Bridge IP" />
         <TextBox Text="{Binding HueBridgeIp}" />

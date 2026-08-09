@@ -243,10 +243,13 @@ namespace Dmx.Net.Controllers
         {
             if (!IsDisposed)
             {
-                Close();
 #if WINDOWS
-                FT_ResetDevice(_handle);
+                if (_handle != IntPtr.Zero)
+                {
+                    FT_ResetDevice(_handle);
+                }
 #endif
+                Close();
                 writeBuffer = Array.Empty<byte>();
                 IsDisposed = true;
 

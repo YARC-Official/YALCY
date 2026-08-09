@@ -11,6 +11,15 @@
                       Content="{Binding SerialEnabledSetting.ToggleButtonContent}"
                       IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
         <TextBlock Text="The channel numbers set and used from the sAcn/dmx tab" Margin="5" />
+        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
+            <RadioButton Content="Strobe command"
+                         GroupName="SerialStrobeMode"
+                         IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+            <RadioButton Content="Manual flash strobe"
+                         GroupName="SerialStrobeMode"
+                         IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+        </StackPanel>
         <TextBlock Text="{Binding SerialMessage}" Margin="5" Foreground="Red" />
         <!-- DataGrid -->
         <DataGrid Grid.Row="1" Grid.Column="0" CanUserSortColumns="False" ItemsSource="{Binding SerialConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">

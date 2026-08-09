@@ -33,13 +33,81 @@ public partial class UdpIntake
         LightingCue = 34,
         PostProcessing = 35,
         FogState = 36,
-        StrobeState = 37,
-        Beat = 38,
-        Keyframe = 39,
-        BonusEffect = 40,
-        AutoGen = 41,
-        Spotlight = 42,
-        Singalong = 43,
+        FogRemainingCentiseconds = 37,
+        StrobeState = 39,
+        Beat = 40,
+        Keyframe = 41,
+        BonusEffect = 42,
+        AutoGen = 43,
+        Spotlight = 44,
+        Singalong = 45,
+        CameraCutConstraint = 46,
+        CameraCutPriority = 47,
+        CameraCutSubject = 48,
+        PlayerStarPowerCount = 49,
+    }
+
+    public enum CameraCutPriorityByte
+    {
+        Normal,
+        Directed
+    }
+
+    [Flags]
+    public enum CameraCutConstraintByte
+    {
+        None = 0,
+        OnlyClose = 1 << 0,
+        OnlyFar = 1 << 1,
+        NoClose = 1 << 2,
+        NoBehind = 1 << 3,
+    }
+
+    public enum CameraCutSubjectByte
+    {
+        Crowd,
+        Stage,
+        AllBehind,
+        AllFar,
+        AllNear,
+        BehindNoDrum,
+        NearNoDrum,
+        Guitar,
+        GuitarBehind,
+        GuitarCloseup,
+        GuitarCloseupHead,
+        Drums,
+        DrumsKick,
+        DrumsBehind,
+        DrumsCloseupHand,
+        DrumsCloseupHead,
+        Bass,
+        BassBehind,
+        BassCloseup,
+        BassCloseupHead,
+        Vocals,
+        VocalsCloseup,
+        VocalsBehind,
+        Keys,
+        KeysBehind,
+        KeysCloseupHand,
+        KeysCloseupHead,
+        DrumsVocals,
+        BassDrums,
+        DrumsGuitar,
+        BassVocalsBehind,
+        BassVocals,
+        GuitarVocalsBehind,
+        GuitarVocals,
+        KeysVocalsBehind,
+        KeysVocals,
+        BassGuitarBehind,
+        BassGuitar,
+        BassKeysBehind,
+        BassKeys,
+        GuitarKeysBehind,
+        GuitarKeys,
+        Random               // This needs to always be last
     }
 
      public enum SongSectionByte
@@ -105,7 +173,9 @@ public partial class UdpIntake
 
     private enum DatagramVersionByte
     {
-        Version,
+        CameraCut = 3,
+        PlayerStarPower = 4,
+        FogRemainingDuration = 5,
     }
 
     private enum PlatformByte
@@ -143,6 +213,7 @@ public partial class UdpIntake
         On,
     }
 
+    [Flags]
     private enum GuitarBassKeyboardNotesByte
     {
         None = 0,
@@ -275,5 +346,6 @@ public partial class UdpIntake
         Gameplay,
         Score,
         Calibration,
+        Practice
     }
 }

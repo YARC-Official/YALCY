@@ -67,6 +67,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+# some .dotnet crap
+.dotnet
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
@@ -382,10 +384,6 @@ FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
 *.code-workspace
 
 # Local History for Visual Studio Code
@@ -406,17 +404,6 @@ FodyWeavers.xsd
 # Rider #
 .idea/
 
-# VS Code
-.vscode/*
-# Tasks/launch are kept for convenience
-!.vscode/tasks.json
-!.vscode/launch.json
-
 # draw.io temp.backup files
 *.bkp
 *.dtmp
-
-# TestConsole files
-console_songdirs.txt
-console_songcache.bin
-console_badsongs.txt

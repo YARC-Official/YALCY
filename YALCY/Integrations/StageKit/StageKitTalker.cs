@@ -78,12 +78,15 @@ public class StageKitTalker
             return;
         }
 
-        foreach (var primitive in _currentLightingCue?.CuePrimitives)
+        if (_currentLightingCue != null)
         {
-            primitive.KillSelf();
-        }
+            foreach (var primitive in _currentLightingCue.CuePrimitives)
+            {
+                primitive.KillSelf();
+            }
 
-        _currentLightingCue.KillSelf();
+            _currentLightingCue.KillSelf();
+        }
         // Set and enable the new lighting cue
         PreviousLightingCue = _currentLightingCue;
         _currentLightingCue = cue;
