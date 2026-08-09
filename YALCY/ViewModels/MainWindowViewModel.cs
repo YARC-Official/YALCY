@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -300,8 +300,8 @@ public class DeviceWithZones : ReactiveObject
 public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
 {
     public new event PropertyChangedEventHandler? PropertyChanged;
-    public Device Device { get; set; }
-    public Zone Zone { get; set; }
+    public Device Device { get; set; } = null!;
+    public Zone Zone { get; set; } = null!;
     public int ZoneIndex { get; set; }
     private int _category;
     private MainWindowViewModel? _viewModel;
@@ -325,11 +325,13 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
         ZoneIndex = zoneIndex;
         _category = initialCategory;
         _viewModel = viewModel;
+        UpdateDeviceCategoryList(_category);
     }
 
     public void SetViewModel(MainWindowViewModel viewModel)
     {
         _viewModel = viewModel;
+        UpdateDeviceCategoryList(_category);
     }
 
     private void RemoveFromCategoryList(int category)
@@ -415,7 +417,7 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
 public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
 {
     public new event PropertyChangedEventHandler? PropertyChanged;
-    public Device Device { get; set; }
+    public Device Device { get; set; } = null!;
     private int _category;
     private MainWindowViewModel? _viewModel;
 
@@ -436,11 +438,13 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
         Device = device;
         _category = initialCategory;
         _viewModel = viewModel;
+        UpdateDeviceCategoryList(_category);
     }
 
     public void SetViewModel(MainWindowViewModel viewModel)
     {
         _viewModel = viewModel;
+        UpdateDeviceCategoryList(_category);
     }
 
     private void RemoveFromCategoryList(int category)

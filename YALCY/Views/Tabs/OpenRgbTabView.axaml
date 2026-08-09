@@ -8,7 +8,7 @@
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
     <UserControl.Resources>
-        <tabs:DeviceTypeToIconConverter x:Key="DeviceTypeToIconConverter"/>
+        <vm:DeviceTypeToIconConverter x:Key="DeviceTypeToIconConverter"/>
     </UserControl.Resources>
     <Grid Margin="20,15">
         <Grid.RowDefinitions>
@@ -69,7 +69,6 @@
             <!-- Connection Settings Card -->
             <Border Grid.Column="0" x:Name="ConnectionCard"
                     Background="#101224" 
-
                     BorderThickness="1" 
                     CornerRadius="12"
                     Padding="20"

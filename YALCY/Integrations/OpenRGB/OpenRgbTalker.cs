@@ -83,12 +83,18 @@ public class OpenRgbTalker
             LightPodList.Clear();
             StrobeList.Clear();
             FoggerList.Clear();
-            LightPodStates.Clear();
+            lock (LightPodStates)
+            {
+                LightPodStates.Clear();
+            }
             OffZones.Clear();
             LightPodZones.Clear();
             StrobeZones.Clear();
             FoggerZones.Clear();
-            LightPodZoneStates.Clear();
+            lock (LightPodZoneStates)
+            {
+                LightPodZoneStates.Clear();
+            }
             
             // Clear visual lists in the UI synchronously
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -181,22 +187,28 @@ public class OpenRgbTalker
         var devices = client.GetAllControllerData();
         OffList.Clear();
         Dispatcher.UIThread.InvokeAsync(MainWindowViewModel.ClearOpenRgbVisualList);
-        
-        if (_mainViewModel != null)
+        Dispatcher.UIThread.InvokeAsync(() => 
         {
-            Dispatcher.UIThread.InvokeAsync(() => _mainViewModel.ClearDevicesWithZones());
-        }
+            if (_mainViewModel != null)
+            {
+                _mainViewModel.DeviceCategories.Clear();
+                _mainViewModel.ClearDevicesWithZones();
+            }
+        });
         
         foreach (var dev in devices)
         {
             OffList.Add(dev);
             OpenRgbDeviceInserted?.Invoke(dev);
             
-            if (_mainViewModel != null)
+            Dispatcher.UIThread.InvokeAsync(() => 
             {
-                Dispatcher.UIThread.InvokeAsync(() => 
-                    _mainViewModel.DevicesWithZones.Add(new DeviceWithZones(dev, _mainViewModel)));
-            }
+                if (_mainViewModel != null)
+                {
+                    _mainViewModel.DeviceCategories.Add(new DeviceCategory(dev, 0, _mainViewModel));
+                    _mainViewModel.DevicesWithZones.Add(new DeviceWithZones(dev, _mainViewModel));
+                }
+            });
         }
     }
 
@@ -397,7 +409,11 @@ public class OpenRgbTalker
         {
             // Adjust the number of LEDs per area, ensuring at least one LED per area
             var keysPerArea = Math.Max(1, device.Leds.Length / numAreas);
-            var colors = LightPodStates[device.Index];
+            Color[]? colors;
+            lock (LightPodStates)
+            {
+                if (!LightPodStates.TryGetValue(device.Index, out colors)) continue;
+            }
 
             for (int area = areaOffset; area < areaOffset + 8; area++)
             {
@@ -406,14 +422,7 @@ public class OpenRgbTalker
                     var ledIndex = area * keysPerArea + key;
                     if (ledIndex >= device.Leds.Length) continue;
 
-                    if ((parameter & (1 << (area - areaOffset))) != 0)
-                    {
-                        colors[ledIndex] = color;
-                    }
-                    else
-                    {
-                        colors[ledIndex] = new Color(0, 0, 0);
-                    }
+                    colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                 }
             }
 
@@ -428,7 +437,11 @@ public class OpenRgbTalker
             var zoneKey = kvp.Key;
             
             var keysPerArea = Math.Max(1, zoneInfo.Zone.LedCount / numAreas);
-            var colors = LightPodZoneStates[zoneKey];
+            Color[]? colors;
+            lock (LightPodZoneStates)
+            {
+                if (!LightPodZoneStates.TryGetValue(zoneKey, out colors)) continue;
+            }
 
             for (int area = areaOffset; area < areaOffset + 8; area++)
             {
@@ -437,14 +450,7 @@ public class OpenRgbTalker
                     var ledIndex = area * keysPerArea + key;
                     if (ledIndex >= zoneInfo.Zone.LedCount) continue;
 
-                    if ((parameter & (1 << (area - areaOffset))) != 0)
-                    {
-                        colors[ledIndex] = color;
-                    }
-                    else
-                    {
-                        colors[ledIndex] = new Color(0, 0, 0);
-                    }
+                    colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                 }
             }
 
