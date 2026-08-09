@@ -125,15 +125,15 @@ public class OpenRgbTalker
             OpenRgbDeviceInserted += MainWindowViewModel.OnOpenRgbDeviceInserted;
             OpenRgbDeviceRemoved += MainWindowViewModel.OnOpenRgbDeviceRemoved;
 
-            foreach (var device in devices)
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                OpenRgbDeviceInserted?.Invoke(device);
-                Dispatcher.UIThread.InvokeAsync(() =>
+                foreach (var device in devices)
                 {
+                    OpenRgbDeviceInserted?.Invoke(device);
                     mainViewModel.DeviceCategories.Add(new DeviceCategory(device, 0, mainViewModel));
                     mainViewModel.DevicesWithZones.Add(new DeviceWithZones(device, mainViewModel));
-                });
-            }
+                }
+            });
 
             UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Connected);
@@ -481,8 +481,7 @@ public class OpenRgbTalker
             var zoneInfo = kvp.Value;
             var zoneKey = kvp.Key;
             
-            var zoneLedCount = (int)zoneInfo.Zone.LedCount;
-            var keysPerArea = Math.Max(1, zoneLedCount / numAreas);
+            var keysPerArea = Math.Max(1, zoneInfo.Zone.LedCount / numAreas);
             Color[]? colors;
             lock (Lock)
             {
@@ -494,7 +493,8 @@ public class OpenRgbTalker
                 for (int key = 0; key < keysPerArea; key++)
                 {
                     var ledIndex = area * keysPerArea + key;
-                    if (ledIndex >= zoneLedCount) continue;
+                    if (ledIndex >= zoneInfo.Zone.LedCount) continue;
+
                     colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                 }
             }
