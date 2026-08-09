@@ -481,7 +481,8 @@ public class OpenRgbTalker
             var zoneInfo = kvp.Value;
             var zoneKey = kvp.Key;
             
-            var keysPerArea = Math.Max(1, zoneInfo.Zone.LedCount / numAreas);
+            var zoneLedCount = (int)zoneInfo.Zone.LedCount;
+            var keysPerArea = Math.Max(1, zoneLedCount / numAreas);
             Color[]? colors;
             lock (Lock)
             {
@@ -493,8 +494,7 @@ public class OpenRgbTalker
                 for (int key = 0; key < keysPerArea; key++)
                 {
                     var ledIndex = area * keysPerArea + key;
-                    if (ledIndex >= zoneInfo.Zone.LedCount) continue;
-
+                    if (ledIndex >= zoneLedCount) continue;
                     colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                 }
             }
