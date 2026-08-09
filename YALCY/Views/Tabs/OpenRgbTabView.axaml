@@ -281,6 +281,23 @@
                                                                            Foreground="#A5A8C8"
                                                                            FontWeight="SemiBold"/>
                                                             </Border>
+                                                            <Button Command="{Binding IdentifyDeviceCommand}"
+                                                                    Background="#14162B"
+                                                                    CornerRadius="6"
+                                                                    Height="24"
+                                                                    Padding="8,0"
+                                                                    VerticalContentAlignment="Center"
+                                                                    VerticalAlignment="Center"
+                                                                    ToolTip.Tip="Flash all LEDs on this device to identify it in real world">
+                                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                    <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="Identify" 
+                                                                               FontSize="10" 
+                                                                               FontWeight="Bold" 
+                                                                               Foreground="#8B8FB5" 
+                                                                               VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                            </Button>
                                                         </StackPanel>
                                                     </StackPanel>
                                                     
@@ -361,10 +378,32 @@
                                                                         
                                                                         <StackPanel Grid.Column="1" 
                                                                                     Orientation="Horizontal" 
-                                                                                    Spacing="8">
+                                                                                    Spacing="8"
+                                                                                    VerticalAlignment="Center">
+                                                                            <Button Command="{Binding IdentifyZoneCommand}"
+                                                                                    Background="#14162B"
+                                                                                    CornerRadius="6"
+                                                                                    MinHeight="28"
+                                                                                    Height="28"
+                                                                                    Padding="10,0"
+                                                                                    VerticalContentAlignment="Center"
+                                                                                    VerticalAlignment="Center"
+                                                                                    ToolTip.Tip="Flash zone LEDs 4 times to identify physical location">
+                                                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                                    <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center"/>
+                                                                                    <TextBlock Text="Identify" 
+                                                                                               FontSize="10" 
+                                                                                               FontWeight="Bold" 
+                                                                                               Foreground="#8B8FB5" 
+                                                                                               VerticalAlignment="Center"/>
+                                                                                </StackPanel>
+                                                                            </Button>
                                                                             <Border Background="#14162B" 
                                                                                     CornerRadius="6" 
-                                                                                    Padding="8,4">
+                                                                                    MinHeight="28"
+                                                                                    Height="28"
+                                                                                    Padding="10,0"
+                                                                                    VerticalAlignment="Center">
                                                                                 <TextBlock Text="{Binding Zone.Type}" 
                                                                                            FontSize="10" 
                                                                                            FontWeight="Bold"
@@ -373,8 +412,11 @@
                                                                             </Border>
                                                                             <Border Background="#14162B" 
                                                                                     CornerRadius="6" 
-                                                                                    Padding="8,4">
-                                                                                <StackPanel Orientation="Horizontal">
+                                                                                    MinHeight="28"
+                                                                                    Height="28"
+                                                                                    Padding="10,0"
+                                                                                    VerticalAlignment="Center">
+                                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                                                     <TextBlock Text="{Binding Zone.LedCount}" 
                                                                                                FontSize="10" 
                                                                                                FontWeight="Bold"

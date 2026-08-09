@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using HidSharp;
@@ -322,11 +323,13 @@ public class DeviceWithZones : ReactiveObject
 {
     public Device Device { get; set; }
     public ObservableCollection<DeviceZoneCategory> Zones { get; set; }
+    public ICommand IdentifyDeviceCommand { get; }
 
     public DeviceWithZones(Device device, MainWindowViewModel? viewModel = null)
     {
         Device = device;
         Zones = new ObservableCollection<DeviceZoneCategory>();
+        IdentifyDeviceCommand = ReactiveCommand.Create(() => viewModel?.OpenRgbTalker.IdentifyDevice(Device));
         
         // Create a zone category for each zone in the device
         for (int i = 0; i < device.Zones.Length; i++)
@@ -343,6 +346,7 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
     public Device Device { get; set; } = null!;
     public Zone Zone { get; set; } = null!;
     public int ZoneIndex { get; set; }
+    public ICommand IdentifyZoneCommand { get; }
     private int _category;
     private MainWindowViewModel? _viewModel;
 
@@ -366,6 +370,7 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
         ZoneIndex = zoneIndex;
         _category = initialCategory;
         _viewModel = viewModel;
+        IdentifyZoneCommand = ReactiveCommand.Create(() => _viewModel?.OpenRgbTalker.IdentifyZone(Device, ZoneIndex, Zone));
         UpdateDeviceCategoryList(_category);
     }
 
@@ -403,6 +408,18 @@ public class DeviceZoneCategory : ReactiveObject, INotifyPropertyChanged
                     break;
             }
         }
+
+        Task.Run(() =>
+        {
+            try
+            {
+                _viewModel.OpenRgbTalker.TurnOffZoneLeds(Device, ZoneIndex, Zone);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"TurnOffZoneLeds error: {ex.Message}");
+            }
+        });
     }
 
     private void UpdateDeviceCategoryList(int category)
@@ -515,6 +532,18 @@ public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
                     break;
             }
         }
+
+        Task.Run(() =>
+        {
+            try
+            {
+                _viewModel.OpenRgbTalker.TurnOffDeviceLeds(Device);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"TurnOffDeviceLeds error: {ex.Message}");
+            }
+        });
     }
 
     private void UpdateDeviceCategoryList(int category)
