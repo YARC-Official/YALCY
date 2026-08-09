@@ -143,6 +143,16 @@
                                            Height="36"
                                            VerticalContentAlignment="Center" />
                         </StackPanel>
+
+                        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
+                        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
+                            <RadioButton Content="Strobe command"
+                                         GroupName="OpenRgbStrobeMode"
+                                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+                            <RadioButton Content="Manual flash strobe"
+                                         GroupName="OpenRgbStrobeMode"
+                                         IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+                        </StackPanel>
                         
                         <Button x:Name="ConnectButton" Content="🔗 Connect" 
                                 Command="{Binding ConnectToOpenRgbServerCommand}"
