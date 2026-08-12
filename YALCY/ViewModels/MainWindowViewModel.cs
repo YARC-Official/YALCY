@@ -1,10 +1,13 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using HidSharp;
@@ -20,6 +23,7 @@ using YALCY.Integrations.RB3E;
 using YALCY.Integrations.Serial;
 using YALCY.Integrations.StageKit;
 using YALCY.Usb;
+using YALCY.ViewModels.OpenRGB;
 using Device = OpenRGB.NET.Device;
 
 namespace YALCY.ViewModels;
@@ -199,7 +203,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             SettingsManager.OpenRgbEnabledSettingIsEnabled,
             "YALCY is talking OpenRGB!",
             "YALCY is NOT talking to OpenRGB!",
-            async (isEnabled) => OpenRgbTalker.EnableOpenRgbTalker(isEnabled, OpenRgbServerIp, OpenRgbServerPort),
+            async (isEnabled) => await OpenRgbTalker.EnableOpenRgbTalker(isEnabled, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort),
             "Enable or disable output to a OpenRGB client"
         );
     }
@@ -216,7 +220,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         DiscoverHomeAssistantLightsCommand = ReactiveCommand.CreateFromTask(() => HomeAssistantTalker.DiscoverLightsAsync(this));
         AddHomeAssistantEntityCommand = ReactiveCommand.Create(AddHomeAssistantEntity);
         ConnectToOpenRgbServerCommand = ReactiveCommand.CreateFromTask(() =>
-            OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp, OpenRgbServerPort));
+            OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort));
     }
 
     private async void ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
@@ -235,7 +239,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         SettingsManager.SaveSettings(this);
 
         // Turn off the OpenRGB talker
-        await OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp, OpenRgbServerPort, this);
+        await OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort, this);
 
         // Turn off the RB3E Talker
         Rb3ETalker.EnableRb3eTalker(false, this);
@@ -316,97 +320,4 @@ public class EnableSetting : ReactiveObject
         _toolTip = toolTip;
         ToolTip = toolTip;
     }
-}
-
-public class DeviceCategory : ReactiveObject, INotifyPropertyChanged
-{
-    public Device Device { get; set; }
-    private int _category;
-    private MainWindowViewModel? _viewModel;
-
-    public int Category
-    {
-        get => _category;
-        set
-        {
-            RemoveFromCategoryList(_category);
-            _category = value;
-            UpdateDeviceCategoryList(_category);
-            this.RaisePropertyChanged(nameof(Category));
-        }
-    }
-
-    public DeviceCategory(Device device, int initialCategory, MainWindowViewModel? viewModel = null)
-    {
-        Device = device;
-        _category = initialCategory;
-        _viewModel = viewModel;
-    }
-
-    public void SetViewModel(MainWindowViewModel viewModel)
-    {
-        _viewModel = viewModel;
-    }
-
-    private void RemoveFromCategoryList(int category)
-    {
-        if (_viewModel == null) return;
-
-        switch (category)
-        {
-            case 0:
-                _viewModel.OpenRgbTalker.OffList.Remove(Device);
-                break;
-
-            case 1:
-                _viewModel.OpenRgbTalker.LightPodList.Remove(Device);
-                lock (_viewModel.OpenRgbTalker.LightPodStates)
-                {
-                    _viewModel.OpenRgbTalker.LightPodStates.Remove(Device.Index);
-                }
-                break;
-
-            case 2:
-                _viewModel.OpenRgbTalker.StrobeList.Remove(Device);
-                break;
-
-            case 3:
-                _viewModel.OpenRgbTalker.FoggerList.Remove(Device);
-                break;
-        }
-    }
-
-    private void UpdateDeviceCategoryList(int category)
-    {
-        if (_viewModel == null) return;
-
-        // Add the device to the correct list based on the category
-        switch (category)
-        {
-            case 0:
-                _viewModel.OpenRgbTalker.OffList.Add(Device);
-                break;
-
-            case 1:
-                _viewModel.OpenRgbTalker.LightPodList.Add(Device);
-                lock (_viewModel.OpenRgbTalker.LightPodStates)
-                {
-                    if (!_viewModel.OpenRgbTalker.LightPodStates.ContainsKey(Device.Index))
-                    {
-                        // Initialize the light pod state for this device
-                        _viewModel.OpenRgbTalker.LightPodStates[Device.Index] = new Color[Device.Leds.Length];
-                    }
-                }
-                break;
-
-            case 2:
-                _viewModel.OpenRgbTalker.StrobeList.Add(Device);
-                break;
-
-            case 3:
-                _viewModel.OpenRgbTalker.FoggerList.Add(Device);
-                break;
-        }
-    }
-
 }

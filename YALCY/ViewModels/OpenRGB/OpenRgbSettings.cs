@@ -1,8 +1,9 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Avalonia.Threading;
 using OpenRGB.NET;
 using ReactiveUI;
+using YALCY.ViewModels.OpenRGB;
 
 namespace YALCY.ViewModels;
 
@@ -10,10 +11,11 @@ public partial class MainWindowViewModel
 {
     private string? _openRgbServerIp;
     private ushort _openRgbServerPort;
-    private string _openRgbStatus;
+    private string _openRgbStatus = null!;
     private static ObservableCollection<Device>? OpenRgbDevices { get; set; }
-    public ICommand ConnectToOpenRgbServerCommand { set; get; }
-    public ObservableCollection<DeviceCategory> DeviceCategories { get; set; }
+    public ICommand ConnectToOpenRgbServerCommand { set; get; } = null!;
+    public ObservableCollection<DeviceCategory> DeviceCategories { get; set; } = null!;
+    public ObservableCollection<DeviceWithZones> DevicesWithZones { get; set; } = null!;
 
     public string OpenRgbStatus
     {
@@ -55,6 +57,7 @@ public partial class MainWindowViewModel
     {
         OpenRgbDevices = new ObservableCollection<Device>();
         DeviceCategories = new ObservableCollection<DeviceCategory>();
+        DevicesWithZones = new ObservableCollection<DeviceWithZones>();
     }
 
     public static void OnOpenRgbDeviceInserted(Device device)
@@ -70,5 +73,10 @@ public partial class MainWindowViewModel
     public static void ClearOpenRgbVisualList()
     {
         OpenRgbDevices?.Clear();
+    }
+    
+    public void ClearDevicesWithZones()
+    {
+        DevicesWithZones?.Clear();
     }
 }

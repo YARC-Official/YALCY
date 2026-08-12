@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Core Launch (YALCY)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/YALCY/bin/Debug/net9.0/YALCY.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/YALCY",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Launch (YALCY.CLI)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-cli",
+            "program": "${workspaceFolder}/YALCY.CLI/bin/Debug/net9.0/YALCY.CLI.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/YALCY.CLI",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}
