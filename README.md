@@ -1,11 +1,12 @@
 # 💡 YALCY
 The official repository for Yet Another Lighting Control for YARG.
+YARG outputs a UDP of various stuff it is doing, such as venue lighting, at any given moment. YALCY takes that data and converts it to real-world lighting protocols so you can get down with your bad self in funky fresh light shows synced to the song, right in your living room / bar / airport terminal gate / etc!
 
 YALCY IS IN ALPHA! EXPECT BUGS, SETTING CHANGES, INCOMPLETE FEATURES, CRASHES, LOOKING BAD, AND MORE!
 Help test YALCY!
 
 ## Summary
-YALCY is YARG's offical light controller for real world lighting effects. It currently supports:
+YALCY currently supports:
 |Protocol|Status|
 | --- | --- |
 |Stage Kit and compatible hardware such as FatsCo devices| Working!|
@@ -14,14 +15,17 @@ YALCY is YARG's offical light controller for real world lighting effects. It cur
 |LIFX LAN protocol| In testing|
 |RB3E datastream, partial, just the lighting data|Working!|
 |OpenRGB| Working!|
-|Serial| In testing|
+|Serial| Working!|
+|LIFX| Working!|
 
 ## 📥 Downloading and Playing
 
 Download the release for your operating system.
 Run it, can be minimized.
-Run YARG (a versison that outputs the datasstream).
-Rock on.
+Run YARG.l
+Turn on UDP data stream in experimental settings.
+Some protocols need some setup, see those tabs for more info.
+Rock on!
 
 ## 🔨 Building
 
@@ -45,3 +49,7 @@ Some libraries/assets are **packaged** with the source code have licenses that m
 |[Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json)|MIT|Settings saving and loading|
 |[OpenRGB.net](https://github.com/diogotr7/OpenRGB.NET)|MIT|OpenRGB handling|
 |[DMX.NET](https://github.com/Nyxyxylyth/DMX.NET)|MIT| USB to serial handling|
+
+
+⚠️ Warning:
+Once you go lights, you never go back!
