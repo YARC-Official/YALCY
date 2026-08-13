@@ -24,6 +24,7 @@ public class SettingsContainer
     public string? HueBridgeIP { get; set; }
     public ushort UdpListenPort { get; set; }
     public int? FogDurationPercent { get; set; }
+    public int? YargPacketTimeoutSeconds { get; set; }
     public ushort OpenRgbServerPort { get; set; }
     public string? OpenRgbServerIp { get; set; }
     public string? SacnAdapterIp { get; set; }
@@ -48,6 +49,9 @@ public sealed class LifxZoneAssignmentSetting
 
 internal static class SettingsManager
 {
+    public const ushort DefaultUdpListenPort = 36107;
+    public const int DefaultYargPacketTimeoutSeconds = 5;
+
     private static readonly string SettingsDirectory =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YALCY", "Settings");
 
@@ -68,6 +72,7 @@ internal static class SettingsManager
         HueBridgeIP = "",
         UdpListenPort = 0,
         FogDurationPercent = 100,
+        YargPacketTimeoutSeconds = DefaultYargPacketTimeoutSeconds,
         OpenRgbServerPort = 0,
         OpenRgbServerIp = "",
         SacnAdapterIp = "",
@@ -127,6 +132,7 @@ internal static class SettingsManager
     public static string? HueBridgeIp { get; private set; }
     public static ushort UdpListenPort { get; set; }
     public static int FogDurationPercent { get; set; }
+    public static int YargPacketTimeoutSeconds { get; set; } = DefaultYargPacketTimeoutSeconds;
     public static ushort OpenRgbServerPort { get; set; }
     public static string? OpenRgbServerIp { get; set; }
     public static string? SacnAdapterIp { get; set; }
@@ -144,6 +150,38 @@ internal static class SettingsManager
         Array.Empty<LifxZoneAssignmentSetting>();
     public static IReadOnlyList<HomeAssistantAssignmentSetting> HomeAssistantAssignments { get; private set; } =
         Array.Empty<HomeAssistantAssignmentSetting>();
+
+    public static void ResetDmxChannelsToDefaults()
+    {
+        BpmChannelSettingValue = 57;
+        CueChangeChannelSettingValue = 58;
+        BeatLineChannelSettingValue = 59;
+        BonusEffectChannelSettingValue = 60;
+        KeyFrameChannelSettingValue = 61;
+        DrumNoteChannelSettingValue = 62;
+        PostProcessingChannelSettingValue = 63;
+        GuitarNoteChannelSettingValue = 64;
+        BassNoteChannelSettingValue = 65;
+        CurrentSpotlightSettingValue = 66;
+        CurrentSingalongSettingValue = 67;
+        KeysNoteChannelSettingValue = 68;
+        VocalsNoteChannelSettingValue = 69;
+        Harmony0NoteChannelSettingValue = 70;
+        Harmony1NoteChannelSettingValue = 71;
+        Harmony2NoteChannelSettingValue = 72;
+        CurrentSceneSettingValue = 73;
+        VenueSizeSettingValue = 74;
+        PauseStateSettingValue = 75;
+        SongSectionSettingValue = 76;
+
+        MasterDimmerSettingsChannel = new[] { 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106 };
+        FogChannelsChannel = new[] { 6, 13, 20, 27, 34, 41, 48, 55 };
+        StrobeChannelsChannel = new[] { 7, 14, 21, 28, 35, 42, 49, 56 };
+        RedChannelsChannel = new[] { 2, 9, 16, 23, 30, 37, 44, 51 };
+        BlueChannelsChannel = new[] { 3, 10, 17, 24, 31, 38, 45, 52 };
+        YellowChannelsChannel = new[] { 4, 11, 18, 25, 32, 39, 46, 53 };
+        GreenChannelsChannel = new[] { 5, 12, 19, 26, 33, 40, 47, 54 };
+    }
 
     public static void SaveSettings(MainWindowViewModel mainViewModel)
     {
@@ -202,6 +240,7 @@ internal static class SettingsManager
         settings.HueBridgeIP = mainViewModel.HueBridgeIp;
         settings.UdpListenPort = mainViewModel.UdpListenPort;
         settings.FogDurationPercent = mainViewModel.FogDurationPercent;
+        settings.YargPacketTimeoutSeconds = mainViewModel.YargPacketTimeoutSeconds;
         settings.LifxZoneAssignments = new List<LifxZoneAssignmentSetting>(mainViewModel.GetLifxZoneAssignments());
         settings.HomeAssistantAssignments =
             new List<HomeAssistantAssignmentSetting>(mainViewModel.GetHomeAssistantAssignments());
@@ -427,6 +466,10 @@ internal static class SettingsManager
 
             UdpListenPort = container.UdpListenPort;
             FogDurationPercent = Math.Clamp(container.FogDurationPercent ?? 100, 0, 100);
+            YargPacketTimeoutSeconds = Math.Clamp(
+                container.YargPacketTimeoutSeconds ?? DefaultYargPacketTimeoutSeconds,
+                1,
+                30);
             LifxZoneAssignments = (container.LifxZoneAssignments ?? new List<LifxZoneAssignmentSetting>())
                 .Where(assignment => !string.IsNullOrWhiteSpace(assignment.Serial) && assignment.ZoneIndex >= 0)
                 .Select(assignment => new LifxZoneAssignmentSetting
@@ -476,45 +519,20 @@ internal static class SettingsManager
             LifxEnabledSettingIsEnabled = false;
             HomeAssistantEnabledSettingIsEnabled = false;
 
-            BpmChannelSettingValue = 57;
-            CueChangeChannelSettingValue = 58;
-            BeatLineChannelSettingValue = 59;
-            BonusEffectChannelSettingValue = 60;
-            KeyFrameChannelSettingValue = 61;
-            DrumNoteChannelSettingValue = 62;
-            PostProcessingChannelSettingValue = 63;
-            GuitarNoteChannelSettingValue = 64;
-            BassNoteChannelSettingValue = 65;
-            CurrentSpotlightSettingValue = 66;
-            CurrentSingalongSettingValue = 67;
-            KeysNoteChannelSettingValue = 68;
-            VocalsNoteChannelSettingValue = 69;
-            Harmony0NoteChannelSettingValue = 70;
-            Harmony1NoteChannelSettingValue = 71;
-            Harmony2NoteChannelSettingValue = 72;
-            CurrentSceneSettingValue = 73;
-            VenueSizeSettingValue = 74;
-            PauseStateSettingValue = 75;
-            SongSectionSettingValue = 76;
+            ResetDmxChannelsToDefaults();
 
             BroadcastUniverseSettingValue = 1;
 
-            MasterDimmerSettingsChannel = new[] { 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106 };
             MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
-            FogChannelsChannel = new[] { 6, 13, 20, 27, 34, 41, 48, 55 };
-            StrobeChannelsChannel = new[] { 7, 14, 21, 28, 35, 42, 49, 56 };
-            RedChannelsChannel = new[] { 2, 9, 16, 23, 30, 37, 44, 51 };
-            BlueChannelsChannel = new[] { 3, 10, 17, 24, 31, 38, 45, 52 };
-            YellowChannelsChannel = new[] { 4, 11, 18, 25, 32, 39, 46, 53 };
-            GreenChannelsChannel = new[] { 5, 12, 19, 26, 33, 40, 47, 54 };
 
             HueAuthResultUsername = "";
             HueAuthResultStreamingClientKey = "";
             HueAuthResultIp = "";
             HueBridgeIp = "";
 
-            UdpListenPort = 36107;
+            UdpListenPort = DefaultUdpListenPort;
             FogDurationPercent = 100;
+            YargPacketTimeoutSeconds = DefaultYargPacketTimeoutSeconds;
             LifxZoneAssignments = Array.Empty<LifxZoneAssignmentSetting>();
             HomeAssistantAssignments = Array.Empty<HomeAssistantAssignmentSetting>();
 

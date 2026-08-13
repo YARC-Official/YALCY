@@ -18,6 +18,7 @@ public partial class MainWindowViewModel
     public ObservableCollection<UdpIntake.IDatapacketMember> CombinedCollection { get; set; }
     private ushort _udpListenPort;
     private int _fogDurationPercent;
+    private int _yargPacketTimeoutSeconds;
     public ushort UdpListenPort
     {
         get => _udpListenPort;
@@ -35,10 +36,30 @@ public partial class MainWindowViewModel
         }
     }
 
+    public int YargPacketTimeoutSeconds
+    {
+        get => _yargPacketTimeoutSeconds;
+        set
+        {
+            var normalized = Math.Clamp(value, 1, 30);
+            this.RaiseAndSetIfChanged(ref _yargPacketTimeoutSeconds, normalized);
+            if (SafetyController != null)
+            {
+                SafetyController.Timeout = TimeSpan.FromSeconds(normalized);
+            }
+        }
+    }
+
+    public void ResetUdpListenPort()
+    {
+        UdpListenPort = SettingsManager.DefaultUdpListenPort;
+    }
+
     private void FeedInUdpSettings()
     {
         UdpListenPort = SettingsManager.UdpListenPort;
         FogDurationPercent = SettingsManager.FogDurationPercent;
+        YargPacketTimeoutSeconds = SettingsManager.YargPacketTimeoutSeconds;
     }
 
     private void InitializeUdpIntakeCollections()

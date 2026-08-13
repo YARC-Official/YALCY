@@ -306,6 +306,7 @@ public sealed class LifxTalker : IDisposable
                     break;
                 case StageKitTalker.CommandId.DisableAll:
                     _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+                    ApplyStrobeState(StageKitTalker.CommandId.StrobeOff, 0xFF, 1000, true);
                     DisableAssignedZones();
                     break;
             }
@@ -368,6 +369,11 @@ public sealed class LifxTalker : IDisposable
 
     private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
     {
+        if (UsbDeviceMonitor.IsOutputSuppressed)
+        {
+            isOn = false;
+        }
+
         var devices = SnapshotDevices();
         if (devices.Count == 0)
         {

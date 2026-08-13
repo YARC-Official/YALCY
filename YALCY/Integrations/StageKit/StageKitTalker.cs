@@ -29,11 +29,12 @@ public class StageKitTalker
 
     private static StageKitLightingCue? _currentLightingCue;
     public static StageKitLightingCue? PreviousLightingCue;
+    private bool _isEnabled;
 
     //cues that are outide of songs
     public StageKitTalker()
     {
-        _cueDictionary.TryGetValue(UdpIntake.CueByte.NoCue, out var startCue);
+        var startCue = CreateCue(UdpIntake.CueByte.NoCue);
         _currentLightingCue = startCue;
         PreviousLightingCue = startCue;
     }
@@ -42,51 +43,48 @@ public class StageKitTalker
     //private static byte _currentFogState = (byte)UdpIntake.FogStateByte.Off;
 
     //this should be on song start as, venue calculations are done in the song start
-    private static readonly Dictionary<UdpIntake.CueByte, StageKitLightingCue> _cueDictionary = new()
+    private static readonly Dictionary<UdpIntake.CueByte, Func<StageKitLightingCue>> _cueFactories = new()
     {
-        { UdpIntake.CueByte.NoCue, new NoCue() },
-        { UdpIntake.CueByte.Menu, new MenuLighting() },
-        { UdpIntake.CueByte.Score, new ScoreLighting() },
-        { UdpIntake.CueByte.Warm_Manual, new ManualWarm() },
-        { UdpIntake.CueByte.Cool_Manual, new ManualCool() },
-        { UdpIntake.CueByte.Dischord, new Dischord() },
-        { UdpIntake.CueByte.Stomp, new Stomp() },
-        { UdpIntake.CueByte.Default, new Default() },
-        { UdpIntake.CueByte.Warm_Automatic, new LoopWarm() },
-        { UdpIntake.CueByte.Cool_Automatic, new LoopCool() },
-        { UdpIntake.CueByte.BigRockEnding, new BigRockEnding() },
-        { UdpIntake.CueByte.Searchlights, new SearchLight() },
-        { UdpIntake.CueByte.Frenzy, new Frenzy() },
-        { UdpIntake.CueByte.Sweep, new Sweep() },
-        { UdpIntake.CueByte.Harmony, new Harmony() },
-        { UdpIntake.CueByte.Flare_Slow, new FlareSlow() },
-        { UdpIntake.CueByte.Flare_Fast, new FlareFast() },
-        { UdpIntake.CueByte.Silhouettes_Spotlight, new SilhouetteSpot() },
-        { UdpIntake.CueByte.Silhouettes, new Silhouettes() },
-        { UdpIntake.CueByte.Blackout_Spotlight, new Blackout() },
-        { UdpIntake.CueByte.Blackout_Slow, new Blackout() },
-        { UdpIntake.CueByte.Blackout_Fast, new Blackout() },
-        { UdpIntake.CueByte.Intro, new Intro() }
+        { UdpIntake.CueByte.NoCue, static () => new NoCue() },
+        { UdpIntake.CueByte.Menu, static () => new MenuLighting() },
+        { UdpIntake.CueByte.Score, static () => new ScoreLighting() },
+        { UdpIntake.CueByte.Warm_Manual, static () => new ManualWarm() },
+        { UdpIntake.CueByte.Cool_Manual, static () => new ManualCool() },
+        { UdpIntake.CueByte.Dischord, static () => new Dischord() },
+        { UdpIntake.CueByte.Stomp, static () => new Stomp() },
+        { UdpIntake.CueByte.Default, static () => new Default() },
+        { UdpIntake.CueByte.Warm_Automatic, static () => new LoopWarm() },
+        { UdpIntake.CueByte.Cool_Automatic, static () => new LoopCool() },
+        { UdpIntake.CueByte.BigRockEnding, static () => new BigRockEnding() },
+        { UdpIntake.CueByte.Searchlights, static () => new SearchLight() },
+        { UdpIntake.CueByte.Frenzy, static () => new Frenzy() },
+        { UdpIntake.CueByte.Sweep, static () => new Sweep() },
+        { UdpIntake.CueByte.Harmony, static () => new Harmony() },
+        { UdpIntake.CueByte.Flare_Slow, static () => new FlareSlow() },
+        { UdpIntake.CueByte.Flare_Fast, static () => new FlareFast() },
+        { UdpIntake.CueByte.Silhouettes_Spotlight, static () => new SilhouetteSpot() },
+        { UdpIntake.CueByte.Silhouettes, static () => new Silhouettes() },
+        { UdpIntake.CueByte.Blackout_Spotlight, static () => new Blackout() },
+        { UdpIntake.CueByte.Blackout_Slow, static () => new Blackout() },
+        { UdpIntake.CueByte.Blackout_Fast, static () => new Blackout() },
+        { UdpIntake.CueByte.Intro, static () => new Intro() }
     };
+
+    internal static StageKitLightingCue? CreateCue(UdpIntake.CueByte cue)
+    {
+        return _cueFactories.TryGetValue(cue, out var factory) ? factory() : null;
+    }
 
     private static void CueChange(byte cueByte)
     {
-        // Try to get the new cue from the dictionary
-        if (!_cueDictionary.TryGetValue((UdpIntake.CueByte)cueByte, out var cue))
+        var cue = CreateCue((UdpIntake.CueByte)cueByte);
+        if (cue == null)
         {
             Console.WriteLine($"Cue {cueByte} not found in dictionary.");
             return;
         }
 
-        if (_currentLightingCue != null)
-        {
-            foreach (var primitive in _currentLightingCue.CuePrimitives)
-            {
-                primitive.KillSelf();
-            }
-
-            _currentLightingCue.KillSelf();
-        }
+        StopCurrentCue();
         // Set and enable the new lighting cue
         PreviousLightingCue = _currentLightingCue;
         _currentLightingCue = cue;
@@ -119,6 +117,12 @@ public class StageKitTalker
 
     public void EnableStageKitTalker(bool isEnabled)
     {
+        if (_isEnabled == isEnabled)
+        {
+            return;
+        }
+
+        _isEnabled = isEnabled;
         if (isEnabled)
         {
             UdpIntake.OnLightingCue += CueChange;
@@ -135,5 +139,26 @@ public class StageKitTalker
 
           // CueChange((byte)UdpIntake.CueByte.NoCue); Don't do this, other protocols might still be on
         }
+    }
+
+    internal void SuspendCurrentCue()
+    {
+        StopCurrentCue();
+        _currentLightingCue = null;
+    }
+
+    private static void StopCurrentCue()
+    {
+        if (_currentLightingCue == null)
+        {
+            return;
+        }
+
+        foreach (var primitive in _currentLightingCue.CuePrimitives)
+        {
+            primitive.KillSelf();
+        }
+
+        _currentLightingCue.KillSelf();
     }
 }

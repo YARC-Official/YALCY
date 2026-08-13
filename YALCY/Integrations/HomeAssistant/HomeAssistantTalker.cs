@@ -376,6 +376,11 @@ public sealed class HomeAssistantTalker : IDisposable
 
     private async Task SendStrobeStateAsync(bool isOn, CancellationToken cancellationToken, bool force = false)
     {
+        if (UsbDeviceMonitor.IsOutputSuppressed)
+        {
+            isOn = false;
+        }
+
         if (_strobeAssignments.Count == 0)
         {
             return;

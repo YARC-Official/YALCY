@@ -85,6 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         UsbDeviceMonitor = new UsbDeviceMonitor();
         OpenRgbTalker = new OpenRgbTalker();
         SerialTalker = new SerialTalker();
+        InitializeSafety();
 
         // Initialize EnableSettings using loaded settings
         InitializeEnableSettings();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Buffers.Binary;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Sockets;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Threading;
 using ReactiveUI;
+using YALCY.Safety;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
 
@@ -28,6 +30,7 @@ public partial class UdpIntake : ReactiveObject
     private CancellationTokenSource? _fogDurationCts;
     private bool _rawFogState;
     private bool _effectiveFogState;
+    private LightingSafetyController? _safetyController;
     public static int FogDurationPercent { get; set; } = 100;
 
     public interface IDatapacketMember
@@ -138,10 +141,13 @@ public partial class UdpIntake : ReactiveObject
 
     private static UdpClient? _udpClient;
     private static CancellationTokenSource? _cancellationTokenSource;
-    private static DateTime _lastPacketReceived = DateTime.MinValue;
     private static Timer? _healthCheckTimer;
     private const int HEALTH_CHECK_INTERVAL_MS = 1000; // Check once per second
-    private const int PACKET_TIMEOUT_MS = 3000; // Three-second timeout
+
+    internal void SetSafetyController(LightingSafetyController safetyController)
+    {
+        _safetyController = safetyController;
+    }
 
     public async Task EnableUdpIntake(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
@@ -171,9 +177,7 @@ public partial class UdpIntake : ReactiveObject
                 _udpClient = new UdpClient(_mainViewModel.UdpListenPort);
                 _udpClient.Client.ReceiveBufferSize = 8192; // Increase buffer size
                 
-                // Initialize the connection health-check timer.
-                _lastPacketReceived = DateTime.Now;
-                _healthCheckTimer = new Timer(HealthCheckCallback, null, HEALTH_CHECK_INTERVAL_MS, HEALTH_CHECK_INTERVAL_MS);
+                _healthCheckTimer = new Timer(HealthCheckCallback, this, HEALTH_CHECK_INTERVAL_MS, HEALTH_CHECK_INTERVAL_MS);
             }
             catch (Exception ex)
             {
@@ -191,10 +195,6 @@ public partial class UdpIntake : ReactiveObject
                     {
                         var result = await _udpClient.ReceiveAsync().ConfigureAwait(false);
 
-                        // Update the timestamp of the most recently received packet.
-                        _lastPacketReceived = DateTime.Now;
-
-                        // Process packets in a separate task
                         DeserializePacket(result.Buffer);
                     }
                 }
@@ -220,29 +220,26 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
- public void DeserializePacket(byte[] data)
-{
-    if (data.Length < MIN_PACKET_SIZE)
+    public void DeserializePacket(byte[] data)
     {
-        Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {MIN_PACKET_SIZE})");
-        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
-        return;
+        TryDeserializePacket(data);
     }
 
-    try
+    internal bool TryDeserializePacket(byte[] data)
     {
-        using (MemoryStream ms = new MemoryStream(data))
-        using (BinaryReader reader = new BinaryReader(ms))
+        if (!TryValidatePacket(data, out var validationError))
         {
-            Header.Value = reader.ReadUInt32(); // byte count: 4
+            Console.WriteLine($"Invalid UDP packet: {validationError}");
+            Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+            return false;
+        }
 
-            if (Header.Value != PACKET_HEADER)
+        try
+        {
+            using (MemoryStream ms = new MemoryStream(data))
+            using (BinaryReader reader = new BinaryReader(ms))
             {
-                Console.WriteLine($"Invalid packet header: {Header.Value}");
-                Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
-                return;
-            }
-
+            Header.Value = reader.ReadUInt32(); // byte count: 4
             DatagramVersion.Value = reader.ReadByte(); // 5
             UpdateVersionedMemberIndexes(DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration);
             Platform.Value = reader.ReadByte(); // 6
@@ -292,23 +289,7 @@ public partial class UdpIntake : ReactiveObject
                 var fixedPacketSize = DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration
                     ? CURRENT_FIXED_PACKET_SIZE
                     : V4_FIXED_PACKET_SIZE;
-                if (data.Length < fixedPacketSize)
-                {
-                    Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {fixedPacketSize} for player star power count)");
-                    Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
-                    return;
-                }
-
                 PlayerStarPowerCount.Value = reader.ReadUInt16();
-                var expectedPacketSize = GetExpectedPacketSize(PlayerStarPowerCount.Value, fixedPacketSize);
-
-                if (data.Length < expectedPacketSize)
-                {
-                    Console.WriteLine($"Invalid packet size: {data.Length} (expected at least {expectedPacketSize} for {PlayerStarPowerCount.Value} player star power entr{(PlayerStarPowerCount.Value == 1 ? "y" : "ies")})");
-                    Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
-                    return;
-                }
-
                 EnsurePlayerStarPowerMemberCount(PlayerStarPowerCount.Value, fixedPacketSize);
 
                 for (var i = 0; i < PlayerStarPowerCount.Value; i++)
@@ -324,23 +305,65 @@ public partial class UdpIntake : ReactiveObject
                 EnsurePlayerStarPowerMemberCount(0);
             }
 
+            }
+
+            PacketProcessed?.Invoke(data);
+            _safetyController?.NotifyValidPacket();
+            return true;
         }
-        PacketProcessed?.Invoke(data);
-        StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connected);
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reading UDP data: {ex.Message}");
+            Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+            return false;
+        }
     }
-    catch (EndOfStreamException ex)
+
+    internal static bool TryValidatePacket(ReadOnlySpan<byte> data, out string validationError)
     {
-        Console.WriteLine($"Error reading UDP data (incomplete packet): {ex.Message}");
-        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
-        StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
+        if (data.Length < sizeof(uint) + sizeof(byte))
+        {
+            validationError = $"packet is too short ({data.Length} bytes)";
+            return false;
+        }
+
+        if (BinaryPrimitives.ReadUInt32LittleEndian(data) != PACKET_HEADER)
+        {
+            validationError = "packet header is not YARG";
+            return false;
+        }
+
+        var version = data[(int)ByteIndexName.DatagramVersion];
+        var fixedPacketSize = version switch
+        {
+            >= (byte)DatagramVersionByte.FogRemainingDuration => CURRENT_FIXED_PACKET_SIZE,
+            >= (byte)DatagramVersionByte.PlayerStarPower => V4_FIXED_PACKET_SIZE,
+            _ => LEGACY_PACKET_SIZE
+        };
+
+        if (data.Length < fixedPacketSize)
+        {
+            validationError = $"packet is incomplete ({data.Length} bytes, expected at least {fixedPacketSize})";
+            return false;
+        }
+
+        var expectedPacketSize = fixedPacketSize;
+        if (version >= (byte)DatagramVersionByte.PlayerStarPower)
+        {
+            var playerCountOffset = fixedPacketSize - PLAYER_STAR_POWER_COUNT_SIZE;
+            var playerCount = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(playerCountOffset, PLAYER_STAR_POWER_COUNT_SIZE));
+            expectedPacketSize = GetExpectedPacketSize(playerCount, fixedPacketSize);
+        }
+
+        if (data.Length != expectedPacketSize)
+        {
+            validationError = $"packet size is {data.Length} bytes; expected exactly {expectedPacketSize}";
+            return false;
+        }
+
+        validationError = string.Empty;
+        return true;
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error reading UDP data: {ex.Message}");
-        Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
-        StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
-    }
-}
 
     private static string DescribePacket(byte[] data)
     {
@@ -508,6 +531,22 @@ public partial class UdpIntake : ReactiveObject
         OnFogState?.Invoke(value);
     }
 
+    internal void EnterSafetyBlackout()
+    {
+        _fogDurationCts?.Cancel();
+        _fogDurationCts?.Dispose();
+        _fogDurationCts = null;
+        _rawFogState = false;
+        _effectiveFogState = false;
+    }
+
+    internal void ReplayOutputState()
+    {
+        OnLightingCue?.Invoke(LightingCue.Value);
+        OnStrobeState?.Invoke(StrobeState.Value);
+        OnFogState?.Invoke(_effectiveFogState);
+    }
+
     private void RemovePlayerStarPowerMemberFromView(IDatapacketMember member)
     {
         if (_mainViewModel == null)
@@ -536,24 +575,14 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
-    /// <summary>
-    /// Timer callback that checks whether any data was received in the last three seconds.
-    /// Marks the connection status as Error when no recent data is available.
-    /// </summary>
     private static void HealthCheckCallback(object? state)
     {
         try
         {
-            if (_udpClient != null && !_cancellationTokenSource?.Token.IsCancellationRequested == true)
+            if (state is UdpIntake intake && _udpClient != null &&
+                !_cancellationTokenSource?.Token.IsCancellationRequested == true)
             {
-                var timeSinceLastPacket = DateTime.Now - _lastPacketReceived;
-                
-                if (timeSinceLastPacket.TotalMilliseconds > PACKET_TIMEOUT_MS)
-                {
-                    // No data received in the last three seconds; mark the connection as errored.
-                    StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
-                    Console.WriteLine($"UDP health check failed: No data received for {timeSinceLastPacket.TotalMilliseconds:F0}ms");
-                }
+                intake._safetyController?.CheckForTimeout();
             }
         }
         catch (Exception ex)
@@ -566,6 +595,7 @@ public partial class UdpIntake : ReactiveObject
     {
         try
         {
+            _safetyController?.NotifyStreamStopped();
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;

@@ -242,6 +242,13 @@ public partial class MainWindowViewModel
 
     private void FeedInDmxSettings()
     {
+        FeedInDmxChannelSettings();
+        MasterDimmerValues.Channel = SettingsManager.MasterDimmerValuesChannel;
+        BroadcastUniverseSetting.Value = SettingsManager.BroadcastUniverseSettingValue;
+    }
+
+    private void FeedInDmxChannelSettings()
+    {
         BpmChannelSetting.Value = SettingsManager.BpmChannelSettingValue;
         CueChangeChannelSetting.Value = SettingsManager.CueChangeChannelSettingValue;
         PostProcessingChannelSetting.Value = SettingsManager.PostProcessingChannelSettingValue;
@@ -264,15 +271,18 @@ public partial class MainWindowViewModel
         SongSectionSetting.Value = SettingsManager.SongSectionSettingValue;
 
         MasterDimmerSettings.Channel = SettingsManager.MasterDimmerSettingsChannel;
-        MasterDimmerValues.Channel = SettingsManager.MasterDimmerValuesChannel;
         StrobeChannels.Channel = SettingsManager.StrobeChannelsChannel;
         FogChannels.Channel = SettingsManager.FogChannelsChannel;
         RedChannels.Channel = SettingsManager.RedChannelsChannel;
         BlueChannels.Channel = SettingsManager.BlueChannelsChannel;
         YellowChannels.Channel = SettingsManager.YellowChannelsChannel;
         GreenChannels.Channel = SettingsManager.GreenChannelsChannel;
+    }
 
-        BroadcastUniverseSetting.Value = SettingsManager.BroadcastUniverseSettingValue;
+    public void ResetDmxChannelsToDefaults()
+    {
+        SettingsManager.ResetDmxChannelsToDefaults();
+        FeedInDmxChannelSettings();
     }
 
     private void InitializeSacnAdapterOptions()

@@ -319,6 +319,11 @@ public class HueTalker : IDisposable
 
     private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
     {
+        if (UsbDeviceMonitor.IsOutputSuppressed)
+        {
+            isOn = false;
+        }
+
         var layer = _effectLayer ?? _baseEntLayer;
         if (layer == null)
         {

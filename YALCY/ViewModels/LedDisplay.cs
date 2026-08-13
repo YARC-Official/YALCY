@@ -155,6 +155,11 @@ namespace YALCY.ViewModels;
                 var updateLed = false;
                 switch (commandId)
                 {
+                    case StageKitTalker.CommandId.DisableAll:
+                        Array.Clear(LedStates, 0, LedStates.Length);
+                        InvalidateVisual();
+                        return;
+
                     case StageKitTalker.CommandId.BlueLeds:
                         updateLed = (Color == 0);
                         break;

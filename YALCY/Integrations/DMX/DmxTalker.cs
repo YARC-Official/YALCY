@@ -253,12 +253,10 @@ public class DmxTalker
 
             case StageKitTalker.CommandId.DisableAll:
                 _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
-                SetChannels(_mainViewModel.StrobeChannels, 0);
-                SetChannels(_mainViewModel.FogChannels, 0);
-                SetChannels(_mainViewModel.BlueChannels, 0);
-                SetChannels(_mainViewModel.GreenChannels, 0);
-                SetChannels(_mainViewModel.YellowChannels, 0);
-                SetChannels(_mainViewModel.RedChannels, 0);
+                lock (_sendLock)
+                {
+                    Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
+                }
                 break;
 
             case StageKitTalker.CommandId.StrobeOff:
@@ -323,7 +321,8 @@ public class DmxTalker
     {
         if (_mainViewModel != null)
         {
-            SetChannels(_mainViewModel.StrobeChannels, isOn ? (byte)255 : (byte)0);
+            var allowFlash = isOn && !UsbDeviceMonitor.IsOutputSuppressed;
+            SetChannels(_mainViewModel.StrobeChannels, allowFlash ? (byte)255 : (byte)0);
         }
 
         return Task.CompletedTask;
@@ -362,7 +361,15 @@ public class DmxTalker
             if (_sendClient == null) return;
             if (_mainViewModel == null) return;
 
-            UpdateStateChannels(_mainViewModel);
+            if (UsbDeviceMonitor.IsOutputSuppressed)
+            {
+                Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
+            }
+            else
+            {
+                UpdateMasterDimmers();
+                UpdateStateChannels(_mainViewModel);
+            }
 
             // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
             _sendClient?.SendDmxData(null, (ushort)_mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);

@@ -173,6 +173,7 @@ public class OpenRgbTalker
         else
         {
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Off);
+            UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
             _manualStrobeFlasher.Stop(SetStrobeFlashStateAsync);
 
             StopBreathingEffect();
@@ -397,6 +398,8 @@ public class OpenRgbTalker
                 case StageKitTalker.CommandId.DisableAll:
                     StopStrobeEffect();
                     StopBreathingEffect();
+                    SetDeviceBrightness(0);
+                    SetZoneBrightness(0);
                     UpdateLightPodColor(parameter, new Color(0, 0, 0), 0);
                     UpdateLightPodColor(parameter, new Color(0, 0, 0), 8);
                     UpdateLightPodColor(parameter, new Color(0, 0, 0), 16);
@@ -437,6 +440,11 @@ public class OpenRgbTalker
 
     private Task SetStrobeFlashStateAsync(bool isOn, CancellationToken cancellationToken)
     {
+        if (UsbDeviceMonitor.IsOutputSuppressed)
+        {
+            isOn = false;
+        }
+
         _isStrobeActive = isOn;
         Device[] strobeDevices;
         ZoneInfo[] strobeZones;
@@ -553,6 +561,11 @@ public class OpenRgbTalker
 
     private void SetDeviceBrightness(byte brightness)
     {
+        if (brightness > 0 && UsbDeviceMonitor.IsOutputSuppressed)
+        {
+            return;
+        }
+
         Device[] foggerDevices;
         lock (Lock)
         {
@@ -583,6 +596,11 @@ public class OpenRgbTalker
 
     private void SetZoneBrightness(byte brightness)
     {
+        if (brightness > 0 && UsbDeviceMonitor.IsOutputSuppressed)
+        {
+            return;
+        }
+
         ZoneInfo[] foggerZones;
         lock (Lock)
         {

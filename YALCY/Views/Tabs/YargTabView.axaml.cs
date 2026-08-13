@@ -7,6 +7,7 @@ using Avalonia.Platform;
 using YALCY.Views.Components;
 using YALCY.Views.Windows;
 using Avalonia.Interactivity;
+using YALCY.ViewModels;
 
 namespace YALCY.Views.Tabs;
 
@@ -51,6 +52,14 @@ public partial class YargTabView : UserControl
         InitializeComponent();
         _mainGrid = this.FindControl<Grid>("MainGrid");
         _originalVisualizer = LedVisualizer;
+    }
+
+    private void OnResetUdpListenPortClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.ResetUdpListenPort();
+        }
     }
 
     private void OnDetachVisualizerClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

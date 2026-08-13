@@ -29,13 +29,16 @@ public class UsbDeviceMonitor
     private static List<SerialDevice> _connectedSerialDevices = new();
     private static List<BleDevice> _connectedBLEDevices = new();
 
-    private static List<int> _connectedControllerIndices = new(); // Store connected XInput controller indices
+    private static List<int> _connectedXInputStageKitIndices = new();
+    private static int _outputSuppressed;
 
     public static Action<Device> DeviceInserted;
     public static Action<Device> DeviceRemoved;
     public static Action<SerialDevice> SerialDeviceAdded;
 
     public static event Action<StageKitTalker.CommandId, byte> OnStageKitCommand;
+
+    internal static bool IsOutputSuppressed => Volatile.Read(ref _outputSuppressed) != 0;
 
     private MainWindowViewModel? _mainViewModel;
     private bool _isRunning;
@@ -78,7 +81,7 @@ public class UsbDeviceMonitor
         lock (DeviceStateLock)
         {
             _connectedHidDevices.Clear();
-            _connectedControllerIndices.Clear(); // Clear XInput controllers
+            _connectedXInputStageKitIndices.Clear();
         }
 
         _updateCts?.Cancel();
@@ -152,7 +155,7 @@ public class UsbDeviceMonitor
             }
 
 #if WINDOWS
-            UpdateConnectedXInputControllers();
+            UpdateConnectedXInputStageKits();
 #endif
 
             if (token.IsCancellationRequested)
@@ -215,18 +218,57 @@ public class UsbDeviceMonitor
 
     public static void SendReport(StageKitTalker.CommandId commandId, byte parameter)
     {
-        OnStageKitCommand?.Invoke(commandId, parameter);
-
-#if WINDOWS
-        List<int> controllerIndices;
-        lock (DeviceStateLock)
+        if (IsOutputSuppressed)
         {
-            controllerIndices = _connectedControllerIndices.ToList();
+            return;
         }
 
-        foreach (var controllerIndex in controllerIndices) // Only vibrate connected controllers
+        DispatchReport(commandId, parameter);
+    }
+
+    internal static void EnterSafetyBlackout()
+    {
+        if (Interlocked.Exchange(ref _outputSuppressed, 1) != 0)
         {
-            SetXInputVibration(controllerIndex, parameter, (byte)commandId);
+            return;
+        }
+
+        DispatchReport(StageKitTalker.CommandId.DisableAll, 0);
+    }
+
+    internal static void ExitSafetyBlackout()
+    {
+        Interlocked.Exchange(ref _outputSuppressed, 0);
+    }
+
+    private static void DispatchReport(StageKitTalker.CommandId commandId, byte parameter)
+    {
+        var subscribers = OnStageKitCommand?.GetInvocationList();
+        if (subscribers != null)
+        {
+            foreach (var subscriber in subscribers)
+            {
+                try
+                {
+                    ((Action<StageKitTalker.CommandId, byte>)subscriber)(commandId, parameter);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Stage Kit command subscriber failed: {ex.Message}");
+                }
+            }
+        }
+
+#if WINDOWS
+        List<int> stageKitIndices;
+        lock (DeviceStateLock)
+        {
+            stageKitIndices = _connectedXInputStageKitIndices.ToList();
+        }
+
+        foreach (var stageKitIndex in stageKitIndices)
+        {
+            SendXInputStageKitReport(stageKitIndex, parameter, (byte)commandId);
         }
 #endif
 
@@ -272,50 +314,59 @@ public class UsbDeviceMonitor
                || (device.VendorID == 0x0E6F && device.ProductID == 0x0103);
     }
 #if WINDOWS
-    private void UpdateConnectedXInputControllers()
+    private const byte XInputDeviceSubtypeStageKit = 0x09;
+    private const int XInputSuccess = 0;
+    private const int XInputMaxControllers = 4;
+
+    private void UpdateConnectedXInputStageKits()
     {
-        Console.WriteLine("Updating connected XInput controllers...");
-        lock (DeviceStateLock)
+        Console.WriteLine("Updating connected XInput Stage Kits...");
+        var stageKitIndices = new List<int>();
+
+        for (var controllerIndex = 0; controllerIndex < XInputMaxControllers; controllerIndex++)
         {
-            _connectedControllerIndices.Clear();
+            var capabilities = new XINPUT_CAPABILITIES();
+            var result = XInputGetCapabilities(controllerIndex, 0, ref capabilities);
+
+            if (result == XInputSuccess && capabilities.SubType == XInputDeviceSubtypeStageKit)
+            {
+                stageKitIndices.Add(controllerIndex);
+            }
         }
 
-        for (int i = 0; i < 4; i++) // Check up to 4 controllers
+        lock (DeviceStateLock)
         {
-            XINPUT_STATE state = new XINPUT_STATE();
-            int result = XInputGetState(i, ref state);
-
-            if (result == 0) // Controller is connected
-            {
-                lock (DeviceStateLock)
-                {
-                    _connectedControllerIndices.Add(i);
-                }
-            }
+            _connectedXInputStageKitIndices = stageKitIndices;
         }
     }
 
-    private static void SetXInputVibration(int controllerIndex, byte leftMotor, byte rightMotor)
+    private static void SendXInputStageKitReport(int controllerIndex, byte parameter, byte commandId)
     {
-        XINPUT_VIBRATION vibration = new XINPUT_VIBRATION
+        var report = new XINPUT_VIBRATION
         {
-            wLeftMotorSpeed = (ushort)(leftMotor << 8), // Left-shift by 8 bits
-            wRightMotorSpeed = (ushort)(rightMotor << 8) // Left-shift by 8 bits
+            wLeftMotorSpeed = (ushort)(parameter << 8),
+            wRightMotorSpeed = (ushort)(commandId << 8)
         };
-        XInputSetState(controllerIndex, ref vibration);
+        XInputSetState(controllerIndex, ref report);
     }
 
     [DllImport("XInput1_4.dll", EntryPoint = "XInputSetState")]
     private static extern int XInputSetState(int dwUserIndex, ref XINPUT_VIBRATION pVibration);
 
-    [DllImport("XInput1_4.dll", EntryPoint = "XInputGetState")]
-    private static extern int XInputGetState(int dwUserIndex, ref XINPUT_STATE pState);
+    [DllImport("XInput1_4.dll", EntryPoint = "XInputGetCapabilities")]
+    private static extern int XInputGetCapabilities(
+        int dwUserIndex,
+        uint dwFlags,
+        ref XINPUT_CAPABILITIES pCapabilities);
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct XINPUT_STATE
+    private struct XINPUT_CAPABILITIES
     {
-        public uint dwPacketNumber;
+        public byte Type;
+        public byte SubType;
+        public ushort Flags;
         public XINPUT_GAMEPAD Gamepad;
+        public XINPUT_VIBRATION Vibration;
     }
 
     [StructLayout(LayoutKind.Sequential)]

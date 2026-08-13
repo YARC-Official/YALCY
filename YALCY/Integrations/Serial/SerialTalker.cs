@@ -140,6 +140,14 @@ public class SerialTalker: IDisposable
 
                     break;
 
+                case StageKitTalker.CommandId.FogOn:
+                    SetChannels(_mainViewModel.FogChannels.Channel, 255);
+                    break;
+
+                case StageKitTalker.CommandId.FogOff:
+                    SetChannels(_mainViewModel.FogChannels.Channel, 0);
+                    break;
+
                 case StageKitTalker.CommandId.StrobeOff:
                     _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
                     SetStrobeChannels(0);
@@ -163,7 +171,7 @@ public class SerialTalker: IDisposable
 
                 case StageKitTalker.CommandId.DisableAll:
                     _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
-                    SetStrobeChannels(0);
+                    ClearAllOutputChannels();
                     break;
             }
         }
@@ -188,24 +196,43 @@ public class SerialTalker: IDisposable
 
     private Task SetStrobeChannelsForManualFlashAsync(bool isOn, CancellationToken cancellationToken)
     {
-        SetStrobeChannels(isOn ? (byte)255 : (byte)0);
+        var allowFlash = isOn && !UsbDeviceMonitor.IsOutputSuppressed;
+        SetStrobeChannels(allowFlash ? (byte)255 : (byte)0);
         return Task.CompletedTask;
     }
 
     private void SetStrobeChannels(byte value)
     {
-        if (_mainViewModel?.StrobeChannels.Channel == null || controller == null || !controller.IsOpen)
+        SetChannels(_mainViewModel?.StrobeChannels.Channel, value);
+    }
+
+    private void SetChannels(int[]? channels, byte value)
+    {
+        if (channels == null || controller == null || !controller.IsOpen)
         {
             return;
         }
 
-        for (int i = 0; i < 8 && i < _mainViewModel.StrobeChannels.Channel.Length; i++)
+        for (int i = 0; i < channels.Length; i++)
         {
-            var channel = _mainViewModel.StrobeChannels.Channel[i];
+            var channel = channels[i];
             if (channel > 0)
             {
                 controller.SetChannel(channel, value);
             }
+        }
+    }
+
+    private void ClearAllOutputChannels()
+    {
+        if (controller == null || !controller.IsOpen)
+        {
+            return;
+        }
+
+        for (var channel = 1; channel <= 512; channel++)
+        {
+            controller.SetChannel(channel, 0);
         }
     }
 
@@ -225,6 +252,12 @@ public class SerialTalker: IDisposable
         }
 
         var udpIntake = _mainViewModel.UdpIntake;
+
+        if (UsbDeviceMonitor.IsOutputSuppressed)
+        {
+            controller.WriteSafe();
+            return;
+        }
 
         controller.SetChannel(_mainViewModel.GuitarNoteChannelSetting.Value, udpIntake.CurrentGuitarNotes.Value);
         controller.SetChannel(_mainViewModel.BassNoteChannelSetting.Value, udpIntake.CurrentBassNotes.Value);

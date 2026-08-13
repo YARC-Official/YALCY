@@ -48,6 +48,13 @@
                               Margin="5" />
             </UniformGrid>
 
+            <TextBlock Text="DMX" FontWeight="SemiBold" />
+            <Button Content="Reset DMX channels to defaults"
+                    Click="OnResetDmxChannelsClicked"
+                    ToolTip.Tip="Restore all DMX channel mappings to their original defaults."
+                    HorizontalAlignment="Left"
+                    Margin="5" />
+
             <TextBlock Text="Window" FontWeight="SemiBold" />
             <StackPanel Spacing="4">
                 <ToggleButton Content="Minimize to tray when closing"

@@ -13,6 +13,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             
             <!-- Left side - Status indicators -->
@@ -74,8 +75,17 @@
                 
             </StackPanel>
             
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="16,0"
+                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                <TextBlock Text="{Binding YargStreamStatus}" Foreground="White" FontSize="12"
+                           VerticalAlignment="Center" />
+                <Button Content="{Binding BlackoutButtonText}" Command="{Binding ToggleBlackoutCommand}"
+                        Background="#B00020" Foreground="White" FontWeight="Bold"
+                        Padding="14,5" />
+            </StackPanel>
+
             <!-- Right side - App name and version -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
                 <TextBlock Text="YALCY" Foreground="White" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Source={x:Static app:App.Version}, StringFormat=' v{0}'}" Foreground="White" FontSize="12" VerticalAlignment="Center" />
             </StackPanel>

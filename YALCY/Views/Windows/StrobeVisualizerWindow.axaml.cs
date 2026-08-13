@@ -137,6 +137,10 @@ public partial class StrobeVisualizerWindow : Window
             {
                 SpeedText.Text = $"{speed} @{bpm}";
             }
+            else
+            {
+                SpeedText.Text = "Off @0";
+            }
         }
     }
 
