@@ -162,8 +162,6 @@ public partial class YargTabView : UserControl
                 };
                 _allDetachedWindow = _detachedWindow;
 
-                var mainWindow = this.VisualRoot as Window;
-
                 _detachedWindow.Closed += (s, args) =>
                 {
                     _detachedWindow = null;
@@ -178,14 +176,7 @@ public partial class YargTabView : UserControl
                     }
                 };
 
-                if (mainWindow != null)
-                {
-                    _detachedWindow.Show(mainWindow);
-                }
-                else
-                {
-                    _detachedWindow.Show();
-                }
+                _detachedWindow.Show();
             }
         }
     }
@@ -211,8 +202,6 @@ public partial class YargTabView : UserControl
                 _strobeVisualizerWindow = new StrobeVisualizerWindow();
                 _allStrobeWindow = _strobeVisualizerWindow;
 
-                var mainWindow = this.VisualRoot as Window;
-                
                 _strobeVisualizerWindow.Closed += (s, args) =>
                 {
                     _allStrobeWindow = null;
@@ -223,14 +212,7 @@ public partial class YargTabView : UserControl
                     }
                 };
                 
-                if (mainWindow != null)
-                {
-                    _strobeVisualizerWindow.Show(mainWindow);
-                }
-                else
-                {
-                    _strobeVisualizerWindow.Show();
-                }
+                _strobeVisualizerWindow.Show();
             }
         }
     }
