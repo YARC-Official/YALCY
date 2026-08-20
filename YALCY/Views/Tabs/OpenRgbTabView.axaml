@@ -582,15 +582,16 @@
                                                                                      ToolTip.Tip="Interpolates smooth color gradients between active LEDs across the entire strip without black gaps"/>
 
                                                                         <!-- Info Button with Guide Flyout -->
-                                                                        <Button Width="20" Height="20"
-                                                                                Padding="0"
+                                                                        <Button Width="22" Height="22"
+                                                                                Padding="4"
                                                                                 Background="Transparent"
-                                                                                BorderThickness="0"
-                                                                                CornerRadius="10"
+                                                                                BorderBrush="{DynamicResource AppBorder}"
+                                                                                BorderThickness="1"
+                                                                                CornerRadius="11"
                                                                                 VerticalAlignment="Center"
                                                                                 Cursor="Hand"
-                                                                                Margin="0,2,0,2"
-                                                                                ToolTip.Tip="Click to view Colour Blending Modes guide">
+                                                                                Margin="4,0,0,0"
+                                                                                ToolTip.Tip="Colour Blending Guide">
                                                                             <Button.Flyout>
                                                                                 <Flyout Placement="BottomEdgeAlignedLeft">
                                                                                     <Border Background="{DynamicResource AppCardBackground}"
@@ -650,19 +651,12 @@
                                                                                     </Border>
                                                                                 </Flyout>
                                                                             </Button.Flyout>
-                                                                            <Border Width="16" Height="16"
-                                                                                    CornerRadius="8"
-                                                                                    Background="{DynamicResource AppBorderStrong}"
-                                                                                    HorizontalAlignment="Center"
-                                                                                    VerticalAlignment="Center">
-                                                                                <TextBlock Text="i"
-                                                                                           FontSize="10"
-                                                                                           FontWeight="ExtraBold"
-                                                                                           FontStyle="Italic"
-                                                                                           Foreground="{DynamicResource AppTextPrimary}"
-                                                                                           HorizontalAlignment="Center"
-                                                                                           VerticalAlignment="Center"/>
-                                                                            </Border>
+                                                                            <PathIcon Data="{StaticResource IconInfo}"
+                                                                                      Width="11"
+                                                                                      Height="11"
+                                                                                      Foreground="{DynamicResource AppTextSecondary}"
+                                                                                      HorizontalAlignment="Center"
+                                                                                      VerticalAlignment="Center"/>
                                                                         </Button>
                                                                     </WrapPanel>
 
