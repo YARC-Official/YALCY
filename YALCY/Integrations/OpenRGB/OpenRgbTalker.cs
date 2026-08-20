@@ -16,6 +16,13 @@ using Device = OpenRGB.NET.Device;
 
 namespace YALCY.Integrations.OpenRGB;
 
+public enum OpenRgbBlendMode
+{
+    Discrete = 0,
+    UniformWash = 1,
+    SmoothGradient = 2
+}
+
 public class ZoneInfo
 {
     public Device Device { get; set; } = null!;
@@ -41,6 +48,8 @@ public class OpenRgbTalker
     public Dictionary<string, ZoneInfo> StrobeZones { get; } = new();
     public Dictionary<string, ZoneInfo> FoggerZones { get; } = new();
     public Dictionary<string, Color[]> LightPodZoneStates { get; } = new();
+    public Dictionary<string, Color[]> LightPodZoneRawStates { get; } = new();
+    public Dictionary<string, OpenRgbBlendMode> ZoneBlendModes { get; } = new();
 
     // Hybrid LightPod + Strobe tracking collections
     public HashSet<int> LightPodStrobeDevices { get; } = new();
@@ -693,11 +702,20 @@ public class OpenRgbTalker
 
             var keysPerArea = Math.Max(1, (int)zoneInfo.Zone.LedCount / numAreas);
             Color[]? colors;
+            Color[]? rawColors;
             int[]? customMap;
+            OpenRgbBlendMode blendMode = OpenRgbBlendMode.Discrete;
+
             lock (Lock)
             {
                 if (!LightPodZoneStates.TryGetValue(zoneKey, out colors)) continue;
+                if (!LightPodZoneRawStates.TryGetValue(zoneKey, out rawColors) || rawColors.Length != colors.Length)
+                {
+                    rawColors = new Color[colors.Length];
+                    LightPodZoneRawStates[zoneKey] = rawColors;
+                }
                 CustomLedMappings.TryGetValue(zoneKey, out customMap);
+                ZoneBlendModes.TryGetValue(zoneKey, out blendMode);
             }
 
             if (customMap != null && customMap.Length == (int)zoneInfo.Zone.LedCount)
@@ -707,11 +725,11 @@ public class OpenRgbTalker
                     int area = customMap[ledIndex];
                     if (area < 0)
                     {
-                        colors[ledIndex] = new Color(0, 0, 0);
+                        rawColors[ledIndex] = new Color(0, 0, 0);
                     }
                     else if (area >= areaOffset && area < areaOffset + 8)
                     {
-                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                        rawColors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                     }
                 }
             }
@@ -723,14 +741,127 @@ public class OpenRgbTalker
                     {
                         var ledIndex = area * keysPerArea + key;
                         if (ledIndex >= zoneInfo.Zone.LedCount) continue;
-                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                        rawColors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                     }
                 }
             }
+
+            ApplyZoneBlending(rawColors, colors, blendMode);
         }
 
         // Offload TCP socket flush to background task with frame coalescing
         TriggerLightPodFlush();
+    }
+
+    private static void ApplyZoneBlending(Color[] raw, Color[] output, OpenRgbBlendMode mode)
+    {
+        if (raw.Length != output.Length || raw.Length == 0) return;
+
+        switch (mode)
+        {
+            case OpenRgbBlendMode.UniformWash:
+            {
+                int sumR = 0, sumG = 0, sumB = 0;
+                int activeCount = 0;
+                for (int i = 0; i < raw.Length; i++)
+                {
+                    var c = raw[i];
+                    if (c.R != 0 || c.G != 0 || c.B != 0)
+                    {
+                        sumR += c.R;
+                        sumG += c.G;
+                        sumB += c.B;
+                        activeCount++;
+                    }
+                }
+
+                if (activeCount == 0)
+                {
+                    Array.Clear(output, 0, output.Length);
+                    return;
+                }
+
+                int maxComp = Math.Max(sumR, Math.Max(sumG, sumB));
+                double scale = maxComp > 0 ? 255.0 / maxComp : 1.0;
+                var blended = new Color(
+                    (byte)Math.Clamp(sumR * scale, 0, 255),
+                    (byte)Math.Clamp(sumG * scale, 0, 255),
+                    (byte)Math.Clamp(sumB * scale, 0, 255)
+                );
+
+                for (int i = 0; i < output.Length; i++)
+                {
+                    output[i] = blended;
+                }
+                break;
+            }
+
+            case OpenRgbBlendMode.SmoothGradient:
+            {
+                var anchors = new List<(int Index, Color Color)>();
+                for (int i = 0; i < raw.Length; i++)
+                {
+                    var c = raw[i];
+                    if (c.R != 0 || c.G != 0 || c.B != 0)
+                    {
+                        anchors.Add((i, c));
+                    }
+                }
+
+                if (anchors.Count == 0)
+                {
+                    Array.Clear(output, 0, output.Length);
+                    return;
+                }
+
+                if (anchors.Count == 1)
+                {
+                    var c = anchors[0].Color;
+                    for (int i = 0; i < output.Length; i++)
+                    {
+                        output[i] = c;
+                    }
+                    return;
+                }
+
+                // Fill before first anchor
+                for (int i = 0; i <= anchors[0].Index; i++)
+                {
+                    output[i] = anchors[0].Color;
+                }
+
+                // Interpolate between consecutive anchors
+                for (int a = 0; a < anchors.Count - 1; a++)
+                {
+                    int i1 = anchors[a].Index;
+                    int i2 = anchors[a + 1].Index;
+                    var c1 = anchors[a].Color;
+                    var c2 = anchors[a + 1].Color;
+                    int span = i2 - i1;
+
+                    for (int i = i1; i <= i2; i++)
+                    {
+                        double t = span > 0 ? (double)(i - i1) / span : 0;
+                        byte r = (byte)Math.Clamp(c1.R + (c2.R - c1.R) * t, 0, 255);
+                        byte g = (byte)Math.Clamp(c1.G + (c2.G - c1.G) * t, 0, 255);
+                        byte b = (byte)Math.Clamp(c1.B + (c2.B - c1.B) * t, 0, 255);
+                        output[i] = new Color(r, g, b);
+                    }
+                }
+
+                // Fill after last anchor
+                for (int i = anchors[^1].Index; i < output.Length; i++)
+                {
+                    output[i] = anchors[^1].Color;
+                }
+                break;
+            }
+
+            case OpenRgbBlendMode.Discrete:
+            default:
+                Array.Copy(raw, output, raw.Length);
+                break;
+        }
     }
 
     public void ResetLightPodColors()
@@ -742,6 +873,10 @@ public class OpenRgbTalker
                 Array.Clear(colors, 0, colors.Length);
             }
             foreach (var colors in LightPodZoneStates.Values)
+            {
+                Array.Clear(colors, 0, colors.Length);
+            }
+            foreach (var colors in LightPodZoneRawStates.Values)
             {
                 Array.Clear(colors, 0, colors.Length);
             }

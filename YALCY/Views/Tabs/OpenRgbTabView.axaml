@@ -541,6 +541,69 @@
                                                                  </Grid>
                                                             </Border>
 
+                                                            <!-- Colour Blending Mode Selector Row (LightPod & LightPod+Strobe only) -->
+                                                            <Border IsVisible="{Binding IsLightPodOrHybrid}"
+                                                                    Background="{DynamicResource AppCardBackground}"
+                                                                    BorderBrush="{DynamicResource AppBorder}"
+                                                                    BorderThickness="0,1,0,0"
+                                                                    Padding="14,8">
+                                                                <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,14,0">
+                                                                        <TextBlock Text="🎨" FontSize="11" VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="COLOUR BLENDING" 
+                                                                                   FontSize="10" 
+                                                                                   Foreground="{DynamicResource AppTextMuted}" 
+                                                                                   VerticalAlignment="Center" 
+                                                                                   FontWeight="Black"
+                                                                                   LetterSpacing="1"/>
+                                                                    </StackPanel>
+
+                                                                    <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                        <!-- Discrete (1:1) -->
+                                                                        <RadioButton Content="Discrete (1:1)" 
+                                                                                     GroupName="{Binding GetZoneKeyProperty, StringFormat='{}{0}_blend'}"
+                                                                                     IsChecked="{Binding IsBlendDiscrete, Mode=OneWay}"
+                                                                                     Command="{Binding SelectBlendModeCommand}"
+                                                                                     CommandParameter="0"
+                                                                                     Foreground="{DynamicResource AppTextSecondary}"
+                                                                                     FontSize="11"
+                                                                                     FontWeight="SemiBold"
+                                                                                     Padding="10,4"
+                                                                                     CornerRadius="6"
+                                                                                     Margin="0,2,6,2"
+                                                                                     ToolTip.Tip="Maps discrete StageKit channels directly to individual LEDs"/>
+
+                                                                        <!-- Uniform Wash -->
+                                                                        <RadioButton Content="Uniform Wash" 
+                                                                                     GroupName="{Binding GetZoneKeyProperty, StringFormat='{}{0}_blend'}"
+                                                                                     IsChecked="{Binding IsBlendUniformWash, Mode=OneWay}"
+                                                                                     Command="{Binding SelectBlendModeCommand}"
+                                                                                     CommandParameter="1"
+                                                                                     Foreground="{DynamicResource AppTextSecondary}"
+                                                                                     FontSize="11"
+                                                                                     FontWeight="SemiBold"
+                                                                                     Padding="10,4"
+                                                                                     CornerRadius="6"
+                                                                                     Margin="0,2,6,2"
+                                                                                     ToolTip.Tip="Blends all currently active StageKit colors into a harmonious uniform wash across all LEDs"/>
+
+                                                                        <!-- Smooth Gradient -->
+                                                                        <RadioButton Content="Smooth Gradient" 
+                                                                                     GroupName="{Binding GetZoneKeyProperty, StringFormat='{}{0}_blend'}"
+                                                                                     IsChecked="{Binding IsBlendSmoothGradient, Mode=OneWay}"
+                                                                                     Command="{Binding SelectBlendModeCommand}"
+                                                                                     CommandParameter="2"
+                                                                                     Foreground="{DynamicResource AppTextSecondary}"
+                                                                                     FontSize="11"
+                                                                                     FontWeight="SemiBold"
+                                                                                     Padding="10,4"
+                                                                                     CornerRadius="6"
+                                                                                     Margin="0,2,6,2"
+                                                                                     ToolTip.Tip="Interpolates smooth color gradients between active LEDs across the entire strip without black gaps"/>
+                                                                    </WrapPanel>
+                                                                </Grid>
+                                                            </Border>
+
                                                             <!-- Expandable LED Customization Drawer (2D Matrix & Linear Layout) -->
                                                             <Border IsVisible="{Binding IsCustomizingLeds}"
                                                                     Background="{DynamicResource AppInputBackground}"
