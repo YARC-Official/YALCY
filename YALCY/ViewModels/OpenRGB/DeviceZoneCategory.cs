@@ -44,6 +44,10 @@ public class DeviceZoneCategory : ReactiveObject
             var clamped = Math.Clamp(value, 0, 2);
             if (_blendMode == clamped) return;
             this.RaiseAndSetIfChanged(ref _blendMode, clamped);
+            if (_blendMode != 0)
+            {
+                IsCustomizingLeds = false;
+            }
             if (_viewModel != null)
             {
                 var key = GetZoneKey();

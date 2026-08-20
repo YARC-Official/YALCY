@@ -522,17 +522,18 @@
                                                                      </WrapPanel>
 
                                                                      <Button Grid.Column="1" Command="{Binding ToggleCustomizeLedsCommand}"
-                                                                              Background="{DynamicResource AppCardBackground}"
-                                                                              BorderBrush="{DynamicResource AppBorderStrong}"
-                                                                              BorderThickness="1"
-                                                                              Foreground="{DynamicResource AppTextSecondary}"
-                                                                              FontSize="11"
-                                                                              FontWeight="Bold"
-                                                                              Padding="10,5"
-                                                                              CornerRadius="7"
-                                                                              HorizontalAlignment="Right"
-                                                                              VerticalAlignment="Center"
-                                                                              Margin="0,2,0,2">
+                                                                             IsVisible="{Binding IsBlendDiscrete}"
+                                                                             Background="{DynamicResource AppCardBackground}"
+                                                                             BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                             BorderThickness="1"
+                                                                             Foreground="{DynamicResource AppTextSecondary}"
+                                                                             FontSize="11"
+                                                                             FontWeight="Bold"
+                                                                             Padding="10,5"
+                                                                             CornerRadius="7"
+                                                                             HorizontalAlignment="Right"
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,2,0,2">
                                                                           <StackPanel Orientation="Horizontal" Spacing="6">
                                                                               <TextBlock Text="⚙️" FontSize="11" VerticalAlignment="Center"/>
                                                                               <TextBlock Text="Customize LEDs" VerticalAlignment="Center"/>
