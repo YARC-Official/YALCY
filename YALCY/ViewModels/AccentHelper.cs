@@ -8,6 +8,9 @@ namespace YALCY.ViewModels;
 
 public static class AccentHelper
 {
+    public const string DefaultAccentHex = "#45D8FE";
+    public static readonly Color DefaultAccentColor = Color.Parse(DefaultAccentHex);
+
     public static Dictionary<string, Color> GetWindowsAccentPalette()
     {
         var palette = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -75,7 +78,7 @@ public static class AccentHelper
             return palette;
         }
 
-        GeneratePaletteFromBase(Color.Parse("#107C41"), palette);
+        GeneratePaletteFromBase(DefaultAccentColor, palette);
         return palette;
     }
 
@@ -113,7 +116,7 @@ public static class AccentHelper
         {
             return c;
         }
-        return Color.Parse("#107C41");
+        return DefaultAccentColor;
     }
 
     public static Color GetContrastForegroundColor(Color backgroundColor)
@@ -136,7 +139,7 @@ public static class AccentHelper
             var palette = GetWindowsAccentPalette();
             if (!palette.TryGetValue("SystemAccentColor", out var baseAccent))
             {
-                baseAccent = Color.Parse("#107C41");
+                baseAccent = DefaultAccentColor;
             }
 
             var light1 = palette.GetValueOrDefault("SystemAccentColorLight1", TintColor(baseAccent, 0.25));

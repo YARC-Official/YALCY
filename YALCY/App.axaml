@@ -128,10 +128,10 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Dynamic System Accent and Badge Brushes (managed by AccentHelper) -->
-            <SolidColorBrush x:Key="AppAccentText" Color="#107C41" />
-            <SolidColorBrush x:Key="AppAccentBadgeBackground" Color="#0B2B18" />
-            <SolidColorBrush x:Key="AppAccentBadgeBorder" Color="#13522E" />
-            <SolidColorBrush x:Key="AppAccentBadgeForeground" Color="#6EE7B7" />
+            <SolidColorBrush x:Key="AppAccentText" Color="#45D8FE" />
+            <SolidColorBrush x:Key="AppAccentBadgeBackground" Color="#0D2E3A" />
+            <SolidColorBrush x:Key="AppAccentBadgeBorder" Color="#1A607A" />
+            <SolidColorBrush x:Key="AppAccentBadgeForeground" Color="#45D8FE" />
             <viewModels:IntToBoolConverter x:Key="IntToBoolConverter" />
             <viewModels:BoolToHighlightBackgroundConverter x:Key="BoolToHighlightBackgroundConverter" />
             <viewModels:BoolToHighlightForegroundConverter x:Key="BoolToHighlightForegroundConverter" />

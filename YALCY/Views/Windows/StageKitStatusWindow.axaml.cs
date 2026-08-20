@@ -107,6 +107,8 @@ public partial class StageKitStatusWindow : Window
     private byte _activePulseBeat = 0;
     private readonly DispatcherTimer _strobeOffDebounceTimer;
     private string _currentStrobeState = "OFF";
+    private readonly DispatcherTimer _bonusEffectHoldTimer;
+    private int _bonusTriggerCount;
     private bool _isDisposed;
 
     public static StageKitStatusWindow? ActiveInstance { get; private set; }
@@ -155,6 +157,17 @@ public partial class StageKitStatusWindow : Window
             ApplyStrobeBadgeState("OFF");
         };
 
+        // 1200ms hold timer so instantaneous Bonus Effect triggers remain clearly visible on the badge
+        _bonusEffectHoldTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(1200)
+        };
+        _bonusEffectHoldTimer.Tick += (_, _) =>
+        {
+            _bonusEffectHoldTimer.Stop();
+            ApplyBonusEffectBadgeState(false);
+        };
+
         // Hardware command subscriptions
         UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
 
@@ -190,6 +203,7 @@ public partial class StageKitStatusWindow : Window
 
         _beatPulseTimer.Stop();
         _strobeOffDebounceTimer.Stop();
+        _bonusEffectHoldTimer.Stop();
         UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
         UdpIntake.Venue.PropertyChanged -= OnVenuePropertyChanged;
         UdpIntake.BeatsPerMinute.PropertyChanged -= OnBpmPropertyChanged;
@@ -491,7 +505,8 @@ public partial class StageKitStatusWindow : Window
                     Array.Clear(_yellowLeds, 0, _yellowLeds.Length);
                     UpdateStrobeState("OFF");
                     UpdateFogState(false);
-                    UpdateBonusEffect(false);
+                    _bonusEffectHoldTimer.Stop();
+                    ApplyBonusEffectBadgeState(false);
                     RenderBeatSegment(0);
                     break;
 
@@ -604,13 +619,40 @@ public partial class StageKitStatusWindow : Window
 
     private void UpdateBonusEffect(bool isBonus)
     {
+        if (_isDisposed) return;
+
+        if (isBonus)
+        {
+            _bonusTriggerCount++;
+            _bonusEffectHoldTimer.Stop();
+            ApplyBonusEffectBadgeState(true);
+            _bonusEffectHoldTimer.Start();
+        }
+    }
+
+    private void ApplyBonusEffectBadgeState(bool isActive)
+    {
+        if (!isActive)
+        {
+            _bonusTriggerCount = 0;
+        }
+
         if (BonusEffectText != null && BonusBadge != null)
         {
-            BonusEffectText.Text = isBonus ? "ACTIVE" : "OFF";
+            if (isActive)
+            {
+                BonusEffectText.Text = _bonusTriggerCount > 1
+                    ? $"TRIGGERED! x{_bonusTriggerCount}"
+                    : "TRIGGERED!";
+            }
+            else
+            {
+                BonusEffectText.Text = "OFF";
+            }
 
-            BonusBadge.Background = isBonus ? BonusActiveBackground : NeutralBadgeBackground;
-            BonusBadge.BorderBrush = isBonus ? BonusActiveBorder : NeutralBadgeBorder;
-            BonusEffectText.Foreground = isBonus ? BonusActiveText : NeutralBadgeText;
+            BonusBadge.Background = isActive ? BonusActiveBackground : NeutralBadgeBackground;
+            BonusBadge.BorderBrush = isActive ? BonusActiveBorder : NeutralBadgeBorder;
+            BonusEffectText.Foreground = isActive ? BonusActiveText : NeutralBadgeText;
         }
     }
 
