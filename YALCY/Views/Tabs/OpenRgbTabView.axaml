@@ -549,7 +549,7 @@
                                                                     BorderThickness="0,1,0,0"
                                                                     Padding="14,8">
                                                                 <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,14,0">
+                                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,14,0">
                                                                         <TextBlock Text="🎨" FontSize="11" VerticalAlignment="Center"/>
                                                                         <TextBlock Text="COLOUR BLENDING" 
                                                                                    FontSize="10" 
@@ -557,6 +557,111 @@
                                                                                    VerticalAlignment="Center" 
                                                                                    FontWeight="Black"
                                                                                    LetterSpacing="1"/>
+
+                                                                        <!-- Info Button with Guide Flyout -->
+                                                                        <Button Width="18" Height="18"
+                                                                                Padding="0"
+                                                                                Background="Transparent"
+                                                                                BorderThickness="0"
+                                                                                CornerRadius="9"
+                                                                                VerticalAlignment="Center"
+                                                                                Cursor="Hand"
+                                                                                ToolTip.Tip="Click to view Colour Blending Modes guide">
+                                                                            <Button.Flyout>
+                                                                                <Flyout Placement="BottomEdgeAlignedLeft">
+                                                                                    <Border Background="{DynamicResource AppCardBackground}"
+                                                                                            BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                                            BorderThickness="1"
+                                                                                            CornerRadius="12"
+                                                                                            Padding="16"
+                                                                                            MaxWidth="600">
+                                                                                        <StackPanel Spacing="12">
+                                                                                            <!-- Header -->
+                                                                                            <StackPanel Spacing="2">
+                                                                                                <TextBlock Text="Colour Blending Modes Guide"
+                                                                                                           FontSize="13"
+                                                                                                           FontWeight="Bold"
+                                                                                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                                                                                <TextBlock Text="How StageKit lighting commands are rendered across your device LEDs"
+                                                                                                           FontSize="11"
+                                                                                                           Foreground="{DynamicResource AppTextMuted}"/>
+                                                                                            </StackPanel>
+
+                                                                                            <!-- Comparison Grid -->
+                                                                                            <Border Background="{DynamicResource AppInputBackground}"
+                                                                                                    BorderBrush="{DynamicResource AppBorder}"
+                                                                                                    BorderThickness="1"
+                                                                                                    CornerRadius="8">
+                                                                                                <Grid ColumnDefinitions="130,*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                                                                                    <!-- Header Row -->
+                                                                                                    <Border Grid.Row="0" Grid.ColumnSpan="4" Background="{DynamicResource AppPanelBackground}" Padding="10,8" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1">
+                                                                                                        <Grid ColumnDefinitions="130,*,*,*">
+                                                                                                            <TextBlock Grid.Column="0" Text="FEATURE" FontSize="10" FontWeight="Black" Foreground="{DynamicResource AppTextMuted}" LetterSpacing="1"/>
+                                                                                                            <TextBlock Grid.Column="1" Text="DISCRETE (1:1)" FontSize="10" FontWeight="Black" Foreground="{DynamicResource AppTextPrimary}" LetterSpacing="1" HorizontalAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="2" Text="UNIFORM WASH" FontSize="10" FontWeight="Black" Foreground="{DynamicResource AppTextPrimary}" LetterSpacing="1" HorizontalAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="3" Text="SMOOTH GRADIENT" FontSize="10" FontWeight="Black" Foreground="{DynamicResource AppTextPrimary}" LetterSpacing="1" HorizontalAlignment="Center"/>
+                                                                                                        </Grid>
+                                                                                                    </Border>
+
+                                                                                                    <!-- Row 1: Output on LEDs -->
+                                                                                                    <Border Grid.Row="1" Grid.ColumnSpan="4" Padding="10,7" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1">
+                                                                                                        <Grid ColumnDefinitions="130,*,*,*">
+                                                                                                            <TextBlock Grid.Column="0" Text="Output on LEDs" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppTextSecondary}"/>
+                                                                                                            <TextBlock Grid.Column="1" Text="Manual 1:1 mapping" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="2" Text="1 solid color on all LEDs" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="3" Text="Multi-color fluid gradient" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                        </Grid>
+                                                                                                    </Border>
+
+                                                                                                    <!-- Row 2: Transitions -->
+                                                                                                    <Border Grid.Row="2" Grid.ColumnSpan="4" Padding="10,7" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1">
+                                                                                                        <Grid ColumnDefinitions="130,*,*,*">
+                                                                                                            <TextBlock Grid.Column="0" Text="Transitions" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppTextSecondary}"/>
+                                                                                                            <TextBlock Grid.Column="1" Text="Discrete steps / cuts" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="2" Text="Uniform ambient wash" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="3" Text="Continuous interpolation" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                        </Grid>
+                                                                                                    </Border>
+
+                                                                                                    <!-- Row 3: Rotation / Chases -->
+                                                                                                    <Border Grid.Row="3" Grid.ColumnSpan="4" Padding="10,7" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1">
+                                                                                                        <Grid ColumnDefinitions="130,*,*,*">
+                                                                                                            <TextBlock Grid.Column="0" Text="Rotation / Chases" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppTextSecondary}"/>
+                                                                                                            <TextBlock Grid.Column="1" Text="Jumps LED by LED" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="2" Text="Pulses the entire strip" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="3" Text="Wave sweeps along strip" FontSize="11" Foreground="{DynamicResource AppTextPrimary}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                                                                        </Grid>
+                                                                                                    </Border>
+
+                                                                                                    <!-- Row 4: Custom Mapping -->
+                                                                                                    <Border Grid.Row="4" Grid.ColumnSpan="4" Padding="10,7">
+                                                                                                        <Grid ColumnDefinitions="130,*,*,*">
+                                                                                                            <TextBlock Grid.Column="0" Text="Custom Mapping" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppTextSecondary}"/>
+                                                                                                            <TextBlock Grid.Column="1" Text="✅ Supported (Matrix)" FontSize="11" FontWeight="Bold" Foreground="#10B981" HorizontalAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="2" Text="⚡ Automatic (1➔8)" FontSize="11" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Center"/>
+                                                                                                            <TextBlock Grid.Column="3" Text="⚡ Automatic (1➔8)" FontSize="11" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Center"/>
+                                                                                                        </Grid>
+                                                                                                    </Border>
+                                                                                                </Grid>
+                                                                                            </Border>
+                                                                                        </StackPanel>
+                                                                                    </Border>
+                                                                                </Flyout>
+                                                                            </Button.Flyout>
+                                                                            <Border Width="16" Height="16"
+                                                                                    CornerRadius="8"
+                                                                                    Background="{DynamicResource AppBorderStrong}"
+                                                                                    HorizontalAlignment="Center"
+                                                                                    VerticalAlignment="Center">
+                                                                                <TextBlock Text="i"
+                                                                                           FontSize="10"
+                                                                                           FontWeight="ExtraBold"
+                                                                                           FontStyle="Italic"
+                                                                                           Foreground="{DynamicResource AppTextPrimary}"
+                                                                                           HorizontalAlignment="Center"
+                                                                                           VerticalAlignment="Center"/>
+                                                                            </Border>
+                                                                        </Button>
                                                                     </StackPanel>
 
                                                                     <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
