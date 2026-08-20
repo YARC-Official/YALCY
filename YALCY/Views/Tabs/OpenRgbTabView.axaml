@@ -583,10 +583,9 @@
 
                                                                         <!-- Info Button with Guide Flyout -->
                                                                         <Button Width="22" Height="22"
-                                                                                Padding="4"
+                                                                                Padding="3"
                                                                                 Background="Transparent"
-                                                                                BorderBrush="{DynamicResource AppBorder}"
-                                                                                BorderThickness="1"
+                                                                                BorderThickness="0"
                                                                                 CornerRadius="11"
                                                                                 VerticalAlignment="Center"
                                                                                 Cursor="Hand"
@@ -651,12 +650,16 @@
                                                                                     </Border>
                                                                                 </Flyout>
                                                                             </Button.Flyout>
-                                                                            <PathIcon Data="{StaticResource IconInfo}"
-                                                                                      Width="11"
-                                                                                      Height="11"
-                                                                                      Foreground="{DynamicResource AppTextSecondary}"
-                                                                                      HorizontalAlignment="Center"
-                                                                                      VerticalAlignment="Center"/>
+                                                                            <Path Data="{StaticResource IconInfo}"
+                                                                                  Stroke="{DynamicResource AppTextSecondary}"
+                                                                                  StrokeThickness="2"
+                                                                                  StrokeLineCap="Round"
+                                                                                  StrokeJoin="Round"
+                                                                                  Width="14"
+                                                                                  Height="14"
+                                                                                  Stretch="Uniform"
+                                                                                  HorizontalAlignment="Center"
+                                                                                  VerticalAlignment="Center"/>
                                                                         </Button>
                                                                     </WrapPanel>
 
