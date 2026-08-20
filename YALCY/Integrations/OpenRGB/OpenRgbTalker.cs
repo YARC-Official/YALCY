@@ -787,25 +787,10 @@ public class OpenRgbTalker
             bool isG = (_stageKitGreenParam & (1 << k)) != 0;
             bool isY = (_stageKitYellowParam & (1 << k)) != 0;
 
-            int r = 0, g = 0, b = 0, count = 0;
-            if (isB) { b += 255; count++; }
-            if (isR) { r += 255; count++; }
-            if (isG) { g += 255; count++; }
-            if (isY) { r += 255; g += 255; count++; } // Yellow has R + G
-
-            if (count == 0)
+            var (r, g, b, isActive) = StageKitColorBlender.BlendPod(isB, isR, isG, isY);
+            podColors[k] = new Color(r, g, b);
+            if (isActive)
             {
-                podColors[k] = new Color(0, 0, 0); // Black / Desligado
-            }
-            else
-            {
-                int max = Math.Max(r, Math.Max(g, b));
-                double scale = max > 0 ? 255.0 / max : 1.0;
-                podColors[k] = new Color(
-                    (byte)Math.Clamp(r * scale, 0, 255),
-                    (byte)Math.Clamp(g * scale, 0, 255),
-                    (byte)Math.Clamp(b * scale, 0, 255)
-                );
                 activePodCount++;
             }
         }

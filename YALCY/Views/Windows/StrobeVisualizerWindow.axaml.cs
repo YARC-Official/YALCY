@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -14,11 +12,14 @@ namespace YALCY.Views.Windows;
 
 public partial class StrobeVisualizerWindow : Window
 {
-    private CancellationTokenSource cts = new();
-    private Task strobeTask = Task.CompletedTask;
+    private readonly DispatcherTimer _strobeFlashTimer;
+    private readonly DispatcherTimer _strobeStopDebounceTimer;
+    private bool _strobeStateIsOn;
+    private int _currentStrobeSpeed;
     private IBrush _strobeColor = Brushes.White;
-    private IBrush _strobeOffColor = new SolidColorBrush(Color.Parse("#1a1d2a"));
-    private bool _darkMode = false;
+    private IBrush _strobeOffColor = new SolidColorBrush(Color.Parse("#161616"));
+    private bool _darkMode;
+    private bool _isDisposed;
 
     enum StrobeSpeed
     {
@@ -31,12 +32,47 @@ public partial class StrobeVisualizerWindow : Window
 
     public StrobeVisualizerWindow()
     {
-        RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
         InitializeComponent();
+
+        _strobeFlashTimer = new DispatcherTimer(DispatcherPriority.Render);
+        _strobeFlashTimer.Tick += OnStrobeFlashTick;
+
+        _strobeStopDebounceTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(200)
+        };
+        _strobeStopDebounceTimer.Tick += (_, _) =>
+        {
+            _strobeStopDebounceTimer.Stop();
+            ExecuteStopStrobeEffect();
+        };
+
         UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
         
+        Closing += (_, _) => CleanupSubscriptions();
+        Closed += (_, _) => CleanupSubscriptions();
+
         // Initialize display
         UpdateDisplay(false, StrobeSpeed.Off, 0);
+    }
+
+    private void CleanupSubscriptions()
+    {
+        if (_isDisposed) return;
+        _isDisposed = true;
+
+        _strobeStopDebounceTimer.Stop();
+        _strobeFlashTimer.Stop();
+        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+    }
+
+    private void OnStrobeFlashTick(object? sender, EventArgs e)
+    {
+        _strobeStateIsOn = !_strobeStateIsOn;
+        if (StrobeCanvas != null)
+        {
+            StrobeCanvas.Background = _strobeStateIsOn ? _strobeColor : _strobeOffColor;
+        }
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -47,14 +83,18 @@ public partial class StrobeVisualizerWindow : Window
             this.BeginMoveDrag(e);
         }
     }
+
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
+        if (_isDisposed) return;
+        Dispatcher.UIThread.Post(() =>
         {
+            if (_isDisposed) return;
             switch (commandId)
             {
                 case StageKitTalker.CommandId.StrobeOff:
-                    StopStrobeEffect();
+                case StageKitTalker.CommandId.DisableAll:
+                    RequestStopStrobeEffect();
                     break;
 
                 case StageKitTalker.CommandId.StrobeSlow:
@@ -72,82 +112,63 @@ public partial class StrobeVisualizerWindow : Window
                 case StageKitTalker.CommandId.StrobeFastest:
                     StartStrobeEffect(4);
                     break;
-
-                case StageKitTalker.CommandId.DisableAll:
-                    StopStrobeEffect();
-                    break;
             }
         });
     }
 
     private void StartStrobeEffect(int speed)
     {
-        StopStrobeEffect();
+        _strobeStopDebounceTimer.Stop();
 
         float bpm = UdpIntake.BeatsPerMinute.Value;
-        int interval = CalculateDelay(speed, bpm);
+        int intervalMs = Math.Max(15, CalculateDelay(speed, bpm));
 
-        cts = new CancellationTokenSource();
-        var token = cts.Token;
-        
-        strobeTask = Task.Run(async () =>
+        if (_currentStrobeSpeed == speed && _strobeFlashTimer.IsEnabled)
         {
-            try
-            {
-                while (!token.IsCancellationRequested)
-                {
-                    // Turn strobe ON
-                    await Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        if (this.StrobeCanvas != null)
-                        {
-                            this.StrobeCanvas.Background = _strobeColor;
-                        }
-                    });
-                    
-                    await Task.Delay(interval, token);
-                    
-                    // Turn strobe OFF
-                    await Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        if (this.StrobeCanvas != null)
-                        {
-                            this.StrobeCanvas.Background = _strobeOffColor;
-                        }
-                    });
-                    
-                    await Task.Delay(interval, token);
-                }
-            }
-            catch (Exception) { }
-        }, token);
+            _strobeFlashTimer.Interval = TimeSpan.FromMilliseconds(intervalMs);
+            UpdateDisplay(true, (StrobeSpeed)speed, (int)bpm);
+            return;
+        }
+
+        _currentStrobeSpeed = speed;
+        _strobeStateIsOn = false;
+        _strobeFlashTimer.Stop();
+        _strobeFlashTimer.Interval = TimeSpan.FromMilliseconds(intervalMs);
+        _strobeFlashTimer.Start();
 
         UpdateDisplay(true, (StrobeSpeed)speed, (int)bpm);
     }
 
-    private void StopStrobeEffect()
+    private void RequestStopStrobeEffect()
     {
-        try
+        if (_currentStrobeSpeed != 0 && !_strobeStopDebounceTimer.IsEnabled)
         {
-            cts.Cancel();
+            _strobeStopDebounceTimer.Start();
         }
-        catch (Exception) { }
-        
-        Dispatcher.UIThread.InvokeAsync(() =>
+        else if (_currentStrobeSpeed == 0)
         {
-            if (this.StrobeCanvas != null)
-            {
-                this.StrobeCanvas.Background = _strobeOffColor;
-            }
-            UpdateDisplay(false, StrobeSpeed.Off, 0);
-        });
+            ExecuteStopStrobeEffect();
+        }
+    }
+
+    private void ExecuteStopStrobeEffect()
+    {
+        _currentStrobeSpeed = 0;
+        _strobeFlashTimer.Stop();
+        _strobeStateIsOn = false;
+
+        if (StrobeCanvas != null)
+        {
+            StrobeCanvas.Background = _strobeOffColor;
+        }
+        UpdateDisplay(false, StrobeSpeed.Off, 0);
     }
 
     private void UpdateDisplay(bool isActive, StrobeSpeed speed, int bpm)
     {
         if (StatusText != null)
         {
-            StatusText.Text = isActive ? "On" : "Off";
+            StatusText.Text = isActive ? "ON" : "OFF";
         }
         
         if (SpeedText != null)
@@ -180,12 +201,7 @@ public partial class StrobeVisualizerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
-        try
-        {
-            cts.Cancel();
-        }
-        catch (Exception) { }
+        CleanupSubscriptions();
         base.OnClosed(e);
     }
 
@@ -235,8 +251,8 @@ public partial class StrobeVisualizerWindow : Window
         {
             pathIcon.Data = Geometry.Parse("M303.3 112.7C196.2 121.2 112 210.8 112 320C112 434.9 205.1 528 320 528C353.3 528 384.7 520.2 412.6 506.3C309.2 482.9 232 390.5 232 280C232 214.2 259.4 154.9 303.3 112.7zM64 320C64 178.6 178.6 64 320 64C339.4 64 358.4 66.2 376.7 70.3C386.6 72.5 394 80.8 395.2 90.8C396.4 100.8 391.2 110.6 382.1 115.2C321.5 145.4 280 207.9 280 280C280 381.6 362.4 464 464 464C469 464 473.9 463.8 478.8 463.4C488.9 462.6 498.4 468.2 502.6 477.5C506.8 486.8 504.6 497.6 497.3 504.6C451.3 548.8 388.8 576 320 576C178.6 576 64 461.4 64 320z");
 
-            _strobeOffColor = new SolidColorBrush(Color.Parse("#1a1d2a"));
-            this.Background = new SolidColorBrush(Color.Parse("#0f111a"));
+            _strobeOffColor = new SolidColorBrush(Color.Parse("#161616"));
+            this.Background = new SolidColorBrush(Color.Parse("#1E1E1E"));
             StrobeCanvas.Background = _strobeOffColor;
             MainContent.Padding = new Thickness(10);
         }

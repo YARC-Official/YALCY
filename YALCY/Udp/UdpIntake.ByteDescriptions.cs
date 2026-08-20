@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace YALCY.Udp;
 
@@ -11,6 +11,9 @@ public partial class UdpIntake
     public static Action<byte>? OnLightingCue { get; set; }
     public static Action<bool>? OnFogState { get; set; }
     public static Action<byte>? OnStrobeState { get; set; }
+    public static Action<bool>? OnBonusEffect { get; set; }
+    public static Action<byte>? OnPostProcessing { get; set; }
+    public static Action<byte>? OnSpotlight { get; set; }
     public static Action<byte>? OnPause { get; set; }
 
     public static string GetCameraCutSubjectDescription(byte  byteValue)
@@ -218,6 +221,7 @@ public partial class UdpIntake
             false => "Off",
             true => "On",
         };
+        OnFogState?.Invoke(byteValue);
         return fogStateDescription;
     }
 
@@ -395,6 +399,7 @@ public partial class UdpIntake
         {
             result = PerformerByte.None.ToString();
         }
+        OnSpotlight?.Invoke(byteValue);
         return result;
     }
 
@@ -410,6 +415,7 @@ public partial class UdpIntake
     public static string GetPostProcessingByteDescription(byte byteValue)
     {
         int intValue = byteValue; // Cast byte to int
+        OnPostProcessing?.Invoke(byteValue);
         return Enum.IsDefined(typeof(PostProcessingByte), intValue) ? ((PostProcessingByte)intValue).ToString() : "Unknown";
     }
 
@@ -420,6 +426,7 @@ public partial class UdpIntake
             false => "Off",
             true => "Triggered!",
         };
+        OnBonusEffect?.Invoke(byteValue);
         return bonusEffectDescription;
     }
 

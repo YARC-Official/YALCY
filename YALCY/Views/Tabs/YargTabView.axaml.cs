@@ -18,6 +18,7 @@ public partial class YargTabView : UserControl
 {
     private static LedVisualizerWindow? _allDetachedWindow;
     private static StrobeVisualizerWindow? _allStrobeWindow;
+    private static bool _isAppClosing;
     
     private LedVisualizerWindow? _detachedWindow;
     private StrobeVisualizerWindow? _strobeVisualizerWindow;
@@ -25,26 +26,32 @@ public partial class YargTabView : UserControl
     
     public static void CloseAllDetachedWindows()
     {
+        _isAppClosing = true;
+
         if (_allDetachedWindow != null)
         {
+            var win = _allDetachedWindow;
+            _allDetachedWindow = null;
             try
             {
-                _allDetachedWindow.Close();
+                win.Close();
             }
-
             catch (Exception) { }
-            _allDetachedWindow = null;
         }
         
         if (_allStrobeWindow != null)
         {
+            var win = _allStrobeWindow;
+            _allStrobeWindow = null;
             try
             {
-                _allStrobeWindow.Close();
+                win.Close();
             }
             catch (Exception) { }
-            _allStrobeWindow = null;
         }
+
+        StageKitStatusWindow.CloseActiveInstance();
+        _isAppClosing = false;
     }
 
     private void OnDataGridPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -170,7 +177,7 @@ public partial class YargTabView : UserControl
                     {
                         toggleButton.IsChecked = false;
                     }
-                    if (this.DataContext is YALCY.ViewModels.MainWindowViewModel closeVm)
+                    if (!_isAppClosing && this.DataContext is YALCY.ViewModels.MainWindowViewModel closeVm)
                     {
                         closeVm.IsVisualizerDetached = false;
                     }
