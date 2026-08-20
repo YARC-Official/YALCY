@@ -363,6 +363,11 @@ public class OpenRgbTalker
 
     #region StageKit Event Dispatching
 
+    private byte _stageKitBlueParam;
+    private byte _stageKitRedParam;
+    private byte _stageKitGreenParam;
+    private byte _stageKitYellowParam;
+
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
         try
@@ -370,18 +375,22 @@ public class OpenRgbTalker
             switch (commandId)
             {
                 case StageKitTalker.CommandId.BlueLeds:
+                    _stageKitBlueParam = parameter;
                     UpdateLightPodColor(parameter, new Color(0, 0, 255), 0);
                     break;
 
                 case StageKitTalker.CommandId.RedLeds:
+                    _stageKitRedParam = parameter;
                     UpdateLightPodColor(parameter, new Color(255, 0, 0), 8);
                     break;
 
                 case StageKitTalker.CommandId.GreenLeds:
+                    _stageKitGreenParam = parameter;
                     UpdateLightPodColor(parameter, new Color(0, 255, 0), 16);
                     break;
 
                 case StageKitTalker.CommandId.YellowLeds:
+                    _stageKitYellowParam = parameter;
                     UpdateLightPodColor(parameter, new Color(255, 255, 0), 24);
                     break;
 
@@ -409,10 +418,14 @@ public class OpenRgbTalker
                     StopBreathingEffect();
                     SetDeviceBrightness(0);
                     SetZoneBrightness(0);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 0);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 8);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 16);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 24);
+                    _stageKitBlueParam = 0;
+                    _stageKitRedParam = 0;
+                    _stageKitGreenParam = 0;
+                    _stageKitYellowParam = 0;
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 0);
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 8);
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 16);
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 24);
                     break;
             }
         }
@@ -753,114 +766,115 @@ public class OpenRgbTalker
         TriggerLightPodFlush();
     }
 
-    private static void ApplyZoneBlending(Color[] raw, Color[] output, OpenRgbBlendMode mode)
+    private void ApplyZoneBlending(Color[] raw, Color[] output, OpenRgbBlendMode mode)
     {
         if (raw.Length != output.Length || raw.Length == 0) return;
 
-        switch (mode)
+        if (mode == OpenRgbBlendMode.Discrete)
         {
-            case OpenRgbBlendMode.UniformWash:
+            Array.Copy(raw, output, raw.Length);
+            return;
+        }
+
+        // Calculate the 8 StageKit Pod mixed colors (Pod 1 to Pod 8) from active B, R, G, Y
+        Span<Color> podColors = stackalloc Color[8];
+        int activePodCount = 0;
+
+        for (int k = 0; k < 8; k++)
+        {
+            bool isB = (_stageKitBlueParam & (1 << k)) != 0;
+            bool isR = (_stageKitRedParam & (1 << k)) != 0;
+            bool isG = (_stageKitGreenParam & (1 << k)) != 0;
+            bool isY = (_stageKitYellowParam & (1 << k)) != 0;
+
+            int r = 0, g = 0, b = 0, count = 0;
+            if (isB) { b += 255; count++; }
+            if (isR) { r += 255; count++; }
+            if (isG) { g += 255; count++; }
+            if (isY) { r += 255; g += 255; count++; } // Yellow has R + G
+
+            if (count == 0)
             {
-                int sumR = 0, sumG = 0, sumB = 0;
-                int activeCount = 0;
-                for (int i = 0; i < raw.Length; i++)
-                {
-                    var c = raw[i];
-                    if (c.R != 0 || c.G != 0 || c.B != 0)
-                    {
-                        sumR += c.R;
-                        sumG += c.G;
-                        sumB += c.B;
-                        activeCount++;
-                    }
-                }
-
-                if (activeCount == 0)
-                {
-                    Array.Clear(output, 0, output.Length);
-                    return;
-                }
-
-                int maxComp = Math.Max(sumR, Math.Max(sumG, sumB));
-                double scale = maxComp > 0 ? 255.0 / maxComp : 1.0;
-                var blended = new Color(
-                    (byte)Math.Clamp(sumR * scale, 0, 255),
-                    (byte)Math.Clamp(sumG * scale, 0, 255),
-                    (byte)Math.Clamp(sumB * scale, 0, 255)
+                podColors[k] = new Color(0, 0, 0); // Black / Desligado
+            }
+            else
+            {
+                int max = Math.Max(r, Math.Max(g, b));
+                double scale = max > 0 ? 255.0 / max : 1.0;
+                podColors[k] = new Color(
+                    (byte)Math.Clamp(r * scale, 0, 255),
+                    (byte)Math.Clamp(g * scale, 0, 255),
+                    (byte)Math.Clamp(b * scale, 0, 255)
                 );
-
-                for (int i = 0; i < output.Length; i++)
-                {
-                    output[i] = blended;
-                }
-                break;
+                activePodCount++;
             }
+        }
 
-            case OpenRgbBlendMode.SmoothGradient:
+        if (mode == OpenRgbBlendMode.UniformWash)
+        {
+            if (activePodCount == 0)
             {
-                var anchors = new List<(int Index, Color Color)>();
-                for (int i = 0; i < raw.Length; i++)
-                {
-                    var c = raw[i];
-                    if (c.R != 0 || c.G != 0 || c.B != 0)
-                    {
-                        anchors.Add((i, c));
-                    }
-                }
-
-                if (anchors.Count == 0)
-                {
-                    Array.Clear(output, 0, output.Length);
-                    return;
-                }
-
-                if (anchors.Count == 1)
-                {
-                    var c = anchors[0].Color;
-                    for (int i = 0; i < output.Length; i++)
-                    {
-                        output[i] = c;
-                    }
-                    return;
-                }
-
-                // Fill before first anchor
-                for (int i = 0; i <= anchors[0].Index; i++)
-                {
-                    output[i] = anchors[0].Color;
-                }
-
-                // Interpolate between consecutive anchors
-                for (int a = 0; a < anchors.Count - 1; a++)
-                {
-                    int i1 = anchors[a].Index;
-                    int i2 = anchors[a + 1].Index;
-                    var c1 = anchors[a].Color;
-                    var c2 = anchors[a + 1].Color;
-                    int span = i2 - i1;
-
-                    for (int i = i1; i <= i2; i++)
-                    {
-                        double t = span > 0 ? (double)(i - i1) / span : 0;
-                        byte r = (byte)Math.Clamp(c1.R + (c2.R - c1.R) * t, 0, 255);
-                        byte g = (byte)Math.Clamp(c1.G + (c2.G - c1.G) * t, 0, 255);
-                        byte b = (byte)Math.Clamp(c1.B + (c2.B - c1.B) * t, 0, 255);
-                        output[i] = new Color(r, g, b);
-                    }
-                }
-
-                // Fill after last anchor
-                for (int i = anchors[^1].Index; i < output.Length; i++)
-                {
-                    output[i] = anchors[^1].Color;
-                }
-                break;
+                Array.Clear(output, 0, output.Length);
+                return;
             }
 
-            case OpenRgbBlendMode.Discrete:
-            default:
-                Array.Copy(raw, output, raw.Length);
-                break;
+            int sumR = 0, sumG = 0, sumB = 0;
+            for (int k = 0; k < 8; k++)
+            {
+                var pc = podColors[k];
+                if (pc.R != 0 || pc.G != 0 || pc.B != 0)
+                {
+                    sumR += pc.R;
+                    sumG += pc.G;
+                    sumB += pc.B;
+                }
+            }
+
+            int max = Math.Max(sumR, Math.Max(sumG, sumB));
+            double scale = max > 0 ? 255.0 / max : 1.0;
+            var washColor = new Color(
+                (byte)Math.Clamp(sumR * scale, 0, 255),
+                (byte)Math.Clamp(sumG * scale, 0, 255),
+                (byte)Math.Clamp(sumB * scale, 0, 255)
+            );
+
+            for (int i = 0; i < output.Length; i++)
+            {
+                output[i] = washColor;
+            }
+        }
+        else if (mode == OpenRgbBlendMode.SmoothGradient)
+        {
+            if (activePodCount == 0)
+            {
+                Array.Clear(output, 0, output.Length);
+                return;
+            }
+
+            int n = output.Length;
+            if (n == 1)
+            {
+                output[0] = podColors[0];
+                return;
+            }
+
+            // Distribute the 8 Pod Colors evenly across the N LEDs of the strip with smooth linear interpolation
+            for (int i = 0; i < n; i++)
+            {
+                double pos = (double)i / (n - 1) * 7.0; // Continuous range [0.0 .. 7.0]
+                int k0 = (int)pos;
+                int k1 = Math.Min(7, k0 + 1);
+                double t = pos - k0;
+
+                var c0 = podColors[k0];
+                var c1 = podColors[k1];
+
+                byte r = (byte)Math.Clamp(c0.R + (c1.R - c0.R) * t, 0, 255);
+                byte g = (byte)Math.Clamp(c0.G + (c1.G - c0.G) * t, 0, 255);
+                byte b = (byte)Math.Clamp(c0.B + (c1.B - c0.B) * t, 0, 255);
+
+                output[i] = new Color(r, g, b);
+            }
         }
     }
 
@@ -868,6 +882,10 @@ public class OpenRgbTalker
     {
         lock (Lock)
         {
+            _stageKitBlueParam = 0;
+            _stageKitRedParam = 0;
+            _stageKitGreenParam = 0;
+            _stageKitYellowParam = 0;
             foreach (var colors in LightPodStates.Values)
             {
                 Array.Clear(colors, 0, colors.Length);
