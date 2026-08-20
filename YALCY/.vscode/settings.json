@@ -1,0 +1,15 @@
+{
+    "betterStatusBar.commands": [
+        {
+            "id": "singleFilePublishAndRun",
+            "label": "$(rocket) Build Single File & Run",
+            "command": "workbench.action.tasks.runTask",
+            "args": [
+                "Publish & Run"
+            ],
+            "color": "#4ec9b0",
+            "useVsCodeApi": true,
+            "tooltip": "Build the app in Single File mode and run it"
+        }
+    ]
+}

@@ -3,6 +3,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
+using Avalonia.Media;
 
 namespace YALCY.ViewModels;
 
@@ -10,17 +11,29 @@ public class IntToBoolConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value == null || parameter == null) return false;
-        var category = (int)value;
-        var targetCategory = int.Parse(parameter.ToString()!);
+        if (value is bool isSelected &&
+            targetType == typeof(FontWeight) &&
+            string.Equals(parameter?.ToString(), "Bold", StringComparison.OrdinalIgnoreCase))
+        {
+            return isSelected ? FontWeight.Bold : FontWeight.Normal;
+        }
+
+        if (value is not int category || !int.TryParse(parameter?.ToString(), out var targetCategory))
+        {
+            return false;
+        }
+
         return category == targetCategory;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value == null || parameter == null) return AvaloniaProperty.UnsetValue;
-        var isChecked = (bool)value;
-        var targetCategory = int.Parse(parameter.ToString()!);
+        if (value is not bool isChecked ||
+            !int.TryParse(parameter?.ToString(), out var targetCategory))
+        {
+            return AvaloniaProperty.UnsetValue;
+        }
+
         return isChecked ? targetCategory : AvaloniaProperty.UnsetValue;
     }
 }

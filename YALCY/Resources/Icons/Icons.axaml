@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/SettingsIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/PaletteIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/UdpIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/StageKitIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/DmxIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/Rb3eIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/SerialIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/HueIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/LifxIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/HomeAssistantIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/PinIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/RefreshIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/WarningIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/CheckIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/InfoIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/CaseSensitiveIcon.axaml" />
+    </ResourceDictionary.MergedDictionaries>
+</ResourceDictionary>

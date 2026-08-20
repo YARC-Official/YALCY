@@ -73,7 +73,12 @@ public class DmxChannelSetting : ReactiveObject, IDmxChannelSetting
     public int[]? Channel
     {
         get => _channel;
-        set => this.RaiseAndSetIfChanged(ref _channel, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _channel, value);
+            this.RaisePropertyChanged("Item");
+            this.RaisePropertyChanged("Item[]");
+        }
     }
 
     public DmxChannelSetting(string label, params int[]? channels)
@@ -104,6 +109,8 @@ public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
         set
         {
             this.RaiseAndSetIfChanged(ref _channel, value);
+            this.RaisePropertyChanged("Item");
+            this.RaisePropertyChanged("Item[]");
             // Set previous channel value to 0 and update master dimmers
             if (_dmxTalker != null && _channel != null)
             {
@@ -149,6 +156,8 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
         set
         {
             this.RaiseAndSetIfChanged(ref _channel, value);
+            this.RaisePropertyChanged("Item");
+            this.RaisePropertyChanged("Item[]");
             _dmxTalker?.UpdateMasterDimmers();
         }
     }
@@ -282,7 +291,15 @@ public partial class MainWindowViewModel
     public void ResetDmxChannelsToDefaults()
     {
         SettingsManager.ResetDmxChannelsToDefaults();
-        FeedInDmxChannelSettings();
+        FeedInDmxSettings();
+        InitializeDmxCollections();
+        this.RaisePropertyChanged(nameof(EffectsChannelSettingsContainer));
+        this.RaisePropertyChanged(nameof(MasterDimmerSettingsContainer));
+        this.RaisePropertyChanged(nameof(ColorChannelSettingsContainer));
+        this.RaisePropertyChanged(nameof(InstrumentNoteSettingsContainer));
+        this.RaisePropertyChanged(nameof(AdvancedSettingsContainer));
+        this.RaisePropertyChanged(nameof(BroadcastSettingsContainer));
+        SettingsManager.SaveSettings(this);
     }
 
     private void InitializeSacnAdapterOptions()
