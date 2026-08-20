@@ -31,6 +31,7 @@ public partial class StrobeVisualizerWindow : Window
 
     public StrobeVisualizerWindow()
     {
+        RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
         InitializeComponent();
         UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
         
@@ -87,39 +88,57 @@ public partial class StrobeVisualizerWindow : Window
         int interval = CalculateDelay(speed, bpm);
 
         cts = new CancellationTokenSource();
+        var token = cts.Token;
         
         strobeTask = Task.Run(async () =>
         {
-            while (!cts.Token.IsCancellationRequested)
+            try
             {
-                // Turn strobe ON
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                while (!token.IsCancellationRequested)
                 {
-                    this.StrobeCanvas.Background = _strobeColor;
-                });
-                
-                await Task.Delay(interval, cts.Token);
-                
-                // Turn strobe OFF
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    this.StrobeCanvas.Background = _strobeOffColor;
-                });
-                
-                await Task.Delay(interval, cts.Token);
+                    // Turn strobe ON
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (this.StrobeCanvas != null)
+                        {
+                            this.StrobeCanvas.Background = _strobeColor;
+                        }
+                    });
+                    
+                    await Task.Delay(interval, token);
+                    
+                    // Turn strobe OFF
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (this.StrobeCanvas != null)
+                        {
+                            this.StrobeCanvas.Background = _strobeOffColor;
+                        }
+                    });
+                    
+                    await Task.Delay(interval, token);
+                }
             }
-        }, cts.Token);
+            catch (Exception) { }
+        }, token);
 
         UpdateDisplay(true, (StrobeSpeed)speed, (int)bpm);
     }
 
     private void StopStrobeEffect()
     {
-        cts.Cancel();
+        try
+        {
+            cts.Cancel();
+        }
+        catch (Exception) { }
         
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            this.StrobeCanvas.Background = _strobeOffColor;
+            if (this.StrobeCanvas != null)
+            {
+                this.StrobeCanvas.Background = _strobeOffColor;
+            }
             UpdateDisplay(false, StrobeSpeed.Off, 0);
         });
     }
@@ -162,8 +181,11 @@ public partial class StrobeVisualizerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
-        cts.Cancel();
-        cts.Dispose();
+        try
+        {
+            cts.Cancel();
+        }
+        catch (Exception) { }
         base.OnClosed(e);
     }
 
@@ -178,6 +200,7 @@ public partial class StrobeVisualizerWindow : Window
             var pathIcon = new PathIcon();
             pathIcon.Width = 15;
             pathIcon.Height = 15;
+            pathIcon.Foreground = Brushes.White;
             
             if (this.Topmost)
             {
@@ -197,6 +220,7 @@ public partial class StrobeVisualizerWindow : Window
         var pathIcon = new PathIcon();
         pathIcon.Width = 15;
         pathIcon.Height = 15;
+        pathIcon.Foreground = Brushes.White;
 
         if (this._darkMode)
         {

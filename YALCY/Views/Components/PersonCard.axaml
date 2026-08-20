@@ -5,10 +5,10 @@
              x:Class="YALCY.Views.Components.PersonCard"
              mc:Ignorable="d">
     
-    <Border Background="#3a3d4a" 
+    <Border Background="{DynamicResource AppCardBackground}" 
             CornerRadius="12" 
             Padding="20" 
-            BorderBrush="#4a4d5a" 
+            BorderBrush="{DynamicResource AppBorderStrong}" 
             BorderThickness="1"
             MinWidth="200"
             MaxWidth="400">
@@ -45,11 +45,11 @@
                 <TextBlock x:Name="NameText" 
                            FontSize="17" 
                            FontWeight="SemiBold" 
-                           Foreground="White"
+                           Foreground="{DynamicResource AppTextPrimary}"
                            TextWrapping="Wrap"/>
                 <TextBlock x:Name="RoleText" 
                            FontSize="14" 
-                           Foreground="#B0B0B0" 
+                           Foreground="{DynamicResource AppTextSecondary}" 
                            Margin="0,2,0,0"
                            TextWrapping="Wrap"/>
             </StackPanel>

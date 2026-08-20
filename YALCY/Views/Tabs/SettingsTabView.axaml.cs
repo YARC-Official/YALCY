@@ -9,32 +9,6 @@ public partial class SettingsTabView : UserControl
     public SettingsTabView()
     {
         InitializeComponent();
-        this.AttachedToVisualTree += (s, e) => UpdateLayoutState(this.Bounds.Width);
-        this.SizeChanged += SettingsTabView_SizeChanged;
-    }
-
-    private void SettingsTabView_SizeChanged(object? sender, SizeChangedEventArgs e)
-    {
-        UpdateLayoutState(e.NewSize.Width);
-    }
-
-    private void UpdateLayoutState(double width)
-    {
-        if (IntegrationsGrid != null)
-        {
-            if (width < 700)
-            {
-                IntegrationsGrid.Columns = 1;
-            }
-            else if (width < 1050)
-            {
-                IntegrationsGrid.Columns = 2;
-            }
-            else
-            {
-                IntegrationsGrid.Columns = 3;
-            }
-        }
     }
 
     private void OnResetDmxChannelsClicked(object? sender, RoutedEventArgs e)

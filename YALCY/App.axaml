@@ -28,14 +28,19 @@
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
 
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource AppInputBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}" />
+        </Style>
+
         <!-- Segmented Toggle Buttons Style -->
-        <Style Selector="RadioButton.SegmentedToggle">
+        <Style Selector="RadioButton.SegmentedToggle, ToggleButton.SegmentedToggle, Button.SegmentedToggle">
             <Setter Property="Height" Value="32"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#8B8FB5"/>
-            <Setter Property="Background" Value="#121424"/>
-            <Setter Property="BorderBrush" Value="#3F4363"/>
+            <Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}"/>
+            <Setter Property="Background" Value="{DynamicResource AppPanelBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -56,55 +61,92 @@
                 </ControlTemplate>
             </Setter>
         </Style>
-        <Style Selector="RadioButton.SegmentedToggle:pointerover">
-            <Setter Property="Background" Value="#1A1D33"/>
-            <Setter Property="BorderBrush" Value="#6366F1"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Style Selector="RadioButton.SegmentedToggle:pointerover, ToggleButton.SegmentedToggle:pointerover, Button.SegmentedToggle:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AppCardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}"/>
         </Style>
-        <Style Selector="RadioButton.SegmentedToggle:checked">
-            <Setter Property="Background" Value="#6366F1"/>
-            <Setter Property="BorderBrush" Value="#818CF8"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Style Selector="RadioButton.SegmentedToggle:checked, ToggleButton.SegmentedToggle:checked">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColorLight1}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentContrastBrush}"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
-        <!-- Dark styling for NumericUpDown / ButtonSpinner disabled state -->
+        <!-- RepeatButton & ButtonSpinner disabled state -->
         <Style Selector="RepeatButton:disabled">
-            <Setter Property="Background" Value="#06070E" />
+            <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style Selector="RepeatButton:disabled /template/ ContentPresenter">
-            <Setter Property="Background" Value="#06070E" />
-            <Setter Property="Foreground" Value="#1F2339" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" />
         </Style>
         <Style Selector="ButtonSpinner /template/ RepeatButton:disabled">
-            <Setter Property="Background" Value="#06070E" />
+            <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style Selector="ButtonSpinner /template/ RepeatButton:disabled /template/ ContentPresenter">
-            <Setter Property="Background" Value="#06070E" />
-            <Setter Property="Foreground" Value="#1F2339" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" />
         </Style>
         <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton:disabled">
-            <Setter Property="Background" Value="#06070E" />
+            <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton:disabled /template/ ContentPresenter">
-            <Setter Property="Background" Value="#06070E" />
-            <Setter Property="Foreground" Value="#1F2339" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" />
         </Style>
     </Application.Styles>
 
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#121212" />
+                    <SolidColorBrush x:Key="AppPanelBackground" Color="#1E1E1E" />
+                    <SolidColorBrush x:Key="AppCardBackground" Color="#2A2A2A" />
+                    <SolidColorBrush x:Key="AppInputBackground" Color="#161616" />
+                    <SolidColorBrush x:Key="AppBorder" Color="#333333" />
+                    <SolidColorBrush x:Key="AppBorderStrong" Color="#444444" />
+                    <SolidColorBrush x:Key="AppTextPrimary" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AppTextSecondary" Color="#AAAAAA" />
+                    <SolidColorBrush x:Key="AppTextMuted" Color="#888888" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#F5F5F7" />
+                    <SolidColorBrush x:Key="AppPanelBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AppCardBackground" Color="#F0F2F5" />
+                    <SolidColorBrush x:Key="AppInputBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AppBorder" Color="#D5D8DE" />
+                    <SolidColorBrush x:Key="AppBorderStrong" Color="#BABEC6" />
+                    <SolidColorBrush x:Key="AppTextPrimary" Color="#18181B" />
+                    <SolidColorBrush x:Key="AppTextSecondary" Color="#52525B" />
+                    <SolidColorBrush x:Key="AppTextMuted" Color="#71717A" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://YALCY/Resources/Icons/Icons.axaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Dynamic System Accent and Badge Brushes (managed by AccentHelper) -->
+            <SolidColorBrush x:Key="AppAccentText" Color="#107C41" />
+            <SolidColorBrush x:Key="AppAccentBadgeBackground" Color="#0B2B18" />
+            <SolidColorBrush x:Key="AppAccentBadgeBorder" Color="#13522E" />
+            <SolidColorBrush x:Key="AppAccentBadgeForeground" Color="#6EE7B7" />
             <viewModels:IntToBoolConverter x:Key="IntToBoolConverter" />
+            <viewModels:BoolToHighlightBackgroundConverter x:Key="BoolToHighlightBackgroundConverter" />
+            <viewModels:BoolToHighlightForegroundConverter x:Key="BoolToHighlightForegroundConverter" />
+            <viewModels:BoolToHighlightStarBrushConverter x:Key="BoolToHighlightStarBrushConverter" />
+            <viewModels:BoolToHighlightBorderBrushConverter x:Key="BoolToHighlightBorderBrushConverter" />
             <FontFamily x:Key="InterFont">avares://YALCY/Resources/Fonts#Inter</FontFamily>
 
+            <!-- Dynamic System Accent Contrast Brush -->
+            <SolidColorBrush x:Key="SystemAccentContrastBrush" Color="#FFFFFF" />
+
             <!-- Disabled ButtonSpinner Brushes -->
-            <SolidColorBrush x:Key="RepeatButtonBackgroundDisabled" Color="#06070E" />
-            <SolidColorBrush x:Key="ButtonSpinnerButtonBackgroundDisabled" Color="#06070E" />
-            <SolidColorBrush x:Key="RepeatButtonForegroundDisabled" Color="#1F2339" />
-            <SolidColorBrush x:Key="ButtonSpinnerButtonForegroundDisabled" Color="#1F2339" />
+            <SolidColorBrush x:Key="RepeatButtonBackgroundDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="ButtonSpinnerButtonBackgroundDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="RepeatButtonForegroundDisabled" Color="{DynamicResource AppTextMuted}" />
+            <SolidColorBrush x:Key="ButtonSpinnerButtonForegroundDisabled" Color="{DynamicResource AppTextMuted}" />
         </ResourceDictionary>
     </Application.Resources>
 

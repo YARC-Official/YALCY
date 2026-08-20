@@ -2,42 +2,82 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:YALCY.ViewModels"
         xmlns:components="clr-namespace:YALCY.Views.Components"
         x:Class="YALCY.Views.Windows.LedVisualizerWindow"
+        x:DataType="vm:MainWindowViewModel"
         Title="Stage Kit LED Visualizer"
-        Width="400" Height="500"
-        MinWidth="200" MinHeight="200"
+        Width="380" Height="440"
+        MinWidth="240" MinHeight="240"
         CanResize="True"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ExtendClientAreaToDecorationsHint="True"
-        Background="#0f111a">
+        Background="{DynamicResource AppPanelBackground}">
 
     <Grid RowDefinitions="Auto,*">
-        <!-- Simulated Title Bar Area -->
-        <Border Background="#4D000000" 
-                Height="30"
+        <!-- Title Bar Area -->
+        <Border Background="{DynamicResource AppCardBackground}" 
+                BorderBrush="{DynamicResource AppBorder}"
+                BorderThickness="0,0,0,1"
+                Height="36"
                 PointerPressed="OnTitleBarPointerPressed">
-            <StackPanel Orientation="Horizontal" Margin="0,0,140,0" Spacing="10">
-                <Button x:Name="PinButton"
-                        Width="35" Height="30"
-                        Background="Transparent"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Click="OnPinButtonClick">
-                    <PathIcon Width="15" Height="15"
-                              Data="M160 96C160 78.3 174.3 64 192 64L448 64C465.7 64 480 78.3 480 96C480 113.7 465.7 128 448 128L418.5 128L428.8 262.1C465.9 283.3 494.6 318.5 507 361.8L510.8 375.2C513.6 384.9 511.6 395.2 505.6 403.3C499.6 411.4 490 416 480 416L160 416C150 416 140.5 411.3 134.5 403.3C128.5 395.3 126.5 384.9 129.3 375.2L133 361.8C145.4 318.5 174 283.3 211.2 262.1L221.5 128L192 128C174.3 128 160 113.7 160 96zM288 464L352 464L352 576C352 593.7 337.7 608 320 608C302.3 608 288 593.7 288 576L288 464z"/>
-                </Button>
-                <TextBlock Text="Stage Kit LED Visualizer" 
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left Action Toolbar (Pin & Labels) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,0,0">
+                    <!-- Pin Button -->
+                    <Button x:Name="PinButton"
+                            Width="32" Height="32"
+                            Background="Transparent"
+                            Foreground="{DynamicResource AppTextSecondary}"
+                            BorderThickness="0"
+                            Click="OnPinButtonClick"
+                            ToolTip.Tip="Toggle Always on Top">
+                        <PathIcon Width="14" Height="14"
+                                  Data="M160 96C160 78.3 174.3 64 192 64L448 64C465.7 64 480 78.3 480 96C480 113.7 465.7 128 448 128L418.5 128L428.8 262.1C465.9 283.3 494.6 318.5 507 361.8L510.8 375.2C513.6 384.9 511.6 395.2 505.6 403.3C499.6 411.4 490 416 480 416L160 416C150 416 140.5 411.3 134.5 403.3C128.5 395.3 126.5 384.9 129.3 375.2L133 361.8C145.4 318.5 174 283.3 211.2 262.1L221.5 128L192 128C174.3 128 160 113.7 160 96zM288 464L352 464L352 576C352 593.7 337.7 608 320 608C302.3 608 288 593.7 288 576L288 464z"/>
+                    </Button>
+
+                    <!-- Labels Toggle Button (Aa Icon) -->
+                    <ToggleButton IsChecked="{Binding ShowLedLabels, Mode=TwoWay}"
+                                  Classes="SegmentedToggle"
+                                  Width="26" Height="26"
+                                  Padding="0"
+                                  ToolTip.Tip="Show / Hide LED Channel Labels (B1-B8, G1-G8, Y1-Y8, R1-R8)"
+                                  VerticalAlignment="Center"
+                                  Margin="2,0,0,0">
+                        <Viewbox Width="14" Height="14" Stretch="Uniform">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M 2,16 L 6.039,6.31 A 0.5,0.5 0 0,1 6.962,6.31 L 11,16 M 3.304,13 H 9.696"
+                                      Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeJoin="Round"/>
+                                <Path Data="M 22,9 V 16 M 15,12.5 A 3.5,3.5 0 1,0 22,12.5 A 3.5,3.5 0 1,0 15,12.5"
+                                      Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeJoin="Round"/>
+                            </Canvas>
+                        </Viewbox>
+                    </ToggleButton>
+                </StackPanel>
+
+                <!-- Title -->
+                <TextBlock Grid.Column="1"
+                           Text="Stage Kit LED Visualizer" 
                            VerticalAlignment="Center"
-                           Foreground="White"
-                           FontWeight="SemiBold"/>  
-            </StackPanel>
+                           Foreground="{DynamicResource AppTextPrimary}"
+                           FontWeight="SemiBold"
+                           FontSize="12"
+                           Margin="10,0,0,0"/>
+
+                <!-- Window Controls Spacer (leaves 140px for native minimize/maximize/close buttons) -->
+                <Border Grid.Column="2" Width="140"/>
+            </Grid>
         </Border>
 
         <!-- Main Content Area -->
-        <Border Grid.Row="1" Padding="10">
-            <components:LedVisualizerPanel x:Name="WindowVisualizer" />
+        <Border Grid.Row="1" Padding="14" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <components:LedVisualizerPanel x:Name="WindowVisualizer" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
     </Grid>
-    
 </Window>

@@ -13,7 +13,7 @@
         Width="1700" Height="800"
         MinWidth="700" MinHeight="670"
         WindowStartupLocation="CenterOwner"
-        Background="#070814"
+         Background="{DynamicResource AppWindowBackground}"
         mc:Ignorable="d">
 
     <Window.Styles>
@@ -30,8 +30,8 @@
                         <DockPanel>
                             <!-- Tab Bar Header Strip -->
                             <Border DockPanel.Dock="{TemplateBinding TabStripPlacement}"
-                                    Background="#0B0D1B"
-                                    BorderBrush="#1E2342"
+                                     Background="{DynamicResource AppPanelBackground}"
+                                     BorderBrush="{DynamicResource AppBorder}"
                                     BorderThickness="0,0,0,1"
                                     Padding="14,10,14,10">
                                 <ScrollViewer HorizontalAlignment="Stretch"
@@ -63,16 +63,16 @@
 
         <!-- Style for TabItem default -->
         <Style Selector="TabItem">
-            <Setter Property="Foreground" Value="#8B8FB5" />
+             <Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}" />
             <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="MinHeight" Value="36" />
-            <Setter Property="Height" Value="36" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Height" Value="34" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="CornerRadius" Value="7" />
             <Setter Property="Padding" Value="14,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -81,11 +81,13 @@
 
         <!-- Style for TabItem when hovered -->
         <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
-            <Setter Property="Background" Value="#171A30" />
+             <Setter Property="Background" Value="{DynamicResource AppCardBackground}" />
+             <Setter Property="BorderBrush" Value="{DynamicResource AppBorderStrong}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
         </Style>
         <Style Selector="TabItem:pointerover">
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="Background" Value="#171A30" />
+             <Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
         </Style>
 
         <!-- Remove default pipe indicator -->
@@ -98,54 +100,87 @@
 
         <!-- Style for when TabItem is selected -->
         <Style Selector="TabItem:selected">
-            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentText}" />
             <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Background" Value="#1F2339" />
-            <Setter Property="BorderBrush" Value="#4A4E7A" />
-            <Setter Property="BorderThickness" Value="1" />
+             <Setter Property="Background" Value="{DynamicResource AppCardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="BorderThickness" Value="1.5" />
         </Style>
         <Style Selector="TabItem:selected /template/ Border#PART_LayoutRoot">
-            <Setter Property="Background" Value="#1F2339" />
-            <Setter Property="BorderBrush" Value="#4A4E7A" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+             <Setter Property="Background" Value="{DynamicResource AppCardBackground}" />
+             <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="CornerRadius" Value="7" />
         </Style>
     </Window.Styles>
     
     <Grid RowDefinitions="*,Auto">
         <!-- Main content area -->
         <TabControl Grid.Row="0" Margin="0" TabStripPlacement="Top">
-            <TabItem Header="YARG">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="YARG" />
+                </TabItem.Header>
                 <tabs:YargTabView />
             </TabItem>
-            <TabItem Header="Stage Kit">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="Stage Kit" />
+                </TabItem.Header>
                 <tabs:StageKitTabView />
             </TabItem>
-            <TabItem Header="DMX/SACN">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="DMX/SACN" />
+                </TabItem.Header>
                 <tabs:DmxSacnTabView />
             </TabItem>
-            <TabItem Header="RB3E">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="RB3E" />
+                </TabItem.Header>
                 <tabs:Rb3eTabView />
             </TabItem>
-            <TabItem Header="Serial">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="Serial" />
+                </TabItem.Header>
                 <tabs:SerialTabView />
             </TabItem>
-            <TabItem Header="Hue">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="Hue" />
+                </TabItem.Header>
                 <tabs:HueTabView />
             </TabItem>
-            <TabItem Header="LIFX">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="LIFX" />
+                </TabItem.Header>
                 <tabs:LifxTabView />
             </TabItem>
-            <TabItem Header="Home Assistant">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="Home Assistant" />
+                </TabItem.Header>
                 <tabs:HomeAssistantTabView />
             </TabItem>
-            <TabItem Header="OpenRGB">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="OpenRGB" />
+                </TabItem.Header>
                 <tabs:OpenRgbTabView />
             </TabItem>
-            <TabItem Header="Settings">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="Settings" />
+                </TabItem.Header>
                 <tabs:SettingsTabView />
             </TabItem>
-            <TabItem Header="Credits">
+            <TabItem>
+                <TabItem.Header>
+                    <components:TabHeader Text="Credits" />
+                </TabItem.Header>
                 <tabs:CreditsTabView />
             </TabItem>
         </TabControl>

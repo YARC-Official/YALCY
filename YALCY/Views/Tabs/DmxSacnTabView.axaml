@@ -3,75 +3,41 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:tabs="clr-namespace:YALCY.Views.Tabs"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
              x:Class="YALCY.Views.Tabs.DmxSacnTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
 
-
-
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="20,16,20,20" Spacing="16">
             
-            <!-- Modern Hero Header -->
-            <Border Background="#101224" 
-                    BorderBrush="#252B48" 
-                    BorderThickness="2" 
-                    CornerRadius="12" 
-                    Padding="28,22">
-                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                    <!-- Icon Badge -->
-                    <Border Grid.Column="0"
-                            Background="#6366F1"
-                            Width="48"
-                            Height="48"
-                            CornerRadius="12"
-                            Margin="0,0,18,0"
-                            VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconDmx}" 
-                                  Width="24" 
-                                  Height="24" 
-                                  Foreground="#FFFFFF" 
-                                  HorizontalAlignment="Center" 
-                                  VerticalAlignment="Center"/>
-                    </Border>
-                    
-                    <!-- Titles -->
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,20,0">
-                        <TextBlock Text="DMX / sACN Output" 
-                                   FontSize="20" 
-                                   FontWeight="Black" 
-                                   Foreground="#FFFFFF"
-                                   TextTrimming="CharacterEllipsis"
-                                   Margin="0,0,0,2"/>
-                        <TextBlock Text="Control stage lights, moving heads, dimmers, and effects via OpenDMX &amp; sACN (E1.31)" 
-                                   FontSize="13" 
-                                   Foreground="#AAAAAA"
-                                   FontWeight="Medium"
-                                   TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
-
-                    <!-- Enable Switch & Status -->
-                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="180">
+            <components:TabHeroHeader Margin="0,0,0,0"
+                                      HeaderTitle="DMX / sACN Output"
+                                      Subtitle="Control stage lights, moving heads, dimmers, and effects via OpenDMX &amp; sACN (E1.31)"
+                                      IconData="{StaticResource IconDmx}">
+                <components:TabHeroHeader.BadgeContent>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="180">
                         <ToggleSwitch ToolTip.Tip="{Binding DmxEnabledSetting.ToolTip}"
                                       IsChecked="{Binding DmxEnabledSetting.IsEnabled, Mode=TwoWay}"
                                       OnContent=""
                                       OffContent=""
                                       HorizontalAlignment="Right"
-                                      Margin="0"/>
-                        <TextBlock Text="{Binding DmxEnabledSetting.ToggleButtonContent}" 
-                                   FontSize="11" 
+                                      Margin="0" />
+                        <TextBlock Text="{Binding DmxEnabledSetting.ToggleButtonContent}"
+                                   FontSize="11"
                                    FontWeight="SemiBold"
-                                   Foreground="#8B8FB5"
+                                   Foreground="{DynamicResource AppTextSecondary}"
                                    TextTrimming="CharacterEllipsis"
                                    HorizontalAlignment="Right"
-                                   Margin="0,2,0,0"/>
+                                   Margin="0,2,0,0" />
                     </StackPanel>
-                </Grid>
-            </Border>
+                </components:TabHeroHeader.BadgeContent>
+            </components:TabHeroHeader>
 
             <!-- Network & Protocol Configuration Card -->
-            <Border Background="#101224" 
-                    BorderBrush="#222643" 
+             <Border Background="{DynamicResource AppPanelBackground}" 
+                     BorderBrush="{DynamicResource AppBorder}" 
                     BorderThickness="1" 
                     CornerRadius="12" 
                     Padding="20">
@@ -80,20 +46,18 @@
                         <TextBlock Text="Network &amp; Output Settings" 
                                    FontSize="15" 
                                    FontWeight="Bold" 
-                                   Foreground="#FFFFFF"
+                                   Foreground="{DynamicResource AppTextPrimary}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="Configure sACN network interface, broadcast universe, and strobe triggering modes" 
                                    FontSize="11" 
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource AppTextMuted}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
-                    <Grid x:Name="NetworkSettingsGrid" ColumnDefinitions="*,*,*">
+                    <UniformGrid Columns="{Binding GridColumns3, FallbackValue=3}">
                         <!-- sACN Network Adapter -->
-                        <Border x:Name="NetworkAdapterCard"
-                                Grid.Column="0"
-                                Background="#1F2339"
-                                BorderBrush="#3F4363"
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
                                 BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="14,12"
@@ -102,22 +66,20 @@
                                 <TextBlock Text="sACN Network Adapter" 
                                            FontSize="12" 
                                            FontWeight="Bold" 
-                                           Foreground="#FFFFFF"
+                                           Foreground="{DynamicResource AppTextPrimary}"
                                            TextTrimming="CharacterEllipsis"/>
                                 <ComboBox ItemsSource="{Binding SacnAdapterOptions}"
                                           SelectedItem="{Binding SelectedSacnAdapter, Mode=TwoWay}"
                                           DisplayMemberBinding="{Binding Name}"
                                           HorizontalAlignment="Stretch"
-                                          Background="#121424"
-                                          BorderBrush="#3F4363"/>
+                                          Background="{DynamicResource AppInputBackground}"
+                                          BorderBrush="{DynamicResource AppBorder}"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Broadcast Universe -->
-                        <Border x:Name="BroadcastUniverseCard"
-                                Grid.Column="1"
-                                Background="#1F2339"
-                                BorderBrush="#3F4363"
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
                                 BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="14,12"
@@ -129,7 +91,7 @@
                                             <TextBlock Text="{Binding Label}" 
                                                        FontSize="12" 
                                                        FontWeight="Bold" 
-                                                       Foreground="#FFFFFF"
+                                                       Foreground="{DynamicResource AppTextPrimary}"
                                                        TextTrimming="CharacterEllipsis"/>
                                             <NumericUpDown Minimum="1" Maximum="63999"
                                                            Value="{Binding Value, Mode=TwoWay}"
@@ -137,8 +99,8 @@
                                                            HorizontalContentAlignment="Center"
                                                            VerticalContentAlignment="Center"
                                                            FormatString="F0"
-                                                           Background="#121424"
-                                                           BorderBrush="#3F4363"/>
+                                                           Background="{DynamicResource AppInputBackground}"
+                                                           BorderBrush="{DynamicResource AppBorder}"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -146,10 +108,8 @@
                         </Border>
 
                         <!-- Strobe Output Mode: Segmented Toggle Buttons -->
-                        <Border x:Name="StrobeBehaviorCard"
-                                Grid.Column="2"
-                                Background="#1F2339"
-                                BorderBrush="#3F4363"
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
                                 BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="14,12"
@@ -158,7 +118,7 @@
                                 <TextBlock Text="Strobe Behavior" 
                                            FontSize="12" 
                                            FontWeight="Bold" 
-                                           Foreground="#FFFFFF"
+                                           Foreground="{DynamicResource AppTextPrimary}"
                                            TextTrimming="CharacterEllipsis"/>
                                 <Grid ColumnDefinitions="*,*" Margin="0,2,0,0">
                                     <RadioButton Grid.Column="0"
@@ -178,13 +138,13 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
-                    </Grid>
+                    </UniformGrid>
                 </StackPanel>
             </Border>
 
             <!-- Master Dimmer Settings Card -->
-            <Border Background="#101224" 
-                    BorderBrush="#222643" 
+            <Border Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}" 
                     BorderThickness="1" 
                     CornerRadius="12" 
                     Padding="20">
@@ -193,19 +153,19 @@
                         <TextBlock Text="Master Dimmer Settings" 
                                    FontSize="15" 
                                    FontWeight="Bold" 
-                                   Foreground="#FFFFFF"
+                                   Foreground="{DynamicResource AppTextPrimary}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="Master fixture dimmer channels (16 channels) and default intensity levels" 
                                    FontSize="11" 
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource AppTextMuted}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding MasterDimmerSettingsContainer}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#1F2339"
-                                        BorderBrush="#3F4363"
+                                <Border Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorderStrong}"
                                         BorderThickness="1"
                                         CornerRadius="10"
                                         Padding="14,12"
@@ -214,63 +174,87 @@
                                         <TextBlock Text="{Binding Label}" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         
-                                        <!-- ROW 1 (CH 1-8 in wide, CH 1-4 and 5-8 in compact) -->
+                                        <!-- ROW 1 (Channels 1 - 8) -->
                                         <StackPanel Spacing="4">
-                                            <TextBlock Classes="WideHeader" Text="Channels 1 - 8" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5"/>
-                                            <Grid Classes="DimmerRowContainer" ColumnDefinitions="*,*">
+                                            <TextBlock Text="Channels 1 - 8"
+                                                       IsVisible="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                       FontSize="10" 
+                                                       FontWeight="SemiBold" 
+                                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                                            <UniformGrid Columns="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).GridColumns2, FallbackValue=2}">
                                                 <!-- Block 1: CH 1-4 -->
-                                                <StackPanel Grid.Column="0" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 1 - 4" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 1 - 4" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[0], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[1], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[2], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[3], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[0], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[1], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[2], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[3], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
 
                                                 <!-- Block 2: CH 5-8 -->
-                                                <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 5 - 8" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 5 - 8" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[4], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[5], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[6], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[7], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[4], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[5], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[6], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[7], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
-                                            </Grid>
+                                            </UniformGrid>
                                         </StackPanel>
 
-                                        <!-- ROW 2 (CH 9-16 in wide, CH 9-12 and 13-16 in compact) -->
+                                        <!-- ROW 2 (Channels 9 - 16) -->
                                         <StackPanel Spacing="4">
-                                            <TextBlock Classes="WideHeader" Text="Channels 9 - 16" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5"/>
-                                            <Grid Classes="DimmerRowContainer" ColumnDefinitions="*,*">
+                                            <TextBlock Text="Channels 9 - 16"
+                                                       IsVisible="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                       FontSize="10" 
+                                                       FontWeight="SemiBold" 
+                                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                                            <UniformGrid Columns="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).GridColumns2, FallbackValue=2}">
                                                 <!-- Block 3: CH 9-12 -->
-                                                <StackPanel Grid.Column="0" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 9 - 12" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 9 - 12" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[8], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[9], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[10], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[11], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[8], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[9], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[10], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[11], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
 
                                                 <!-- Block 4: CH 13-16 -->
-                                                <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 13 - 16" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 13 - 16" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[12], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[13], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[14], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[15], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[12], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[13], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[14], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[15], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
-                                            </Grid>
+                                            </UniformGrid>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
@@ -281,8 +265,8 @@
             </Border>
 
             <!-- Color Channels Card -->
-            <Border Background="#101224" 
-                    BorderBrush="#222643" 
+            <Border Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}" 
                     BorderThickness="1" 
                     CornerRadius="12" 
                     Padding="20">
@@ -291,19 +275,19 @@
                         <TextBlock Text="Color Channels" 
                                    FontSize="15" 
                                    FontWeight="Bold" 
-                                   Foreground="#FFFFFF"
+                                   Foreground="{DynamicResource AppTextPrimary}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="Direct DMX channel assignments for fixture color groups (8 channels per color)" 
                                    FontSize="11" 
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource AppTextMuted}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding ColorChannelSettingsContainer}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#1F2339"
-                                        BorderBrush="#3F4363"
+                                <Border Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorderStrong}"
                                         BorderThickness="1"
                                         CornerRadius="10"
                                         Padding="14,12"
@@ -312,35 +296,47 @@
                                         <TextBlock Text="{Binding Label}" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         
-                                        <!-- ROW 1 (CH 1-8 in wide, CH 1-4 and 5-8 in compact) -->
+                                        <!-- ROW 1 (Channels 1 - 8) -->
                                         <StackPanel Spacing="4">
-                                            <TextBlock Classes="WideHeader" Text="Channels 1 - 8" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5"/>
-                                            <Grid Classes="ColorRowContainer" ColumnDefinitions="*,*">
+                                            <TextBlock Text="Channels 1 - 8"
+                                                       IsVisible="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                       FontSize="10" 
+                                                       FontWeight="SemiBold" 
+                                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                                            <UniformGrid Columns="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).GridColumns2, FallbackValue=2}">
                                                 <!-- Block 1: CH 1-4 -->
-                                                <StackPanel Grid.Column="0" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 1 - 4" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 1 - 4" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[0], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[1], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[2], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[3], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[0], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[1], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[2], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[3], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
 
                                                 <!-- Block 2: CH 5-8 -->
-                                                <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 5 - 8" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 5 - 8" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[4], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[5], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[6], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[7], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[4], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[5], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[6], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[7], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
-                                            </Grid>
+                                            </UniformGrid>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
@@ -351,8 +347,8 @@
             </Border>
 
             <!-- Effects Channels (Fog / Strobe) Card -->
-            <Border Background="#101224" 
-                    BorderBrush="#222643" 
+            <Border Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}" 
                     BorderThickness="1" 
                     CornerRadius="12" 
                     Padding="20">
@@ -361,19 +357,19 @@
                         <TextBlock Text="Effects Channels" 
                                    FontSize="15" 
                                    FontWeight="Bold" 
-                                   Foreground="#FFFFFF"
+                                   Foreground="{DynamicResource AppTextPrimary}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="DMX channels for special stage atmosphere fixtures (Fog machines &amp; Strobes)" 
                                    FontSize="11" 
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource AppTextMuted}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding EffectsChannelSettingsContainer}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#1F2339"
-                                        BorderBrush="#3F4363"
+                                <Border Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorderStrong}"
                                         BorderThickness="1"
                                         CornerRadius="10"
                                         Padding="14,12"
@@ -382,35 +378,47 @@
                                         <TextBlock Text="{Binding Label}" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         
-                                        <!-- ROW 1 (CH 1-8 in wide, CH 1-4 and 5-8 in compact) -->
+                                        <!-- ROW 1 (Channels 1 - 8) -->
                                         <StackPanel Spacing="4">
-                                            <TextBlock Classes="WideHeader" Text="Channels 1 - 8" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5"/>
-                                            <Grid Classes="ColorRowContainer" ColumnDefinitions="*,*">
+                                            <TextBlock Text="Channels 1 - 8"
+                                                       IsVisible="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                       FontSize="10" 
+                                                       FontWeight="SemiBold" 
+                                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                                            <UniformGrid Columns="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).GridColumns2, FallbackValue=2}">
                                                 <!-- Block 1: CH 1-4 -->
-                                                <StackPanel Grid.Column="0" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 1 - 4" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 1 - 4" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[0], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[1], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[2], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[3], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[0], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[1], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[2], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[3], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
 
                                                 <!-- Block 2: CH 5-8 -->
-                                                <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock Classes="CompactHeader" Text="Channels 5 - 8" FontSize="10" FontWeight="SemiBold" Foreground="#8B8FB5" IsVisible="False"/>
+                                                <StackPanel Spacing="4" Margin="2">
+                                                    <TextBlock Text="Channels 5 - 8" 
+                                                                IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCompactMode}"
+                                                                FontSize="10" 
+                                                                FontWeight="SemiBold" 
+                                                                Foreground="{DynamicResource AppTextSecondary}"/>
                                                     <UniformGrid Columns="4">
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[4], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[5], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[6], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
-                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[7], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="#121424" BorderBrush="#3F4363" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[4], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[5], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[6], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
+                                                        <NumericUpDown Minimum="1" Maximum="512" Value="{Binding Channel[7], Mode=TwoWay}" Margin="2" Padding="6,2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FormatString="F0" Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}" />
                                                     </UniformGrid>
                                                 </StackPanel>
-                                            </Grid>
+                                            </UniformGrid>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
@@ -421,8 +429,8 @@
             </Border>
 
             <!-- Instrument Note Channels Card -->
-            <Border Background="#101224" 
-                    BorderBrush="#222643" 
+            <Border Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}" 
                     BorderThickness="1" 
                     CornerRadius="12" 
                     Padding="20">
@@ -431,24 +439,24 @@
                         <TextBlock Text="Instrument Note Channels" 
                                    FontSize="15" 
                                    FontWeight="Bold" 
-                                   Foreground="#FFFFFF"
+                                   Foreground="{DynamicResource AppTextPrimary}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="Dedicated DMX channels triggered by instrument note events during gameplay" 
                                    FontSize="11" 
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource AppTextMuted}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding InstrumentNoteSettingsContainer}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid x:Name="InstrumentNotesGrid" Columns="4" />
+                                <UniformGrid Columns="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).GridColumns4, FallbackValue=4}" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#1F2339"
-                                        BorderBrush="#3F4363"
+                                <Border Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorderStrong}"
                                         BorderThickness="1"
                                         CornerRadius="10"
                                         Padding="14,10"
@@ -457,7 +465,7 @@
                                         <TextBlock Text="{Binding Label}" 
                                                    FontSize="12" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"
                                                    ToolTip.Tip="{Binding Label}"/>
                                         <NumericUpDown Minimum="1" Maximum="512"
@@ -467,8 +475,8 @@
                                                        HorizontalContentAlignment="Center"
                                                        VerticalContentAlignment="Center"
                                                        FormatString="F0"
-                                                       Background="#121424"
-                                                       BorderBrush="#3F4363"/>
+                                                       Background="{DynamicResource AppInputBackground}"
+                                                       BorderBrush="{DynamicResource AppBorder}"/>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
@@ -478,8 +486,8 @@
             </Border>
 
             <!-- Advanced Stage & Song Channels Card -->
-            <Border Background="#101224" 
-                    BorderBrush="#222643" 
+            <Border Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}" 
                     BorderThickness="1" 
                     CornerRadius="12" 
                     Padding="20">
@@ -488,24 +496,24 @@
                         <TextBlock Text="Advanced Scene &amp; Gameplay Channels" 
                                    FontSize="15" 
                                    FontWeight="Bold" 
-                                   Foreground="#FFFFFF"
+                                   Foreground="{DynamicResource AppTextPrimary}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="DMX channels for BPM synchronization, cue changes, beatlines, spotlights, singalongs, and venue scenes" 
                                    FontSize="11" 
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource AppTextMuted}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding AdvancedSettingsContainer}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid x:Name="AdvancedSettingsGrid" Columns="4" />
+                                <UniformGrid Columns="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).GridColumns4, FallbackValue=4}" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#1F2339"
-                                        BorderBrush="#3F4363"
+                                <Border Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorderStrong}"
                                         BorderThickness="1"
                                         CornerRadius="10"
                                         Padding="14,10"
@@ -514,7 +522,7 @@
                                         <TextBlock Text="{Binding Label}" 
                                                    FontSize="12" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"
                                                    ToolTip.Tip="{Binding Label}"/>
                                         <NumericUpDown Minimum="1" Maximum="512"
@@ -524,8 +532,8 @@
                                                        HorizontalContentAlignment="Center"
                                                        VerticalContentAlignment="Center"
                                                        FormatString="F0"
-                                                       Background="#121424"
-                                                       BorderBrush="#3F4363"/>
+                                                       Background="{DynamicResource AppInputBackground}"
+                                                       BorderBrush="{DynamicResource AppBorder}"/>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>

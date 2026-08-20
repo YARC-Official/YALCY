@@ -1,13 +1,16 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform;
+using Avalonia.Input;
 using YALCY.Views.Components;
 using YALCY.Views.Windows;
 using Avalonia.Interactivity;
 using YALCY.ViewModels;
+using YALCY.Usb;
+using YALCY.Integrations.StageKit;
 
 namespace YALCY.Views.Tabs;
 
@@ -17,26 +20,23 @@ public partial class YargTabView : UserControl
     private static StrobeVisualizerWindow? _allStrobeWindow;
     
     private LedVisualizerWindow? _detachedWindow;
-    private StrobeVisualizerWindow? strobeVisualizerWindow;
-    private Grid? _mainGrid;
-    private LedVisualizerPanel? _originalVisualizer;
-    private bool _isVisualizerDetached = false;
+    private StrobeVisualizerWindow? _strobeVisualizerWindow;
+    private CancellationTokenSource? _testAnimationCts;
     
     public static void CloseAllDetachedWindows()
     {
-        // Close detached LED window
-        if (_allDetachedWindow != null && _allDetachedWindow.IsVisible)
+        if (_allDetachedWindow != null)
         {
             try
             {
                 _allDetachedWindow.Close();
             }
+
             catch (Exception) { }
             _allDetachedWindow = null;
         }
         
-        // Close strobe window
-        if (_allStrobeWindow != null && _allStrobeWindow.IsVisible)
+        if (_allStrobeWindow != null)
         {
             try
             {
@@ -47,11 +47,29 @@ public partial class YargTabView : UserControl
         }
     }
 
+    private void OnDataGridPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is not Button)
+        {
+            e.Handled = true;
+        }
+    }
+
     public YargTabView()
     {
         InitializeComponent();
-        _mainGrid = this.FindControl<Grid>("MainGrid");
-        _originalVisualizer = LedVisualizer;
+    }
+
+    private void OnToggleHighlightClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is Udp.UdpIntake.IDatapacketMember member)
+        {
+            member.IsHighlighted = !member.IsHighlighted;
+            if (DataContext is MainWindowViewModel vm)
+            {
+                vm.ReorderCombinedCollection();
+            }
+        }
     }
 
     private void OnResetUdpListenPortClicked(object? sender, RoutedEventArgs e)
@@ -62,16 +80,113 @@ public partial class YargTabView : UserControl
         }
     }
 
+    private void OnTestAllLedsClicked(object? sender, RoutedEventArgs e)
+    {
+        _testAnimationCts?.Cancel();
+        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.BlueLeds, 0xFF);
+        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.GreenLeds, 0xFF);
+        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.YellowLeds, 0xFF);
+        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.RedLeds, 0xFF);
+    }
+
+    private void OnClearLedsClicked(object? sender, RoutedEventArgs e)
+    {
+        _testAnimationCts?.Cancel();
+        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.DisableAll, 0x00);
+    }
+
+    private async void OnTestRotateLedsClicked(object? sender, RoutedEventArgs e)
+    {
+        _testAnimationCts?.Cancel();
+        _testAnimationCts = new CancellationTokenSource();
+        var ct = _testAnimationCts.Token;
+
+        try
+        {
+            for (int cycle = 0; cycle < 3 && !ct.IsCancellationRequested; cycle++)
+            {
+                for (int i = 0; i < 8 && !ct.IsCancellationRequested; i++)
+                {
+                    byte b = (byte)(1 << i);
+                    byte g = (byte)(1 << ((i + 2) % 8));
+                    byte y = (byte)(1 << ((i + 4) % 8));
+                    byte r = (byte)(1 << ((i + 6) % 8));
+
+                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.BlueLeds, b);
+                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.GreenLeds, g);
+                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.YellowLeds, y);
+                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.RedLeds, r);
+
+                    await Task.Delay(85, ct);
+                }
+            }
+
+            if (!ct.IsCancellationRequested)
+            {
+                UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.DisableAll, 0x00);
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
     private void OnDetachVisualizerClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var toggleButton = sender as Avalonia.Controls.Primitives.ToggleButton;
-        if (toggleButton?.IsChecked == true)
+        if (toggleButton?.IsChecked == false)
         {
-            DetachLedVisualizer();
+            // Close detached visualizer window and re-dock to YARG tab
+            if (_detachedWindow != null)
+            {
+                try { _detachedWindow.Close(); } catch (Exception) { }
+                _detachedWindow = null;
+            }
+            _allDetachedWindow = null;
+            if (this.DataContext is YALCY.ViewModels.MainWindowViewModel vm)
+            {
+                vm.IsVisualizerDetached = false;
+            }
         }
         else
         {
-            AttachLedVisualizer();
+            // Detach visualizer into floating window
+            if (_detachedWindow == null)
+            {
+                if (this.DataContext is YALCY.ViewModels.MainWindowViewModel vm)
+                {
+                    vm.IsVisualizerDetached = true;
+                }
+
+                _detachedWindow = new LedVisualizerWindow
+                {
+                    DataContext = this.DataContext
+                };
+                _allDetachedWindow = _detachedWindow;
+
+                var mainWindow = this.VisualRoot as Window;
+
+                _detachedWindow.Closed += (s, args) =>
+                {
+                    _detachedWindow = null;
+                    _allDetachedWindow = null;
+                    if (toggleButton != null)
+                    {
+                        toggleButton.IsChecked = false;
+                    }
+                    if (this.DataContext is YALCY.ViewModels.MainWindowViewModel closeVm)
+                    {
+                        closeVm.IsVisualizerDetached = false;
+                    }
+                };
+
+                if (mainWindow != null)
+                {
+                    _detachedWindow.Show(mainWindow);
+                }
+                else
+                {
+                    _detachedWindow.Show();
+                }
+            }
         }
     }
     
@@ -81,152 +196,42 @@ public partial class YargTabView : UserControl
         if (toggleButton?.IsChecked == false)
         {
             // Close strobe visualizer
-            if (strobeVisualizerWindow != null)
+            if (_strobeVisualizerWindow != null)
             {
-                strobeVisualizerWindow.Close();
-                strobeVisualizerWindow = null;
+                try { _strobeVisualizerWindow.Close(); } catch (Exception) { }
+                _strobeVisualizerWindow = null;
             }
+            _allStrobeWindow = null;
         }
         else
         {
             // Open strobe visualizer
-            if (strobeVisualizerWindow == null)
+            if (_strobeVisualizerWindow == null)
             {
-                strobeVisualizerWindow = new StrobeVisualizerWindow();
-                _allStrobeWindow = strobeVisualizerWindow;
+                _strobeVisualizerWindow = new StrobeVisualizerWindow();
+                _allStrobeWindow = _strobeVisualizerWindow;
+
+                var mainWindow = this.VisualRoot as Window;
                 
-                strobeVisualizerWindow.Closed += (sender, e) =>
+                _strobeVisualizerWindow.Closed += (s, args) =>
                 {
-                    // Reset button state when window is closed
+                    _allStrobeWindow = null;
+                    _strobeVisualizerWindow = null;
                     if (toggleButton != null)
                     {
                         toggleButton.IsChecked = false;
                     }
-                    _allStrobeWindow = null;
-                    strobeVisualizerWindow = null;
                 };
-                strobeVisualizerWindow.Show();
-            }
-        }
-    }
-
-    private void DetachLedVisualizer()
-    {
-        if (_detachedWindow != null)
-        {
-            _detachedWindow.Activate();
-            return;
-        }
-
-        if (_isVisualizerDetached)
-        {
-            return;
-        }
-        
-        if (_originalVisualizer != null)
-        {
-            _originalVisualizer.IsVisible = false;
-            _originalVisualizer.Opacity = 0.0;
-            _originalVisualizer.Width = 0;
-            _originalVisualizer.Height = 0;
-            _originalVisualizer.Margin = new Avalonia.Thickness(-1000, -1000, 0, 0);
-            
-            var namedVisualizer = this.FindControl<LedVisualizerPanel>("LedVisualizer");
-            if (namedVisualizer != null)
-            {
-                namedVisualizer.IsVisible = false;
-                namedVisualizer.Opacity = 0.0;
-                namedVisualizer.Width = 0;
-                namedVisualizer.Height = 0;
-                namedVisualizer.Margin = new Avalonia.Thickness(-1000, -1000, 0, 0);
-            }
-            
-            if (_mainGrid != null)
-            {
-                var visualizersToRemove = _mainGrid.Children.OfType<LedVisualizerPanel>().ToList();
-                foreach (var viz in visualizersToRemove)
+                
+                if (mainWindow != null)
                 {
-                    _mainGrid.Children.Remove(viz);
+                    _strobeVisualizerWindow.Show(mainWindow);
+                }
+                else
+                {
+                    _strobeVisualizerWindow.Show();
                 }
             }
-            
-            this.InvalidateVisual();
-            this.InvalidateMeasure();
-            this.InvalidateArrange();
-            
-            var dataGrid = this.FindControl<Avalonia.Controls.DataGrid>("MainDataGrid");
-            if (dataGrid != null)
-            {
-                Grid.SetColumnSpan(dataGrid, 2);
-                dataGrid.InvalidateVisual();
-            }
-            
-            _isVisualizerDetached = true;
-            DetachVisualizerButton.Content = "Attach LED Visualizer";
-        }
-
-        _detachedWindow = new LedVisualizerWindow();
-        _allDetachedWindow = _detachedWindow;
-        var mainWindow = this.VisualRoot as Window;
-        if (mainWindow != null)
-        {
-            var position = mainWindow.Position;
-            _detachedWindow.Position = new PixelPoint(
-                (int)(position.X + mainWindow.Width + 10),
-                (int)position.Y
-            );
-        }
-
-        _detachedWindow.Closed += (sender, e) =>
-        {
-            if (_detachedWindow != null)
-            {
-                _allDetachedWindow = null;
-            }
-            
-            _detachedWindow = null;
-            AttachLedVisualizer();
-        };
-
-        _detachedWindow.Show();
-    }
-
-    private void AttachLedVisualizer()
-    {
-        if (!_isVisualizerDetached)
-        {
-            return;
-        }
-
-        if (_detachedWindow != null)
-        {
-            _allDetachedWindow = null;
-            _detachedWindow.Close();
-            _detachedWindow = null;
-        }
-
-        if (_mainGrid != null)
-        {
-            var newVisualizer = new LedVisualizerPanel();
-            newVisualizer.DataContext = this.DataContext;
-            Grid.SetRow(newVisualizer, 3);
-            Grid.SetColumn(newVisualizer, 1);
-            newVisualizer.Height = 320;
-            newVisualizer.Width = 320;
-            newVisualizer.Margin = new Thickness(20, 0, 20, 0);
-            
-            _mainGrid.Children.Add(newVisualizer);
-            _originalVisualizer = newVisualizer;
-            
-            var dataGrid = this.FindControl<Avalonia.Controls.DataGrid>("MainDataGrid");
-            if (dataGrid != null)
-            {
-                Grid.SetColumnSpan(dataGrid, 1);
-            }
-            
-            _isVisualizerDetached = false;
-            DetachVisualizerButton.Content = "Detach LED Visualizer";
-            DetachVisualizerButton.IsChecked = false;
         }
     }
 }

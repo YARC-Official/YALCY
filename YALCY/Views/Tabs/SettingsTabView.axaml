@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
              x:Class="YALCY.Views.Tabs.SettingsTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
@@ -12,64 +13,41 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="20,16,20,20">
                 
-                <!-- Modern Hero Header -->
-                <Border Grid.Row="0" 
-                        Background="#101224" 
-                        BorderBrush="#252B48" 
-                        BorderThickness="2" 
-                        CornerRadius="12" 
-                        Padding="28,22" 
-                        Margin="0,0,0,16">
-                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                        <Border Grid.Column="0"
-                                Background="#6366F1"
-                                Width="48"
-                                Height="48"
-                                CornerRadius="12"
-                                Margin="0,0,18,0">
-                            <PathIcon Data="{StaticResource IconSettings}" 
-                                      Width="24" 
-                                      Height="24" 
-                                      Foreground="#FFFFFF" 
-                                      HorizontalAlignment="Center" 
-                                      VerticalAlignment="Center"/>
-                        </Border>
-                        
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="Application Settings" 
-                                       FontSize="20" 
-                                       FontWeight="Black" 
-                                       Foreground="#FFFFFF"
-                                       Margin="0,0,0,2"/>
-                            <TextBlock Text="Manage global application options and integration status" 
-                                       FontSize="13" 
-                                       Foreground="#AAAAAA"
-                                       FontWeight="Medium"/>
-                        </StackPanel>
-
-                        <Border Grid.Column="2" 
-                                Background="#1F2339"
-                                BorderBrush="#3F4363"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="12,6"
-                                VerticalAlignment="Center">
+                <components:TabHeroHeader Grid.Row="0"
+                                          Margin="0,0,0,16"
+                                          HeaderTitle="Application Settings"
+                                          Subtitle="Manage global application options and integration status"
+                                          IconData="{StaticResource IconSettings}"
+                                          BadgeBackground="{DynamicResource AppAccentBadgeBackground}"
+                                          BadgeBorderBrush="{DynamicResource AppAccentBadgeBorder}">
+                    <components:TabHeroHeader.BadgeContent>
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <PathIcon Data="{StaticResource IconSettings}" 
-                                          Width="12" 
-                                          Height="12" 
-                                          Foreground="#8B8FB5" 
-                                          VerticalAlignment="Center"/>
-                                <TextBlock Text="System Options" FontSize="11" FontWeight="Bold" Foreground="#8B8FB5" VerticalAlignment="Center"/>
+                                <PathIcon Data="{StaticResource IconSettings}"
+                                          Width="12"
+                                          Height="12"
+                                          Foreground="{DynamicResource AppAccentBadgeForeground}"
+                                          VerticalAlignment="Center" />
+                                <TextBlock Text="System Options"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppAccentBadgeForeground}"
+                                           VerticalAlignment="Center" />
                             </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
+                            <ComboBox ItemsSource="{Binding ThemeVariants}"
+                                      SelectedItem="{Binding ThemeVariant, Mode=TwoWay}"
+                                      Width="82"
+                                      FontSize="11"
+                                      ToolTip.Tip="Application theme">
+                            </ComboBox>
+                        </StackPanel>
+                    </components:TabHeroHeader.BadgeContent>
+                </components:TabHeroHeader>
 
                 <!-- Integrations Quick Toggles Card -->
                 <Border Grid.Row="1" 
-                        Background="#101224" 
-                        BorderBrush="#222643" 
+                        Background="{DynamicResource AppPanelBackground}" 
+                        BorderBrush="{DynamicResource AppBorder}" 
                         BorderThickness="1" 
                         CornerRadius="12" 
                         Padding="20" 
@@ -80,24 +58,24 @@
                             <TextBlock Text="Integrations Quick Toggles" 
                                        FontSize="15" 
                                        FontWeight="Bold" 
-                                       Foreground="#FFFFFF"/>
+                                       Foreground="{DynamicResource AppTextPrimary}"/>
                             <TextBlock Text="Enable or disable YALCY integrations. Detailed configuration options are in their dedicated tabs." 
                                        FontSize="11" 
-                                       Foreground="#888888"/>
+                                       Foreground="{DynamicResource AppTextMuted}"/>
                         </StackPanel>
 
                         <!-- Responsive Grid of Integration Cards -->
-                        <UniformGrid x:Name="IntegrationsGrid" Columns="3">
+                        <UniformGrid x:Name="IntegrationsGrid" Columns="{Binding GridColumns3, FallbackValue=3}">
                             <!-- UDP Intake -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
@@ -106,7 +84,7 @@
                                         <PathIcon Data="{StaticResource IconUdp}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -114,16 +92,16 @@
                                         <TextBlock Text="UDP Intake" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="UDP light packets" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding UdpEnableSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -138,15 +116,15 @@
                             </Border>
 
                             <!-- StageKit -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
@@ -155,7 +133,7 @@
                                         <PathIcon Data="{StaticResource IconStageKit}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -163,16 +141,16 @@
                                         <TextBlock Text="StageKit" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="Rock Band controller" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding StageKitEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -187,15 +165,15 @@
                             </Border>
 
                             <!-- DMX / sACN -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
@@ -204,7 +182,7 @@
                                         <PathIcon Data="{StaticResource IconDmx}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -212,16 +190,16 @@
                                         <TextBlock Text="DMX / sACN" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="OpenDMX &amp; sACN" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding DmxEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -236,24 +214,24 @@
                             </Border>
 
                             <!-- RB3E -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
                                             Margin="0,0,12,0"
                                             VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconRb3e}" 
+                                        <PathIcon Data="{StaticResource IconGuitar}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -261,16 +239,16 @@
                                         <TextBlock Text="RB3E" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="Rock Band 3 Deluxe" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding Rb3eEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -285,24 +263,24 @@
                             </Border>
 
                             <!-- Serial Output -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
                                             Margin="0,0,12,0"
                                             VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconSerial}" 
+                                        <PathIcon Data="{StaticResource IconUsb}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -310,16 +288,16 @@
                                         <TextBlock Text="Serial Output" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="USB COM port lighting" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding SerialEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -334,24 +312,24 @@
                             </Border>
 
                             <!-- Philips Hue -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
                                             Margin="0,0,12,0"
                                             VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconHue}" 
+                                        <PathIcon Data="{StaticResource IconBulb}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -359,16 +337,16 @@
                                         <TextBlock Text="Philips Hue" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="Hue Bridge Entertainment" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding HueEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -383,15 +361,15 @@
                             </Border>
 
                             <!-- LIFX -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
@@ -400,7 +378,7 @@
                                         <PathIcon Data="{StaticResource IconLifx}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -408,16 +386,16 @@
                                         <TextBlock Text="LIFX" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="LIFX LAN multizone" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding LifxEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -432,15 +410,15 @@
                             </Border>
 
                             <!-- OpenRGB -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
@@ -449,7 +427,7 @@
                                         <PathIcon Data="{StaticResource IconOpenRgb}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -457,16 +435,16 @@
                                         <TextBlock Text="OpenRGB" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="OpenRGB SDK server" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding OpenRgbEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -481,24 +459,24 @@
                             </Border>
 
                             <!-- Home Assistant -->
-                            <Border Background="#1F2339"
-                                    BorderBrush="#3F4363"
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Margin="6"
                                     Padding="14,12">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <Border Grid.Column="0"
-                                            Background="#252B48"
+                                            Background="{DynamicResource SystemAccentColor}"
                                             Width="38"
                                             Height="38"
                                             CornerRadius="9"
                                             Margin="0,0,12,0"
                                             VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconHomeAssistant}" 
+                                        <PathIcon Data="{StaticResource IconHome}" 
                                                   Width="18" 
                                                   Height="18" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                   HorizontalAlignment="Center" 
                                                   VerticalAlignment="Center"/>
                                     </Border>
@@ -506,16 +484,16 @@
                                         <TextBlock Text="Home Assistant" 
                                                    FontSize="13" 
                                                    FontWeight="Bold" 
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="HA REST API &amp; lights" 
                                                    FontSize="10" 
-                                                   Foreground="#8B8FB5"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding HomeAssistantEnabledSetting.ToggleButtonContent}" 
                                                    FontSize="10" 
                                                    FontWeight="SemiBold"
-                                                   Foreground="#AAAAAA"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
                                                    Margin="0,2,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -534,8 +512,8 @@
 
                 <!-- Application & System Options Card -->
                 <Border Grid.Row="2" 
-                        Background="#101224" 
-                        BorderBrush="#222643" 
+                        Background="{DynamicResource AppPanelBackground}" 
+                        BorderBrush="{DynamicResource AppBorder}" 
                         BorderThickness="1" 
                         CornerRadius="12" 
                         Padding="20" 
@@ -546,21 +524,21 @@
                             <TextBlock Text="Application &amp; System" 
                                        FontSize="15" 
                                        FontWeight="Bold" 
-                                       Foreground="#FFFFFF"/>
+                                       Foreground="{DynamicResource AppTextPrimary}"/>
                             <TextBlock Text="Configure main application behavior and system tray interactions" 
                                        FontSize="11" 
-                                       Foreground="#888888"/>
+                                       Foreground="{DynamicResource AppTextMuted}"/>
                         </StackPanel>
 
                         <!-- Option Tile -->
-                        <Border Background="#1F2339"
-                                BorderBrush="#3F4363"
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="16,14">
                             <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                 <Border Grid.Column="0"
-                                        Background="#252B48"
+                                        Background="{DynamicResource SystemAccentColor}"
                                         Width="40"
                                         Height="40"
                                         CornerRadius="10"
@@ -569,7 +547,7 @@
                                     <PathIcon Data="{StaticResource IconPin}" 
                                               Width="18" 
                                               Height="18" 
-                                              Foreground="#FFFFFF" 
+                                              Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                               HorizontalAlignment="Center" 
                                               VerticalAlignment="Center"/>
                                 </Border>
@@ -577,10 +555,10 @@
                                     <TextBlock Text="Minimize to tray when closing" 
                                                FontSize="14" 
                                                FontWeight="Bold" 
-                                               Foreground="#FFFFFF"/>
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
                                     <TextBlock Text="When enabled, clicking the window close button hides YALCY in the system tray. When disabled, the close button exits YALCY." 
                                                FontSize="11" 
-                                               Foreground="#AAAAAA"
+                                               Foreground="{DynamicResource AppTextSecondary}"
                                                TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="2" 
@@ -597,8 +575,8 @@
 
                 <!-- DMX Management Card -->
                 <Border Grid.Row="3" 
-                        Background="#101224" 
-                        BorderBrush="#222643" 
+                        Background="{DynamicResource AppPanelBackground}" 
+                        BorderBrush="{DynamicResource AppBorder}" 
                         BorderThickness="1" 
                         CornerRadius="12" 
                         Padding="20" 
@@ -609,21 +587,21 @@
                             <TextBlock Text="DMX Management" 
                                        FontSize="15" 
                                        FontWeight="Bold" 
-                                       Foreground="#FFFFFF"/>
+                                       Foreground="{DynamicResource AppTextPrimary}"/>
                             <TextBlock Text="Reset channel mappings and default configurations" 
                                        FontSize="11" 
-                                       Foreground="#888888"/>
+                                       Foreground="{DynamicResource AppTextMuted}"/>
                         </StackPanel>
 
                         <!-- Action Tile -->
-                        <Border Background="#1F2339"
-                                BorderBrush="#3F4363"
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="16,14">
                             <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                 <Border Grid.Column="0"
-                                        Background="#252B48"
+                                        Background="{DynamicResource SystemAccentColor}"
                                         Width="40"
                                         Height="40"
                                         CornerRadius="10"
@@ -632,7 +610,7 @@
                                     <PathIcon Data="{StaticResource IconRefresh}" 
                                               Width="18" 
                                               Height="18" 
-                                              Foreground="#FFFFFF" 
+                                              Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                               HorizontalAlignment="Center" 
                                               VerticalAlignment="Center"/>
                                 </Border>
@@ -640,10 +618,10 @@
                                     <TextBlock Text="Reset DMX Channels" 
                                                FontSize="14" 
                                                FontWeight="Bold" 
-                                               Foreground="#FFFFFF"/>
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
                                     <TextBlock Text="Restore all DMX channel mappings and fixture assignments to their factory defaults." 
                                                FontSize="11" 
-                                               Foreground="#AAAAAA"
+                                               Foreground="{DynamicResource AppTextSecondary}"
                                                TextWrapping="Wrap"/>
                                     <!-- Feedback Banner -->
                                     <Border x:Name="DmxResetFeedbackBanner"
@@ -676,19 +654,20 @@
                                         Padding="16,0"
                                         FontWeight="SemiBold"
                                         CornerRadius="8"
-                                        Background="#1F2339"
-                                        BorderBrush="#3F4363"
+                                        Background="{DynamicResource AppAccentBadgeBackground}"
+                                        BorderBrush="{DynamicResource AppAccentBadgeBorder}"
                                         BorderThickness="1"
                                         HorizontalContentAlignment="Center"
                                         VerticalContentAlignment="Center"
-                                        VerticalAlignment="Center">
+                                        VerticalAlignment="Center"
+                                        Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <PathIcon Data="{StaticResource IconRefresh}" 
                                                   Width="14" 
                                                   Height="14" 
-                                                  Foreground="#FFFFFF" 
+                                                  Foreground="{DynamicResource AppAccentBadgeForeground}" 
                                                   VerticalAlignment="Center"/>
-                                        <TextBlock Text="Reset DMX Channels" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Reset DMX Channels" FontWeight="SemiBold" Foreground="{DynamicResource AppAccentBadgeForeground}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </Grid>
@@ -698,8 +677,8 @@
 
                 <!-- Auto-Save Persistence Footer Banner -->
                 <Border Grid.Row="4" 
-                        Background="#090b13" 
-                        BorderBrush="#222643" 
+                        Background="{DynamicResource AppInputBackground}" 
+                        BorderBrush="{DynamicResource AppBorder}" 
                         BorderThickness="1" 
                         CornerRadius="8" 
                         Padding="14,10" 
@@ -708,11 +687,11 @@
                         <PathIcon Data="{StaticResource IconInfo}" 
                                   Width="14" 
                                   Height="14" 
-                                  Foreground="#8B8FB5" 
+                                  Foreground="{DynamicResource AppTextSecondary}" 
                                   VerticalAlignment="Center"/>
                         <TextBlock Text="Settings are saved automatically when YALCY closes." 
                                    FontSize="11" 
-                                   Foreground="#BBBBBB" 
+                                   Foreground="{DynamicResource AppTextSecondary}" 
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
@@ -722,11 +701,11 @@
         <!-- In-App Modal Overlay -->
         <Border x:Name="ResetConfirmationOverlay"
                 IsVisible="False"
-                Background="#B0000000"
+                Background="#80000000"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch">
-            <Border Background="#101224"
-                    BorderBrush="#252B48"
+            <Border Background="{DynamicResource AppPanelBackground}"
+                    BorderBrush="{DynamicResource AppBorderStrong}"
                     BorderThickness="2"
                     CornerRadius="14"
                     Padding="26,22"
@@ -755,10 +734,10 @@
                             <TextBlock Text="Reset DMX Channels to Defaults?" 
                                        FontSize="16" 
                                        FontWeight="Bold" 
-                                       Foreground="#FFFFFF"/>
+                                       Foreground="{DynamicResource AppTextPrimary}"/>
                             <TextBlock Text="This action will restore all DMX channel mappings to factory defaults." 
                                        FontSize="11" 
-                                       Foreground="#AAAAAA"
+                                       Foreground="{DynamicResource AppTextSecondary}"
                                        TextWrapping="Wrap"
                                        Margin="0,4,0,0"/>
                         </StackPanel>
@@ -771,10 +750,10 @@
                                 Height="36"
                                 Padding="20,0"
                                 CornerRadius="8"
-                                Background="#1F2339"
-                                BorderBrush="#3F4363"
+                                Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
                                 BorderThickness="1"
-                                Foreground="#FFFFFF"
+                                Foreground="{DynamicResource AppTextPrimary}"
                                 FontWeight="SemiBold"
                                 FontSize="13"
                                 HorizontalContentAlignment="Center"

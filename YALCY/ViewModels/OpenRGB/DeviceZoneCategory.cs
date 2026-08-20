@@ -208,9 +208,9 @@ public class DeviceZoneCategory : ReactiveObject
     public bool IsYellowSelected => _selectedPaintAreaIndex >= 24 && _selectedPaintAreaIndex <= 31;
     public bool HasSubGroup => !IsOffSelected;
 
-    public string OffBg => IsOffSelected ? "#FFFFFF" : "#111325";
-    public string OffFg => IsOffSelected ? "#000000" : "#94A3B8";
-    public string OffBorder => IsOffSelected ? "#FFFFFF" : "#2B2F4E";
+    public string OffBg => IsOffSelected ? "#FFFFFF" : "#1A1A1A";
+    public string OffFg => IsOffSelected ? "#000000" : "#A0A0A0";
+    public string OffBorder => IsOffSelected ? "#FFFFFF" : "#444444";
 
     public string BlueBg => IsBlueSelected ? "#FFFFFF" : "#1E3A8A";
     public string BlueFg => IsBlueSelected ? "#000000" : "#93C5FD";

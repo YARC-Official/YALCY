@@ -16,5 +16,6 @@
         <ResourceInclude Source="avares://YALCY/Resources/Icons/WarningIcon.axaml" />
         <ResourceInclude Source="avares://YALCY/Resources/Icons/CheckIcon.axaml" />
         <ResourceInclude Source="avares://YALCY/Resources/Icons/InfoIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/CaseSensitiveIcon.axaml" />
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

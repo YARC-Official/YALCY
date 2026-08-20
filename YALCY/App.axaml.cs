@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using YALCY.ViewModels;
 using YALCY.Views;
 
@@ -21,7 +22,7 @@ public class App : Application
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             if (version != null)
             {
-                    return $"{version.Major}.{version.Minor}.{version.Build}";
+                return $"{version.Major}.{version.Minor}.{version.Build}";
             }
             return "1.0.0";
         }
@@ -30,15 +31,36 @@ public class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        AccentHelper.UpdateApplicationAccentColors(this);
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
+        AccentHelper.UpdateApplicationAccentColors(this);
+
+        if (PlatformSettings != null)
+        {
+            PlatformSettings.ColorValuesChanged += (s, e) =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    AccentHelper.UpdateApplicationAccentColors(this);
+                });
+            };
+        }
+
+        ActualThemeVariantChanged += (s, e) =>
+        {
+            AccentHelper.UpdateApplicationAccentColors(this);
+        };
+
         SettingsManager.LoadSettings();
+        SetThemeVariant(SettingsManager.ThemeVariant);
         MainViewModel = new MainWindowViewModel();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             desktop.MainWindow = new MainWindow
             {
                 DataContext = MainViewModel
@@ -48,6 +70,16 @@ public class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    public void SetThemeVariant(string themeVariant)
+    {
+        RequestedThemeVariant = SettingsManager.NormalizeThemeVariant(themeVariant) switch
+        {
+            SettingsManager.LightThemeVariant => ThemeVariant.Light,
+            SettingsManager.DarkThemeVariant => ThemeVariant.Dark,
+            _ => ThemeVariant.Default
+        };
     }
 
     private void OnTrayShowClick(object? sender, EventArgs e)

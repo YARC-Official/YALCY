@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -16,6 +16,7 @@ public partial class MainWindowViewModel
     public ObservableCollection<UdpIntake.DatapacketMember<ushort>> LightingMessageUshorts { get; private set; }
     public ObservableCollection<UdpIntake.DatapacketMember<float>> LightingMessageFloats { get; private set; }
     public ObservableCollection<UdpIntake.IDatapacketMember> CombinedCollection { get; set; }
+    public UdpIntake.DatapacketMember<bool> AutoGenMember => UdpIntake.AutoGen;
     private ushort _udpListenPort;
     private int _fogDurationPercent;
     private int _yargPacketTimeoutSeconds;
@@ -109,9 +110,65 @@ public partial class MainWindowViewModel
         LightingMessageFloats.Add(UdpIntake.CurrentHarmony1Note);
         LightingMessageFloats.Add(UdpIntake.CurrentHarmony2Note);
 
+        var allMembers = LightingMessageUints.Concat(LightingMessageBytes.Cast<UdpIntake.IDatapacketMember>()).Concat(LightingMessageUshorts).Concat(LightingMessageBools).Concat(LightingMessageFloats).ToList();
 
+        _originalMembersOrder.Clear();
+        _originalMembersOrder.AddRange(allMembers);
 
-        CombinedCollection = new ObservableCollection<UdpIntake.IDatapacketMember>(LightingMessageUints.Concat(LightingMessageBytes.Cast<UdpIntake.IDatapacketMember>()).Concat(LightingMessageUshorts).Concat(LightingMessageBools).Concat(LightingMessageFloats));
+        CombinedCollection = new ObservableCollection<UdpIntake.IDatapacketMember>(allMembers);
 
+        foreach (var member in allMembers)
+        {
+            if (member is INotifyPropertyChanged npc)
+            {
+                npc.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName == nameof(UdpIntake.IDatapacketMember.IsHighlighted))
+                    {
+                        ReorderCombinedCollection();
+                    }
+                };
+            }
+        }
+    }
+
+    private readonly System.Collections.Generic.List<UdpIntake.IDatapacketMember> _originalMembersOrder = new();
+
+    public void RegisterMemberForReordering(UdpIntake.IDatapacketMember member)
+    {
+        if (!_originalMembersOrder.Contains(member))
+        {
+            _originalMembersOrder.Add(member);
+        }
+        if (member is INotifyPropertyChanged npc)
+        {
+            npc.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(UdpIntake.IDatapacketMember.IsHighlighted))
+                {
+                    ReorderCombinedCollection();
+                }
+            };
+        }
+    }
+
+    public void ReorderCombinedCollection()
+    {
+        if (CombinedCollection == null) return;
+        var ordered = CombinedCollection
+            .OrderByDescending(m => m.IsHighlighted)
+            .ThenBy(m => _originalMembersOrder.IndexOf(m) >= 0 ? _originalMembersOrder.IndexOf(m) : int.MaxValue)
+            .ToList();
+
+        if (ordered.SequenceEqual(CombinedCollection))
+        {
+            return;
+        }
+
+        CombinedCollection.Clear();
+        foreach (var item in ordered)
+        {
+            CombinedCollection.Add(item);
+        }
     }
 }
