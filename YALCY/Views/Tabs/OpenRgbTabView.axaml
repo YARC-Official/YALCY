@@ -20,39 +20,52 @@
         <!-- Hero Header Section -->
         <Border Grid.Row="0" 
                 Background="#101224"
+                BorderBrush="#252B48"
                 BorderThickness="2" 
                 CornerRadius="12"
                 Padding="28,22"
                 Margin="0,0,0,16">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                                
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                <Border Grid.Column="0"
+                        Background="#6366F1"
+                        Width="48"
+                        Height="48"
+                        CornerRadius="12"
+                        Margin="0,0,18,0">
+                    <PathIcon Data="{StaticResource IconOpenRgb}" 
+                              Width="24" 
+                              Height="24" 
+                              Foreground="#FFFFFF" 
+                              HorizontalAlignment="Center" 
+                              VerticalAlignment="Center"/>
+                </Border>
+                
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="OpenRGB Integration" 
                                FontSize="20" 
                                FontWeight="Black" 
                                Foreground="#FFFFFF"
-                               Margin="0,0,0,0"/>
+                               Margin="0,0,0,2"/>
                     <TextBlock Text="Synchronize RGB lighting across all your devices" 
                                FontSize="13" 
                                Foreground="#AAAAAA"
                                FontWeight="Medium"/>
                 </StackPanel>
                 
-                <ToggleButton Grid.Column="2" 
-                              ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
-                              Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              MinWidth="140"
-                              Height="40"
-                              FontWeight="SemiBold"
-                              HorizontalContentAlignment="Center"
-                              VerticalContentAlignment="Center"
-                              VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <ToggleSwitch ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
+                                  IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                  OnContent=""
+                                  OffContent=""
+                                  HorizontalAlignment="Right"
+                                  Margin="0"/>
+                    <TextBlock Text="{Binding OpenRgbEnabledSetting.ToggleButtonContent}" 
+                               FontSize="11" 
+                               FontWeight="SemiBold"
+                               Foreground="#8B8FB5"
+                               HorizontalAlignment="Right"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
             </Grid>
         </Border>
         
@@ -70,6 +83,7 @@
             <!-- Connection Settings Card -->
             <Border Grid.Column="0" x:Name="ConnectionCard"
                     Background="#101224" 
+                    BorderBrush="#222643"
                     BorderThickness="1" 
                     CornerRadius="12"
                     Padding="20"
@@ -171,19 +185,24 @@
                     </StackPanel>
 
                     <!-- Strobe Behavior -->
-                    <StackPanel Grid.Row="3" x:Name="StrobeModePanel" Margin="0,0,10,8" VerticalAlignment="Bottom">
+                    <StackPanel Grid.Row="3" x:Name="StrobeModePanel" Margin="0,0,0,18" VerticalAlignment="Bottom">
                         <TextBlock x:Name="StrobeModeLabel" Text="Strobe behavior" FontSize="11" FontWeight="SemiBold" Foreground="#AAAAAA" Margin="0,0,0,6" />
-                        <StackPanel x:Name="StrobeModeRadioGroup" Orientation="Horizontal">
-                            <RadioButton Content="Strobe command"
+                        <Grid x:Name="StrobeModeRadioGroup" ColumnDefinitions="*,*" Margin="0,2,0,0">
+                            <RadioButton Grid.Column="0"
+                                         Content="Strobe command"
                                          GroupName="OpenRgbStrobeMode"
                                          IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
-                                         FontSize="11"
-                                         Margin="0,0,10,0" />
-                            <RadioButton Content="Manual flash strobe"
+                                         Classes="SegmentedToggle"
+                                         HorizontalAlignment="Stretch"
+                                         Margin="0,0,3,0"/>
+                            <RadioButton Grid.Column="1"
+                                         Content="Manual flash"
                                          GroupName="OpenRgbStrobeMode"
                                          IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
-                                         FontSize="11"/>
-                        </StackPanel>
+                                         Classes="SegmentedToggle"
+                                         HorizontalAlignment="Stretch"
+                                         Margin="3,0,0,0"/>
+                        </Grid>
                     </StackPanel>
                     
                     <!-- Status -->
@@ -211,6 +230,7 @@
             <!-- Devices Panel -->
             <Border Grid.Column="1" x:Name="DevicesCard"
                     Background="#101224" 
+                    BorderBrush="#222643"
                     BorderThickness="1" 
                     CornerRadius="12"
                     Padding="20">

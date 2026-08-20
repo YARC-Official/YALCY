@@ -13,9 +13,11 @@
         Width="1700" Height="800"
         MinWidth="700" MinHeight="670"
         WindowStartupLocation="CenterOwner"
+        Background="#070814"
         mc:Ignorable="d">
 
     <Window.Styles>
+        <!-- TabControl Root Styling -->
         <Style Selector="TabControl">
             <Setter Property="Template">
                 <ControlTemplate>
@@ -26,69 +28,93 @@
                             HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
                             VerticalAlignment="{TemplateBinding VerticalAlignment}">
                         <DockPanel>
-                            <ScrollViewer DockPanel.Dock="{TemplateBinding TabStripPlacement}" 
-                                          HorizontalAlignment="Stretch"
-                                          HorizontalScrollBarVisibility="Auto">
-                                <ItemsPresenter Name="PART_ItemsPresenter"
-                                              ItemsPanel="{TemplateBinding ItemsPanel}" />
-                            </ScrollViewer>
+                            <!-- Tab Bar Header Strip -->
+                            <Border DockPanel.Dock="{TemplateBinding TabStripPlacement}"
+                                    Background="#0B0D1B"
+                                    BorderBrush="#1E2342"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="14,10,14,10">
+                                <ScrollViewer HorizontalAlignment="Stretch"
+                                              HorizontalScrollBarVisibility="Auto">
+                                    <ItemsPresenter Name="PART_ItemsPresenter"
+                                                    ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                </ScrollViewer>
+                            </Border>
+
+                            <!-- Tab Content Host -->
                             <ContentPresenter Name="PART_SelectedContentHost"
-                                            Margin="{TemplateBinding Padding}"
-                                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
-                                            Content="{TemplateBinding SelectedContent}"
-                                            ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
+                                              Margin="{TemplateBinding Padding}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Content="{TemplateBinding SelectedContent}"
+                                              ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
                         </DockPanel>
                     </Border>
                 </ControlTemplate>
             </Setter>
             <Setter Property="ItemsPanel">
                 <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6"/>
                 </ItemsPanelTemplate>
             </Setter>
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
-        
-        <Style Selector="TabControl">
-            <Setter Property="BorderBrush" Value="Transparent" /> <!-- Remove the border brush -->
-            <Setter Property="BorderThickness" Value="0" /> <!-- Set the border thickness to 0 -->
-        </Style>
+
         <!-- Style for TabItem default -->
         <Style Selector="TabItem">
-            <Setter Property="Foreground" Value="#61688B" />
+            <Setter Property="Foreground" Value="#8B8FB5" />
             <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
-            <Setter Property="FontWeight" Value="DemiBold" />
-            <Setter Property="Height" Value="65" />
-            <Setter Property="Background" Value="#030306" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
         </Style>
+
         <!-- Style for TabItem when hovered -->
-        <Style Selector="TabItem:hover">
-            <Setter Property="Foreground" Value="#A7ABC1" />
+        <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="#171A30" />
+        </Style>
+        <Style Selector="TabItem:pointerover">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="#171A30" />
+        </Style>
+
+        <!-- Remove default pipe indicator -->
+        <Style Selector="TabItem /template/ Border#PART_SelectedPipe">
+            <Setter Property="IsVisible" Value="False" />
         </Style>
         <Style Selector="TabItem:selected /template/ Border#PART_SelectedPipe">
             <Setter Property="IsVisible" Value="False" />
         </Style>
-        <!-- Separate style for when TabItem is selected -->
+
+        <!-- Style for when TabItem is selected -->
         <Style Selector="TabItem:selected">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                        <GradientStop Color="#45D8FE" Offset="0.0" />
-                        <GradientStop Color="#0045D8FE" Offset="1.0" />
-                    </LinearGradientBrush>
-                </Setter.Value>
-            </Setter>
-            <!-- Border at the top -->
-            <Setter Property="BorderThickness" Value="0,3,0,0" /> <!-- 3px border at the top -->
-            <Setter Property="BorderBrush" Value="#45D8FE" /> <!-- Border color -->
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Background" Value="#1F2339" />
+            <Setter Property="BorderBrush" Value="#4A4E7A" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="TabItem:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="#1F2339" />
+            <Setter Property="BorderBrush" Value="#4A4E7A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
     </Window.Styles>
     
     <Grid RowDefinitions="*,Auto">
         <!-- Main content area -->
-        <TabControl Grid.Row="0" Margin="5" TabStripPlacement="Top">
+        <TabControl Grid.Row="0" Margin="0" TabStripPlacement="Top">
             <TabItem Header="YARG">
                 <tabs:YargTabView />
             </TabItem>
@@ -113,7 +139,7 @@
             <TabItem Header="Home Assistant">
                 <tabs:HomeAssistantTabView />
             </TabItem>
-            <TabItem Header="openRGB">
+            <TabItem Header="OpenRGB">
                 <tabs:OpenRgbTabView />
             </TabItem>
             <TabItem Header="Settings">

@@ -27,11 +27,85 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+        <!-- Segmented Toggle Buttons Style -->
+        <Style Selector="RadioButton.SegmentedToggle">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#8B8FB5"/>
+            <Setter Property="Background" Value="#121424"/>
+            <Setter Property="BorderBrush" Value="#3F4363"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="8,4">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.SegmentedToggle:pointerover">
+            <Setter Property="Background" Value="#1A1D33"/>
+            <Setter Property="BorderBrush" Value="#6366F1"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="RadioButton.SegmentedToggle:checked">
+            <Setter Property="Background" Value="#6366F1"/>
+            <Setter Property="BorderBrush" Value="#818CF8"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <!-- Dark styling for NumericUpDown / ButtonSpinner disabled state -->
+        <Style Selector="RepeatButton:disabled">
+            <Setter Property="Background" Value="#06070E" />
+        </Style>
+        <Style Selector="RepeatButton:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="#06070E" />
+            <Setter Property="Foreground" Value="#1F2339" />
+        </Style>
+        <Style Selector="ButtonSpinner /template/ RepeatButton:disabled">
+            <Setter Property="Background" Value="#06070E" />
+        </Style>
+        <Style Selector="ButtonSpinner /template/ RepeatButton:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="#06070E" />
+            <Setter Property="Foreground" Value="#1F2339" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton:disabled">
+            <Setter Property="Background" Value="#06070E" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ ButtonSpinner /template/ RepeatButton:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="#06070E" />
+            <Setter Property="Foreground" Value="#1F2339" />
+        </Style>
     </Application.Styles>
 
     <Application.Resources>
-        <viewModels:IntToBoolConverter x:Key="IntToBoolConverter" />
-        <FontFamily x:Key="InterFont">avares://YALCY/Resources/Fonts#Inter</FontFamily>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://YALCY/Resources/Icons/Icons.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <viewModels:IntToBoolConverter x:Key="IntToBoolConverter" />
+            <FontFamily x:Key="InterFont">avares://YALCY/Resources/Fonts#Inter</FontFamily>
+
+            <!-- Disabled ButtonSpinner Brushes -->
+            <SolidColorBrush x:Key="RepeatButtonBackgroundDisabled" Color="#06070E" />
+            <SolidColorBrush x:Key="ButtonSpinnerButtonBackgroundDisabled" Color="#06070E" />
+            <SolidColorBrush x:Key="RepeatButtonForegroundDisabled" Color="#1F2339" />
+            <SolidColorBrush x:Key="ButtonSpinnerButtonForegroundDisabled" Color="#1F2339" />
+        </ResourceDictionary>
     </Application.Resources>
 
 </Application>

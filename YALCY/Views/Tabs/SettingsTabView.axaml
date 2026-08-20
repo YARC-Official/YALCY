@@ -6,68 +6,797 @@
              x:Class="YALCY.Views.Tabs.SettingsTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
-    <ScrollViewer>
-        <StackPanel Margin="10" Spacing="12">
-            <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" />
-            <TextBlock Text="Quick toggles for integrations. Detailed options are in their tabs."
-                       TextWrapping="Wrap" />
 
-            <TextBlock Text="Integrations" FontWeight="SemiBold" />
-            <UniformGrid Columns="2">
-                <ToggleButton ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}"
-                              Content="{Binding UdpEnableSetting.ToggleButtonContent}"
-                              IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-                <ToggleButton ToolTip.Tip="{Binding StageKitEnabledSetting.ToolTip}"
-                              Content="{Binding StageKitEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding StageKitEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-                <ToggleButton ToolTip.Tip="{Binding DmxEnabledSetting.ToolTip}"
-                              Content="{Binding DmxEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding DmxEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-                <ToggleButton ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
-                              Content="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-                <ToggleButton ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
-                              Content="{Binding SerialEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-                <ToggleButton ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
-                              Content="{Binding HueEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-                <ToggleButton ToolTip.Tip="{Binding LifxEnabledSetting.ToolTip}"
-                              Content="{Binding LifxEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding LifxEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-                <ToggleButton ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
-                              Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              Margin="5" />
-            </UniformGrid>
+    <Grid>
+        <!-- Main Content -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="20,16,20,20">
+                
+                <!-- Modern Hero Header -->
+                <Border Grid.Row="0" 
+                        Background="#101224" 
+                        BorderBrush="#252B48" 
+                        BorderThickness="2" 
+                        CornerRadius="12" 
+                        Padding="28,22" 
+                        Margin="0,0,0,16">
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <Border Grid.Column="0"
+                                Background="#6366F1"
+                                Width="48"
+                                Height="48"
+                                CornerRadius="12"
+                                Margin="0,0,18,0">
+                            <PathIcon Data="{StaticResource IconSettings}" 
+                                      Width="24" 
+                                      Height="24" 
+                                      Foreground="#FFFFFF" 
+                                      HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Application Settings" 
+                                       FontSize="20" 
+                                       FontWeight="Black" 
+                                       Foreground="#FFFFFF"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock Text="Manage global application options and integration status" 
+                                       FontSize="13" 
+                                       Foreground="#AAAAAA"
+                                       FontWeight="Medium"/>
+                        </StackPanel>
 
-            <TextBlock Text="DMX" FontWeight="SemiBold" />
-            <Button Content="Reset DMX channels to defaults"
-                    Click="OnResetDmxChannelsClicked"
-                    ToolTip.Tip="Restore all DMX channel mappings to their original defaults."
-                    HorizontalAlignment="Left"
-                    Margin="5" />
+                        <Border Grid.Column="2" 
+                                Background="#1F2339"
+                                BorderBrush="#3F4363"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,6"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconSettings}" 
+                                          Width="12" 
+                                          Height="12" 
+                                          Foreground="#8B8FB5" 
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Text="System Options" FontSize="11" FontWeight="Bold" Foreground="#8B8FB5" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
 
-            <TextBlock Text="Window" FontWeight="SemiBold" />
-            <StackPanel Spacing="4">
-                <ToggleButton Content="Minimize to tray when closing"
-                              IsChecked="{Binding CloseToTrayOnClose, Mode=TwoWay}"
-                              ToolTip.Tip="When enabled, clicking the window close button hides YALCY in the tray."
-                              Margin="5" />
-                <TextBlock Text="When disabled, the close button exits YALCY."
-                           TextWrapping="Wrap"
-                           Opacity="0.75"
-                           Margin="5,0,5,0" />
-            </StackPanel>
+                <!-- Integrations Quick Toggles Card -->
+                <Border Grid.Row="1" 
+                        Background="#101224" 
+                        BorderBrush="#222643" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="20" 
+                        Margin="0,0,0,16">
+                    <StackPanel Spacing="16">
+                        <!-- Card Header -->
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Integrations Quick Toggles" 
+                                       FontSize="15" 
+                                       FontWeight="Bold" 
+                                       Foreground="#FFFFFF"/>
+                            <TextBlock Text="Enable or disable YALCY integrations. Detailed configuration options are in their dedicated tabs." 
+                                       FontSize="11" 
+                                       Foreground="#888888"/>
+                        </StackPanel>
 
-            <TextBlock Text="Settings are saved automatically when YALCY closes." TextWrapping="Wrap" />
-        </StackPanel>
-    </ScrollViewer>
+                        <!-- Responsive Grid of Integration Cards -->
+                        <UniformGrid x:Name="IntegrationsGrid" Columns="3">
+                            <!-- UDP Intake -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconUdp}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="UDP Intake" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="UDP light packets" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding UdpEnableSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}"
+                                                  IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- StageKit -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconStageKit}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="StageKit" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Rock Band controller" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding StageKitEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding StageKitEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding StageKitEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- DMX / sACN -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconDmx}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="DMX / sACN" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="OpenDMX &amp; sACN" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding DmxEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding DmxEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding DmxEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- RB3E -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconRb3e}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="RB3E" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Rock Band 3 Deluxe" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Rb3eEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Serial Output -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconSerial}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="Serial Output" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="USB COM port lighting" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding SerialEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Philips Hue -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconHue}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="Philips Hue" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Hue Bridge Entertainment" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding HueEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- LIFX -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconLifx}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="LIFX" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="LIFX LAN multizone" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding LifxEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding LifxEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding LifxEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- OpenRGB -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconOpenRgb}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="OpenRGB" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="OpenRGB SDK server" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding OpenRgbEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Home Assistant -->
+                            <Border Background="#1F2339"
+                                    BorderBrush="#3F4363"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="#252B48"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconHomeAssistant}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="#FFFFFF" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="Home Assistant" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#FFFFFF"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="HA REST API &amp; lights" 
+                                                   FontSize="10" 
+                                                   Foreground="#8B8FB5"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding HomeAssistantEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#AAAAAA"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding HomeAssistantEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding HomeAssistantEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Application & System Options Card -->
+                <Border Grid.Row="2" 
+                        Background="#101224" 
+                        BorderBrush="#222643" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="20" 
+                        Margin="0,0,0,16">
+                    <StackPanel Spacing="16">
+                        <!-- Card Header -->
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Application &amp; System" 
+                                       FontSize="15" 
+                                       FontWeight="Bold" 
+                                       Foreground="#FFFFFF"/>
+                            <TextBlock Text="Configure main application behavior and system tray interactions" 
+                                       FontSize="11" 
+                                       Foreground="#888888"/>
+                        </StackPanel>
+
+                        <!-- Option Tile -->
+                        <Border Background="#1F2339"
+                                BorderBrush="#3F4363"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="16,14">
+                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                <Border Grid.Column="0"
+                                        Background="#252B48"
+                                        Width="40"
+                                        Height="40"
+                                        CornerRadius="10"
+                                        Margin="0,0,14,0"
+                                        VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource IconPin}" 
+                                              Width="18" 
+                                              Height="18" 
+                                              Foreground="#FFFFFF" 
+                                              HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <TextBlock Text="Minimize to tray when closing" 
+                                               FontSize="14" 
+                                               FontWeight="Bold" 
+                                               Foreground="#FFFFFF"/>
+                                    <TextBlock Text="When enabled, clicking the window close button hides YALCY in the system tray. When disabled, the close button exits YALCY." 
+                                               FontSize="11" 
+                                               Foreground="#AAAAAA"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="2" 
+                                              IsChecked="{Binding CloseToTrayOnClose, Mode=TwoWay}"
+                                              ToolTip.Tip="When enabled, clicking the window close button hides YALCY in the tray."
+                                              OnContent=""
+                                              OffContent=""
+                                              VerticalAlignment="Center"
+                                              Margin="0"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- DMX Management Card -->
+                <Border Grid.Row="3" 
+                        Background="#101224" 
+                        BorderBrush="#222643" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="20" 
+                        Margin="0,0,0,16">
+                    <StackPanel Spacing="16">
+                        <!-- Card Header -->
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="DMX Management" 
+                                       FontSize="15" 
+                                       FontWeight="Bold" 
+                                       Foreground="#FFFFFF"/>
+                            <TextBlock Text="Reset channel mappings and default configurations" 
+                                       FontSize="11" 
+                                       Foreground="#888888"/>
+                        </StackPanel>
+
+                        <!-- Action Tile -->
+                        <Border Background="#1F2339"
+                                BorderBrush="#3F4363"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="16,14">
+                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                <Border Grid.Column="0"
+                                        Background="#252B48"
+                                        Width="40"
+                                        Height="40"
+                                        CornerRadius="10"
+                                        Margin="0,0,14,0"
+                                        VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource IconRefresh}" 
+                                              Width="18" 
+                                              Height="18" 
+                                              Foreground="#FFFFFF" 
+                                              HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <TextBlock Text="Reset DMX Channels" 
+                                               FontSize="14" 
+                                               FontWeight="Bold" 
+                                               Foreground="#FFFFFF"/>
+                                    <TextBlock Text="Restore all DMX channel mappings and fixture assignments to their factory defaults." 
+                                               FontSize="11" 
+                                               Foreground="#AAAAAA"
+                                               TextWrapping="Wrap"/>
+                                    <!-- Feedback Banner -->
+                                    <Border x:Name="DmxResetFeedbackBanner"
+                                            IsVisible="False"
+                                            Background="#064E3B"
+                                            BorderBrush="#10B981"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="10,6"
+                                            Margin="0,6,0,0"
+                                            HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <PathIcon Data="{StaticResource IconCheck}" 
+                                                      Width="12" 
+                                                      Height="12" 
+                                                      Foreground="#34D399" 
+                                                      VerticalAlignment="Center"/>
+                                            <TextBlock Text="DMX channels reset to defaults successfully!" 
+                                                       FontSize="11" 
+                                                       FontWeight="SemiBold" 
+                                                       Foreground="#34D399" 
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                                <Button Grid.Column="2" 
+                                        Click="OnResetDmxChannelsClicked"
+                                        ToolTip.Tip="Restore all DMX channel mappings to their original defaults."
+                                        Height="36"
+                                        Padding="16,0"
+                                        FontWeight="SemiBold"
+                                        CornerRadius="8"
+                                        Background="#1F2339"
+                                        BorderBrush="#3F4363"
+                                        BorderThickness="1"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconRefresh}" 
+                                                  Width="14" 
+                                                  Height="14" 
+                                                  Foreground="#FFFFFF" 
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="Reset DMX Channels" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Auto-Save Persistence Footer Banner -->
+                <Border Grid.Row="4" 
+                        Background="#090b13" 
+                        BorderBrush="#222643" 
+                        BorderThickness="1" 
+                        CornerRadius="8" 
+                        Padding="14,10" 
+                        ToolTip.Tip="Settings persistence">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconInfo}" 
+                                  Width="14" 
+                                  Height="14" 
+                                  Foreground="#8B8FB5" 
+                                  VerticalAlignment="Center"/>
+                        <TextBlock Text="Settings are saved automatically when YALCY closes." 
+                                   FontSize="11" 
+                                   Foreground="#BBBBBB" 
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- In-App Modal Overlay -->
+        <Border x:Name="ResetConfirmationOverlay"
+                IsVisible="False"
+                Background="#B0000000"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+            <Border Background="#101224"
+                    BorderBrush="#252B48"
+                    BorderThickness="2"
+                    CornerRadius="14"
+                    Padding="26,22"
+                    Width="460"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel Spacing="20">
+                    <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                        <Border Grid.Column="0"
+                                Background="#311920"
+                                BorderBrush="#7F1D1D"
+                                BorderThickness="1"
+                                Width="46"
+                                Height="46"
+                                CornerRadius="12"
+                                Margin="0,0,16,0"
+                                VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconWarning}" 
+                                      Width="22" 
+                                      Height="22" 
+                                      Foreground="#F87171" 
+                                      HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Reset DMX Channels to Defaults?" 
+                                       FontSize="16" 
+                                       FontWeight="Bold" 
+                                       Foreground="#FFFFFF"/>
+                            <TextBlock Text="This action will restore all DMX channel mappings to factory defaults." 
+                                       FontSize="11" 
+                                       Foreground="#AAAAAA"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                        <Button Grid.Column="1"
+                                Content="Cancel" 
+                                Click="OnCancelResetDmxClicked"
+                                Height="36"
+                                Padding="20,0"
+                                CornerRadius="8"
+                                Background="#1F2339"
+                                BorderBrush="#3F4363"
+                                BorderThickness="1"
+                                Foreground="#FFFFFF"
+                                FontWeight="SemiBold"
+                                FontSize="13"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                VerticalAlignment="Center"
+                                Margin="0,0,10,0"/>
+                        <Button Grid.Column="2"
+                                Content="Yes, Reset DMX" 
+                                Click="OnConfirmResetDmxClicked"
+                                Height="36"
+                                Padding="20,0"
+                                CornerRadius="8"
+                                Background="#DC2626"
+                                Foreground="#FFFFFF"
+                                FontWeight="Bold"
+                                FontSize="13"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
 </UserControl>

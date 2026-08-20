@@ -104,6 +104,7 @@ public partial class OpenRgbTabView : UserControl
             StrobeModePanel.Margin = new Thickness(0, 10, 0, 0);
             StrobeModePanel.VerticalAlignment = VerticalAlignment.Center;
             StrobeModePanel.HorizontalAlignment = HorizontalAlignment.Left;
+            StrobeModePanel.Width = 260;
             Grid.SetRow(StrobeModePanel, 1);
             Grid.SetColumn(StrobeModePanel, 0);
             Grid.SetColumnSpan(StrobeModePanel, 1);
@@ -217,7 +218,8 @@ public partial class OpenRgbTabView : UserControl
             StrobeModeLabel.IsVisible = true;
             StrobeModePanel.IsVisible = true;
             StrobeModePanel.Margin = new Thickness(0, 0, 0, 18);
-            StrobeModePanel.HorizontalAlignment = HorizontalAlignment.Left;
+            StrobeModePanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            StrobeModePanel.Width = double.NaN;
 
             StatusPanel.Margin = new Thickness(0);
             StatusPanel.VerticalAlignment = VerticalAlignment.Stretch;
