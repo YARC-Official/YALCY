@@ -1,0 +1,4 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StreamGeometry x:Key="IconCaseSensitive">M2 16 L6.039 6.31 A0.5 0.5 0 0 1 6.962 6.31 L11 16 M3.304 13 H9.696 M22 9 V16 M15 12.5 A3.5 3.5 0 1 0 22 12.5 A3.5 3.5 0 1 0 15 12.5</StreamGeometry>
+</ResourceDictionary>

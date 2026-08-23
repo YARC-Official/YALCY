@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -38,6 +38,7 @@ public class SettingsContainer
     public int? OpenRgbStrobeMode { get; set; }
     public int? HomeAssistantStrobeMode { get; set; }
     public bool CloseToTrayOnClose { get; set; }
+    public string? ThemeVariant { get; set; }
 }
 
 public sealed class LifxZoneAssignmentSetting
@@ -49,6 +50,10 @@ public sealed class LifxZoneAssignmentSetting
 
 internal static class SettingsManager
 {
+    public const string SystemThemeVariant = "System";
+    public const string DarkThemeVariant = "Dark";
+    public const string LightThemeVariant = "Light";
+
     public const ushort DefaultUdpListenPort = 36107;
     public const int DefaultYargPacketTimeoutSeconds = 5;
 
@@ -86,7 +91,20 @@ internal static class SettingsManager
         OpenRgbStrobeMode = StrobeOutputModes.ManualFlash,
         HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand,
         CloseToTrayOnClose = false,
+        ThemeVariant = SystemThemeVariant,
     };
+
+    public static string ThemeVariant { get; set; } = SystemThemeVariant;
+
+    public static string NormalizeThemeVariant(string? themeVariant)
+    {
+        return themeVariant?.Trim().ToLowerInvariant() switch
+        {
+            "dark" => DarkThemeVariant,
+            "light" => LightThemeVariant,
+            _ => SystemThemeVariant
+        };
+    }
 
     public static bool UdpEnableSettingIsEnabled { get; set; }
     public static bool DmxEnabledSettingIsEnabled { get; set; }
@@ -173,8 +191,10 @@ internal static class SettingsManager
         VenueSizeSettingValue = 74;
         PauseStateSettingValue = 75;
         SongSectionSettingValue = 76;
+        BroadcastUniverseSettingValue = 1;
 
         MasterDimmerSettingsChannel = new[] { 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106 };
+        MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
         FogChannelsChannel = new[] { 6, 13, 20, 27, 34, 41, 48, 55 };
         StrobeChannelsChannel = new[] { 7, 14, 21, 28, 35, 42, 49, 56 };
         RedChannelsChannel = new[] { 2, 9, 16, 23, 30, 37, 44, 51 };
@@ -258,6 +278,7 @@ internal static class SettingsManager
         settings.OpenRgbStrobeMode = mainViewModel.OpenRgbStrobeMode;
         settings.HomeAssistantStrobeMode = mainViewModel.HomeAssistantStrobeMode;
         settings.CloseToTrayOnClose = mainViewModel.CloseToTrayOnClose;
+        settings.ThemeVariant = NormalizeThemeVariant(ThemeVariant);
 
         LifxZoneAssignments = settings.LifxZoneAssignments
             .Select(assignment => new LifxZoneAssignmentSetting
@@ -504,6 +525,7 @@ internal static class SettingsManager
             HomeAssistantStrobeMode =
                 StrobeOutputModes.Normalize(container.HomeAssistantStrobeMode ?? StrobeOutputModes.StrobeCommand);
             CloseToTrayOnClose = container.CloseToTrayOnClose;
+            ThemeVariant = NormalizeThemeVariant(container.ThemeVariant);
         }
         else // File is either garbage or doesn't exist. Load defaults.
         {
@@ -549,6 +571,7 @@ internal static class SettingsManager
             OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
             HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
             CloseToTrayOnClose = false;
+            ThemeVariant = SystemThemeVariant;
         }
     }
 

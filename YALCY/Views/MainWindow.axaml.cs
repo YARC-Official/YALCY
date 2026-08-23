@@ -11,9 +11,18 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        
+
         // Close all detached windows when main window is closing
         this.Closing += OnMainWindowClosing;
+
+        // Keep ViewModel WindowWidth synchronized for responsive layouts
+        this.SizeChanged += (sender, e) =>
+        {
+            if (DataContext is MainWindowViewModel viewModel && e.NewSize.Width > 0)
+            {
+                viewModel.WindowWidth = e.NewSize.Width;
+            }
+        };
     }
 
     public void RequestExit()
@@ -27,7 +36,7 @@ public partial class MainWindow : Window
         YargTabView.CloseAllDetachedWindows();
         Hide();
     }
-    
+
     private void OnMainWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         if (_allowClose)

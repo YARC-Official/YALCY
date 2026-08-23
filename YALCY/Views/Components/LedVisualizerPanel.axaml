@@ -5,18 +5,54 @@
              xmlns:vm="clr-namespace:YALCY.ViewModels"
              x:Class="YALCY.Views.Components.LedVisualizerPanel"
              mc:Ignorable="d">
-    
-    <!-- LED Visualization Panel que ocupa todo o espaço disponível -->
-    <Viewbox Stretch="Uniform">
-        <Canvas x:Name="CanvasContainer" Width="320" Height="320">
-            <Image x:Name="CenteredImage" Source="/Resources/StageKit/LedBackground.png" Stretch="Uniform" />
 
-            <!-- Adjust the position and size of the LedDisplay elements -->
-            <vm:LedDisplay Color="0" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
-            <vm:LedDisplay Color="1" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
-            <vm:LedDisplay Color="2" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
-            <vm:LedDisplay Color="3" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="46" Canvas.Left="46" />
-        </Canvas>
+    <Viewbox Stretch="Uniform">
+        <!-- Circular Stage Kit Stage Pod -->
+        <Border Width="300" Height="300"
+                CornerRadius="150"
+                Background="{DynamicResource AppInputBackground}"
+                BorderBrush="{DynamicResource AppBorderStrong}"
+                BorderThickness="2"
+                ClipToBounds="True">
+            <Canvas Width="300" Height="300">
+                <!-- Concentric Ring Track Guides (Subtle & Sleek) -->
+                <!-- Outer Red/Yellow Ring Track (Radius 128, Diameter 256) -->
+                <Ellipse Width="256" Height="256"
+                         Stroke="{DynamicResource AppBorderStrong}"
+                         StrokeThickness="1"
+                         StrokeDashArray="3,3"
+                         Canvas.Left="22" Canvas.Top="22"/>
+
+                <!-- Mid Green Ring Track (Radius 95, Diameter 190) -->
+                <Ellipse Width="190" Height="190"
+                         Stroke="{DynamicResource AppBorderStrong}"
+                         StrokeThickness="1"
+                         StrokeDashArray="3,3"
+                         Canvas.Left="55" Canvas.Top="55"/>
+
+                <!-- Inner Blue Diamond (Losango) Outer Track -->
+                <Polygon Points="150,82 218,150 150,218 82,150"
+                          Stroke="{DynamicResource AppBorderStrong}"
+                         StrokeThickness="1"
+                         StrokeDashArray="3,3"/>
+
+                <!-- Center Stage Emblem / Target -->
+                <Ellipse Width="36" Height="36"
+                         Fill="{DynamicResource AppPanelBackground}"
+                         Stroke="{DynamicResource AppBorder}"
+                         StrokeThickness="1"
+                         Canvas.Left="132" Canvas.Top="132"/>
+                
+                <Ellipse Width="8" Height="8"
+                         Fill="{DynamicResource AppBorderStrong}"
+                         Canvas.Left="146" Canvas.Top="146"/>
+
+                <!-- LED Displays: Coordinate (100, 100) centered at (150, 150) by placing at Canvas.Top="50" Canvas.Left="50" -->
+                <vm:LedDisplay Color="0" Canvas.Top="50" Canvas.Left="50" />
+                <vm:LedDisplay Color="1" Canvas.Top="50" Canvas.Left="50" />
+                <vm:LedDisplay Color="2" Canvas.Top="50" Canvas.Left="50" />
+                <vm:LedDisplay Color="3" Canvas.Top="50" Canvas.Left="50" />
+            </Canvas>
+        </Border>
     </Viewbox>
-    
 </UserControl>

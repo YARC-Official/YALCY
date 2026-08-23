@@ -3,49 +3,530 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:udp="clr-namespace:YALCY.Udp"
              xmlns:components="clr-namespace:YALCY.Views.Components"
              x:Class="YALCY.Views.Tabs.YargTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
-    <Grid x:Name="MainGrid" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,*">
-        <!-- Toggle Button -->
-        <ToggleButton ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}" Content="{Binding UdpEnableSetting.ToggleButtonContent}" IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}" Grid.Row="0" Grid.Column="0" Margin="5" Grid.ColumnSpan="2" />
 
-        <!-- Detach Visualizer Button -->
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Margin="5" HorizontalAlignment="Right" Spacing="10">
-            <ToggleButton x:Name="StrobeVisualizerButton" Content="Strobe Visualizer" Click="OnStrobeVisualizerClicked" />
-            <ToggleButton x:Name="DetachVisualizerButton" Content="Detach LED Visualizer" Click="OnDetachVisualizerClicked" />
-        </StackPanel> 
+    <UserControl.Styles>
+        <Style Selector="Border.authoredBadge">
+            <Setter Property="Background" Value="{DynamicResource AppCardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Opacity" Value="0.45"/>
+        </Style>
+        <Style Selector="Border.authoredBadge.isAuthored">
+            <Setter Property="Background" Value="{DynamicResource AppAccentBadgeBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBadgeBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Opacity" Value="1.0"/>
+        </Style>
 
-        <!-- Port Configuration -->
-        <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="0" Margin="5">
-            <TextBlock Text="Listening Port:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding UdpListenPort, Mode=TwoWay}" MinWidth="80" />
-            <TextBlock Text="Fog duration:" VerticalAlignment="Center" Margin="24,0,10,0"/>
-            <NumericUpDown Minimum="0" Maximum="100" Increment="1"
-                           Value="{Binding FogDurationPercent, Mode=TwoWay}" MinWidth="80" />
-            <TextBlock Text="% of YARG timer" VerticalAlignment="Center" Margin="8,0,0,0"/>
-            <Button Content="Reset to default port" Click="OnResetUdpListenPortClicked" Margin="24,0,0,0" />
-        </StackPanel>
+        <Style Selector="Ellipse.badgeDot">
+            <Setter Property="Fill" Value="{DynamicResource AppTextMuted}"/>
+        </Style>
+        <Style Selector="Ellipse.badgeDot.isAuthored">
+            <Setter Property="Fill" Value="{DynamicResource AppAccentBadgeForeground}"/>
+        </Style>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="0" Margin="5">
-            <TextBlock Text="YARG packet timeout:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <NumericUpDown Minimum="1" Maximum="30" Increment="1"
-                           Value="{Binding YargPacketTimeoutSeconds, Mode=TwoWay}" MinWidth="80" />
-            <TextBlock Text="seconds" VerticalAlignment="Center" Margin="8,0,0,0"/>
-        </StackPanel>
+        <Style Selector="TextBlock.badgeText">
+            <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}"/>
+        </Style>
+        <Style Selector="TextBlock.badgeText.isAuthored">
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBadgeForeground}"/>
+        </Style>
+    </UserControl.Styles>
 
-        <!-- DataGrid with internal scroll -->
-        <DataGrid x:Name="MainDataGrid" Grid.Row="3" Grid.Column="0" Margin="5" BorderThickness="1" BorderBrush="Gray" GridLinesVisibility="All" CanUserResizeColumns="False" CanUserSortColumns="False" ItemsSource="{Binding CombinedCollection}" AutoGenerateColumns="False" IsReadOnly="True">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
-                <DataGridTextColumn Header="Byte" Binding="{Binding Index}" Width="*"/>
-                <DataGridTextColumn Header="Current Value" Binding="{Binding Value}" Width="*"/>
-                <DataGridTextColumn Header="Value Description" Binding="{Binding ValueDescription}" Width="*"/>
-            </DataGrid.Columns>
-        </DataGrid>
+    <Grid Margin="20,16,20,20" RowDefinitions="Auto,Auto,*">
+        <components:TabHeroHeader Grid.Row="0"
+                                  Margin="0,0,0,16"
+                                  HeaderTitle="YARG UDP Receiver"
+                                  Subtitle="Real-time telemetry packet listener and LED stage lighting visualizer"
+                                  IconData="{StaticResource IconUdp}">
+            <components:TabHeroHeader.BadgeContent>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="180">
+                    <ToggleSwitch ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}"
+                                  IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}"
+                                  OnContent=""
+                                  OffContent=""
+                                  HorizontalAlignment="Right"
+                                  Margin="0" />
+                    <TextBlock Text="{Binding UdpEnableSetting.ToggleButtonContent}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppTextSecondary}"
+                               TextTrimming="CharacterEllipsis"
+                               HorizontalAlignment="Right"
+                               Margin="0,2,0,0" />
+                </StackPanel>
+            </components:TabHeroHeader.BadgeContent>
+        </components:TabHeroHeader>
 
-        <!-- LED Visualization Panel (will be dynamically managed) -->
-        <components:LedVisualizerPanel x:Name="LedVisualizer" Grid.Row="3" Margin="20" Grid.Column="1" Width="320" Height="320" />
-    </Grid>
+            <!-- Configuration & Controls Card -->
+            <Border Grid.Row="1"
+                    Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}" 
+                    BorderThickness="1" 
+                    CornerRadius="12" 
+                    Padding="16,12"
+                    Margin="0,0,0,12">
+                <StackPanel Spacing="14">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="UDP Settings &amp; Visualizers" 
+                                   FontSize="15" 
+                                   FontWeight="Bold" 
+                                   Foreground="{DynamicResource AppTextPrimary}"/>
+                        <TextBlock Text="Configure inbound telemetry listening port, packet timeout, fog timing, and floating visualizers" 
+                                   FontSize="11" 
+                                   Foreground="{DynamicResource AppTextMuted}"/>
+                    </StackPanel>
+
+                    <UniformGrid x:Name="ConfigGrid" Columns="{Binding GridColumns4, FallbackValue=4}">
+                        <!-- Listening Port Tile -->
+                         <Border Background="{DynamicResource AppCardBackground}"
+                                 BorderBrush="{DynamicResource AppBorderStrong}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,12"
+                                Margin="4">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" 
+                                               Text="Listening Port" 
+                                               FontSize="12" 
+                                               FontWeight="Bold" 
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
+                                    <Border Grid.Column="1" 
+                                            Background="{DynamicResource AppAccentBadgeBackground}" 
+                                            BorderBrush="{DynamicResource AppAccentBadgeBorder}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="4" 
+                                            Padding="6,1">
+                                        <TextBlock Text="Inbound" 
+                                                   FontSize="9" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="{DynamicResource AppAccentBadgeForeground}"/>
+                                    </Border>
+                                </Grid>
+                                <NumericUpDown Minimum="1" Maximum="65535" 
+                                               Value="{Binding UdpListenPort, Mode=TwoWay}"
+                                               FormatString="F0"
+                                               HorizontalContentAlignment="Center"
+                                               VerticalContentAlignment="Center"
+                                                Background="{DynamicResource AppInputBackground}"
+                                                BorderBrush="{DynamicResource AppBorder}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Fog Duration Tile -->
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,12"
+                                Margin="4">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Fog Duration (% timer)" 
+                                           FontSize="12" 
+                                           FontWeight="Bold" 
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <NumericUpDown Minimum="0" Maximum="100" Increment="1"
+                                               Value="{Binding FogDurationPercent, Mode=TwoWay}"
+                                               FormatString="F0"
+                                               HorizontalContentAlignment="Center"
+                                               VerticalContentAlignment="Center"
+                                               Background="{DynamicResource AppInputBackground}"
+                                               BorderBrush="{DynamicResource AppBorder}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Packet Timeout Tile -->
+                         <Border Background="{DynamicResource AppCardBackground}"
+                                 BorderBrush="{DynamicResource AppBorderStrong}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,12"
+                                Margin="4">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Packet Timeout (sec)" 
+                                           FontSize="12" 
+                                           FontWeight="Bold" 
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <NumericUpDown Minimum="1" Maximum="30" Increment="1"
+                                               Value="{Binding YargPacketTimeoutSeconds, Mode=TwoWay}"
+                                               FormatString="F0"
+                                               HorizontalContentAlignment="Center"
+                                               VerticalContentAlignment="Center"
+                                                Background="{DynamicResource AppInputBackground}"
+                                                BorderBrush="{DynamicResource AppBorder}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Visualizer Tools Tile -->
+                         <Border Background="{DynamicResource AppCardBackground}"
+                                 BorderBrush="{DynamicResource AppBorderStrong}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,12"
+                                Margin="4">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Visualizer Windows" 
+                                           FontSize="12" 
+                                           FontWeight="Bold" 
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <Grid ColumnDefinitions="*,*" Margin="0,2,0,0">
+                                    <ToggleButton Grid.Column="0"
+                                                  x:Name="StrobeVisualizerButton"
+                                                  Content="⚡ Strobe"
+                                                  Click="OnStrobeVisualizerClicked"
+                                                  Classes="SegmentedToggle"
+                                                  HorizontalAlignment="Stretch"
+                                                  Margin="0,0,3,0"/>
+                                    <ToggleButton Grid.Column="1"
+                                                  x:Name="DetachVisualizerButton"
+                                                  Content="⧉ Detach"
+                                                  Click="OnDetachVisualizerClicked"
+                                                  Classes="SegmentedToggle"
+                                                  HorizontalAlignment="Stretch"
+                                                  Margin="3,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Bottom Live Telemetry & Visualizer Area -->
+            <Grid Grid.Row="2" x:Name="ContentAreaGrid" ColumnDefinitions="*,Auto">
+                <!-- Live Telemetry Card -->
+                <Border Grid.Column="0" x:Name="DataGridCard"
+                    Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="16"
+                        Margin="0,0,0,0">
+                    <Grid RowDefinitions="Auto,*">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,12">
+                            <TextBlock Text="Live Telemetry Signals" 
+                                       FontSize="15" 
+                                       FontWeight="Bold" 
+                                       Foreground="{DynamicResource AppTextPrimary}"
+                                       VerticalAlignment="Center"/>
+                            <Border Background="{DynamicResource AppAccentBadgeBackground}" BorderBrush="{DynamicResource AppAccentBadgeBorder}" BorderThickness="1" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <Ellipse Width="6" Height="6" Fill="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Realtime" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppAccentBadgeForeground}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- DataGrid -->
+                        <DataGrid x:Name="MainDataGrid" 
+                                  Grid.Row="1"
+                                  ItemsSource="{Binding CombinedCollection}" 
+                                  AutoGenerateColumns="False" 
+                                  CanUserResizeColumns="False" 
+                                  CanUserSortColumns="False" 
+                                  CanUserReorderColumns="False"
+                                  SelectionMode="Single"
+                                  PointerPressed="OnDataGridPointerPressed"
+                                  IsReadOnly="True"
+                                  Focusable="False"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  VerticalAlignment="Stretch"
+                                  Background="{DynamicResource AppInputBackground}"
+                                  BorderBrush="{DynamicResource AppBorder}"
+                                  BorderThickness="1"
+                                  CornerRadius="8">
+                            <DataGrid.Styles>
+                                <Style Selector="DataGridRow">
+                                    <Setter Property="Background" Value="{DynamicResource AppInputBackground}" />
+                                </Style>
+                                <Style Selector="DataGridRow /template/ Rectangle#BackgroundRectangle">
+                                    <Setter Property="Fill" Value="{DynamicResource AppInputBackground}" />
+                                </Style>
+                                <Style Selector="DataGridCell">
+                                    <Setter Property="Background" Value="{DynamicResource AppInputBackground}" />
+                                </Style>
+                                <Style Selector="DataGridCell /template/ Border#CellBorder">
+                                    <Setter Property="Background" Value="{DynamicResource AppInputBackground}" />
+                                </Style>
+                                <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+                                    <Setter Property="IsVisible" Value="False"/>
+                                </Style>
+                                <Style Selector="DataGridRow:selected">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="DataGridCell:selected">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="DataGridCell:selected /template/ Border#CellBorder">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+                                    <Setter Property="Fill" Value="{DynamicResource AppCardBackground}"/>
+                                    <Setter Property="Opacity" Value="0.6"/>
+                                </Style>
+                                <Style Selector="DataGridCell:focus /template/ Grid#FocusBounds">
+                                    <Setter Property="IsVisible" Value="False"/>
+                                </Style>
+                                <Style Selector="DataGridCell:selected /template/ Grid#FocusBounds">
+                                    <Setter Property="IsVisible" Value="False"/>
+                                </Style>
+                                <Style Selector="DataGridCell:current /template/ Rectangle#CurrencyVisual">
+                                    <Setter Property="IsVisible" Value="False"/>
+                                </Style>
+
+                                <!-- Signal Row Highlight Styles -->
+                                <Style Selector="Border.signalCell">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="Border.signalCell.highlighted">
+                                    <Setter Property="Background" Value="{DynamicResource AppAccentBadgeBackground}"/>
+                                </Style>
+                                <Style Selector="Border.signalPinCell">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="3,0,0,0"/>
+                                </Style>
+                                <Style Selector="Border.signalPinCell.highlighted">
+                                    <Setter Property="Background" Value="{DynamicResource AppAccentBadgeBackground}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+                                    <Setter Property="BorderThickness" Value="3,0,0,0"/>
+                                </Style>
+                                <Style Selector="TextBlock.signalStar">
+                                    <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}"/>
+                                </Style>
+                                <Style Selector="TextBlock.signalStar.highlighted">
+                                    <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+                                </Style>
+                                <Style Selector="TextBlock.signalName">
+                                    <Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}"/>
+                                    <Setter Property="FontWeight" Value="Normal"/>
+                                </Style>
+                                <Style Selector="TextBlock.signalName.highlighted">
+                                    <Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Style>
+                                <Style Selector="TextBlock.signalValue">
+                                    <Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Style>
+                                <Style Selector="TextBlock.signalValue.highlighted">
+                                    <Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Style>
+                            </DataGrid.Styles>
+                            <DataGrid.Columns>
+                                <!-- Highlighting Star Pin Column -->
+                                <DataGridTemplateColumn Width="46">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="signalPinCell"
+                                                    Classes.highlighted="{Binding IsHighlighted}"
+                                                    HorizontalAlignment="Stretch"
+                                                    VerticalAlignment="Stretch">
+                                                <Button Click="OnToggleHighlightClicked"
+                                                        Background="Transparent"
+                                                        BorderBrush="Transparent"
+                                                        BorderThickness="0"
+                                                        Padding="0"
+                                                        Width="28"
+                                                        Height="28"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Cursor="Hand"
+                                                        ToolTip.Tip="Toggle pin highlight">
+                                                    <TextBlock Text="★"
+                                                               FontSize="15"
+                                                               Classes="signalStar"
+                                                               Classes.highlighted="{Binding IsHighlighted}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center" />
+                                                </Button>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Name Column with Accent Border Indicator -->
+                                <DataGridTemplateColumn Header="Signal Name" Width="190">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="signalCell"
+                                                    Classes.highlighted="{Binding IsHighlighted}"
+                                                    Padding="12,0,8,0"
+                                                    VerticalAlignment="Stretch"
+                                                    HorizontalAlignment="Stretch">
+                                                <TextBlock Text="{Binding Name}" 
+                                                           Classes="signalName"
+                                                           Classes.highlighted="{Binding IsHighlighted}"
+                                                           FontSize="12" 
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Value Column -->
+                                <DataGridTemplateColumn Header="Live Value" Width="140">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="signalCell"
+                                                    Classes.highlighted="{Binding IsHighlighted}"
+                                                    Padding="10,0"
+                                                    VerticalAlignment="Stretch"
+                                                    HorizontalAlignment="Stretch">
+                                                <TextBlock Text="{Binding Value}" 
+                                                           Classes="signalValue"
+                                                           Classes.highlighted="{Binding IsHighlighted}"
+                                                           FontSize="12" 
+                                                           FontFamily="Consolas, Cascadia Code, Courier New"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Description Column -->
+                                <DataGridTemplateColumn Header="Description / Meaning" Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="signalCell"
+                                                    Classes.highlighted="{Binding IsHighlighted}"
+                                                    Padding="10,0"
+                                                    VerticalAlignment="Stretch"
+                                                    HorizontalAlignment="Stretch">
+                                                <TextBlock Text="{Binding ValueDescription}" 
+                                                           Foreground="{DynamicResource AppTextSecondary}" 
+                                                           FontSize="11" 
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <!-- LED Visualizer Preview Card -->
+                <Border Grid.Column="1" x:Name="VisualizerCard"
+                        IsVisible="{Binding IsVisualizerCardVisible}"
+                        Background="{DynamicResource AppPanelBackground}" 
+                        BorderBrush="{DynamicResource AppBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="16"
+                        Margin="16,0,0,0"
+                        Width="480"
+                        MinWidth="400">
+                    <Grid RowDefinitions="Auto,*,Auto">
+                        <!-- Header with Color Ring Badges & Authored Status -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="0">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="LED Stage Visualizer" 
+                                               FontSize="15" 
+                                               FontWeight="Bold" 
+                                               Foreground="{DynamicResource AppTextPrimary}"
+                                               VerticalAlignment="Center"/>
+                                    
+                                    <!-- Authored / AutoGen Track Badge -->
+                                    <Border Classes="authoredBadge"
+                                            Classes.isAuthored="{Binding !AutoGenMember.Value}"
+                                            CornerRadius="6"
+                                            Padding="7,2"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="Indicates whether the active song lighting track is hand-authored or auto-generated by YARG">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <Ellipse Width="6" Height="6" Classes="badgeDot" Classes.isAuthored="{Binding !AutoGenMember.Value}"/>
+                                            <TextBlock Text="{Binding AutoGenMember.ValueDescription}"
+                                                       Classes="badgeText"
+                                                       Classes.isAuthored="{Binding !AutoGenMember.Value}"
+                                                       FontSize="10"
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="Simulated 32-LED Stage Kit ring" 
+                                           FontSize="11" 
+                                           Foreground="{DynamicResource AppTextMuted}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <!-- Labels Toggle Button (Aa Icon) -->
+                            <ToggleButton Grid.Column="1"
+                                          IsChecked="{Binding ShowLedLabels, Mode=TwoWay}"
+                                          Classes="SegmentedToggle"
+                                          Width="30" Height="30"
+                                          Padding="0"
+                                          ToolTip.Tip="Show / Hide LED Channel Labels (B1-B8, G1-G8, Y1-Y8, R1-R8)"
+                                          VerticalAlignment="Center">
+                                <Viewbox Width="16" Height="16" Stretch="Uniform">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Data="M 2,16 L 6.039,6.31 A 0.5,0.5 0 0,1 6.962,6.31 L 11,16 M 3.304,13 H 9.696"
+                                              Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                              StrokeThickness="2"
+                                              StrokeLineCap="Round"
+                                              StrokeJoin="Round"/>
+                                        <Path Data="M 22,9 V 16 M 15,12.5 A 3.5,3.5 0 1,0 22,12.5 A 3.5,3.5 0 1,0 15,12.5"
+                                              Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                              StrokeThickness="2"
+                                              StrokeLineCap="Round"
+                                              StrokeJoin="Round"/>
+                                    </Canvas>
+                                </Viewbox>
+                            </ToggleButton>
+                        </Grid>
+
+                        <!-- Centralized LED Visualizer Pod -->
+                        <Border Grid.Row="1"
+                                Background="{DynamicResource AppWindowBackground}"
+                                BorderBrush="{DynamicResource AppCardBackground}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="12"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch">
+                            <components:LedVisualizerPanel x:Name="LedVisualizer" 
+                                                           HorizontalAlignment="Stretch" 
+                                                           VerticalAlignment="Stretch" />
+                        </Border>
+
+                        <!-- Interactive Test Controls -->
+                        <Grid Grid.Row="2" ColumnDefinitions="*,*,*" Margin="0,12,0,0">
+                            <Button Grid.Column="0"
+                                    Content="✨ Test All"
+                                    Click="OnTestAllLedsClicked"
+                                    Classes="SegmentedToggle"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="0,0,3,0"
+                                    ToolTip.Tip="Illuminate all 32 LEDs"/>
+                            <Button Grid.Column="1"
+                                    Content="🌀 Rotate"
+                                    Click="OnTestRotateLedsClicked"
+                                    Classes="SegmentedToggle"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="3,0,3,0"
+                                    ToolTip.Tip="Run rotating chase sequence"/>
+                            <Button Grid.Column="2"
+                                    Content="⬛ Clear"
+                                    Click="OnClearLedsClicked"
+                                    Classes="SegmentedToggle"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="3,0,0,0"
+                                    ToolTip.Tip="Turn off all LEDs"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
 </UserControl>

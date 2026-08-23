@@ -1,0 +1,6 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StreamGeometry x:Key="IconSerial">M16,7V3H14V7H10V3H8V7H7A2,2 0 0,0 5,9V14.5L9.5,19V21H14.5V19L19,14.5V9A2,2 0 0,0 17,7H16Z</StreamGeometry>
+    <StreamGeometry x:Key="IconPlug">M16,7V3H14V7H10V3H8V7H7A2,2 0 0,0 5,9V14.5L9.5,19V21H14.5V19L19,14.5V9A2,2 0 0,0 17,7H16Z</StreamGeometry>
+    <StreamGeometry x:Key="IconUsb">M15,7V2H9V7H7V13H9V16H15V13H17V7H15M13,4H14V6H13V4M10,4H11V6H10V4M13,9H14V11H13V9M10,9H11V11H10V9M8,18A1,1 0 0,0 7,19A1,1 0 0,0 8,20A1,1 0 0,0 9,19A1,1 0 0,0 8,18M16,18A1,1 0 0,0 15,19A1,1 0 0,0 16,20A1,1 0 0,0 17,19A1,1 0 0,0 16,18M12,22A2,2 0 0,0 14,20H10A2,2 0 0,0 12,22Z</StreamGeometry>
+</ResourceDictionary>

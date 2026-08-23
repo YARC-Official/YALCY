@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace YALCY.Udp;
 
@@ -293,7 +293,7 @@ public partial class UdpIntake
         NoCue,
     }
 
-    private enum PostProcessingByte
+    public enum PostProcessingByte
     {
         // Basic effects
         Default,

@@ -1,0 +1,223 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="YALCY.Views.Windows.StageKitStatusWindow"
+        Title="RB3E StageKit Status"
+        Width="680" Height="415"
+        MinWidth="500" MinHeight="300"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        Background="{DynamicResource AppPanelBackground}">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Title Bar -->
+        <Border Background="{DynamicResource AppCardBackground}" 
+                BorderBrush="{DynamicResource AppBorder}"
+                BorderThickness="0,0,0,1"
+                Height="36"
+                PointerPressed="OnTitleBarPointerPressed">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Action Toolbar (Pin) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
+                    <Button x:Name="PinButton"
+                            Width="30" Height="30"
+                            Background="Transparent"
+                            Foreground="{DynamicResource AppTextSecondary}"
+                            BorderThickness="0"
+                            Click="OnPinButtonClick"
+                            ToolTip.Tip="Toggle Always on Top">
+                        <PathIcon Width="14" Height="14"
+                                  Data="M160 96C160 78.3 174.3 64 192 64L448 64C465.7 64 480 78.3 480 96C480 113.7 465.7 128 448 128L418.5 128L428.8 262.1C465.9 283.3 494.6 318.5 507 361.8L510.8 375.2C513.6 384.9 511.6 395.2 505.6 403.3C499.6 411.4 490 416 480 416L160 416C150 416 140.5 411.3 134.5 403.3C128.5 395.3 126.5 384.9 129.3 375.2L133 361.8C145.4 318.5 174 283.3 211.2 262.1L221.5 128L192 128C174.3 128 160 113.7 160 96zM288 464L352 464L352 576C352 593.7 337.7 608 320 608C302.3 608 288 593.7 288 576L288 464z"/>
+                    </Button>
+                </StackPanel>
+
+                <!-- Title -->
+                <TextBlock Grid.Column="1"
+                           Text="Stage Kit LED Status" 
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource AppTextPrimary}"
+                           FontWeight="SemiBold"
+                           FontSize="12"
+                           Margin="10,0,0,0"/>
+
+                <!-- Native Window Buttons Spacer -->
+                <Border Grid.Column="2" Width="140"/>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <Border Grid.Row="1" Padding="24,16,24,16" Background="{DynamicResource AppPanelBackground}">
+            <Grid RowDefinitions="Auto,Auto">
+                
+                <!-- LED Channel Rows (Red, Green, Blue, Yellow, Divider, Blended) -->
+                <StackPanel Grid.Row="0" Spacing="8">
+                    
+                    <!-- Red Channel Row -->
+                    <Grid ColumnDefinitions="70,*,80" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Text="Red" Foreground="{DynamicResource AppTextPrimary}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                        <UniformGrid Grid.Column="1" Columns="8" x:Name="RedLedGrid" HorizontalAlignment="Stretch" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="2" x:Name="RedActiveCountText" Text="inactive" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Green Channel Row -->
+                    <Grid ColumnDefinitions="70,*,80" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Text="Green" Foreground="{DynamicResource AppTextPrimary}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                        <UniformGrid Grid.Column="1" Columns="8" x:Name="GreenLedGrid" HorizontalAlignment="Stretch" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="2" x:Name="GreenActiveCountText" Text="inactive" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Blue Channel Row -->
+                    <Grid ColumnDefinitions="70,*,80" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Text="Blue" Foreground="{DynamicResource AppTextPrimary}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                        <UniformGrid Grid.Column="1" Columns="8" x:Name="BlueLedGrid" HorizontalAlignment="Stretch" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="2" x:Name="BlueActiveCountText" Text="inactive" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Yellow Channel Row -->
+                    <Grid ColumnDefinitions="70,*,80" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Text="Yellow" Foreground="{DynamicResource AppTextPrimary}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                        <UniformGrid Grid.Column="1" Columns="8" x:Name="YellowLedGrid" HorizontalAlignment="Stretch" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="2" x:Name="YellowActiveCountText" Text="inactive" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Separator Line -->
+                    <Border Height="1" Background="{DynamicResource AppBorder}" Margin="0,4,0,4" />
+
+                    <!-- Blended Row -->
+                    <Grid ColumnDefinitions="70,*,80" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Blended" Foreground="{DynamicResource AppTextPrimary}" FontWeight="SemiBold" FontSize="13"/>
+                            <TextBlock Text="True Color" Foreground="{DynamicResource AppTextSecondary}" FontSize="10" FontWeight="Normal" Margin="0,1,0,0"/>
+                        </StackPanel>
+                        <UniformGrid Grid.Column="1" Columns="8" x:Name="BlendedLedGrid" HorizontalAlignment="Stretch" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="2" Text="Blended" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                </StackPanel>
+
+                <!-- LightShow Status Panel (4x2 Layout) -->
+                <Border Grid.Row="1" 
+                        Background="{DynamicResource AppCardBackground}" 
+                        BorderBrush="{DynamicResource AppBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="8" 
+                        Padding="16,12" 
+                        Margin="0,12,0,0">
+                    <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto">
+                        
+                        <!-- Row 0: Venue Size, Light Cue, Strobe, Beat -->
+                        
+                        <!-- Col 0: Venue Size -->
+                        <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,8,12">
+                            <TextBlock Text="Venue Size" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                            <TextBlock x:Name="VenueSizeText" Text="No Venue" Foreground="{DynamicResource AppTextPrimary}" FontSize="13" FontWeight="SemiBold" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+
+                        <!-- Col 1: Light Cue -->
+                        <StackPanel Grid.Column="1" Grid.Row="0" Margin="4,0,8,12">
+                            <TextBlock Text="Light Cue" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                            <TextBlock x:Name="LightingCueText" Text="Default" Foreground="{DynamicResource AppTextPrimary}" FontSize="13" FontWeight="SemiBold" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+
+                        <!-- Col 2: Strobe -->
+                        <StackPanel Grid.Column="2" Grid.Row="0" Margin="4,0,8,12">
+                            <TextBlock Text="Strobe" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                            <Border x:Name="StrobeBadge" 
+                                    Background="{DynamicResource AppPanelBackground}" 
+                                    BorderBrush="{DynamicResource AppBorder}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="10" 
+                                    Padding="10,2" 
+                                    Margin="0,3,0,0" 
+                                    HorizontalAlignment="Left">
+                                <TextBlock x:Name="StrobeStateText" 
+                                           Text="OFF" 
+                                           Foreground="{DynamicResource AppTextSecondary}" 
+                                           FontWeight="Bold" 
+                                           FontSize="11"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Col 3: Beat (Segmented) -->
+                        <StackPanel Grid.Column="3" Grid.Row="0" Margin="4,0,0,12">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="Beat" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                                <TextBlock x:Name="BpmText" Text="" Foreground="{DynamicResource AppTextSecondary}" FontSize="10" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <UniformGrid Columns="4" Margin="0,3,0,0" Height="22">
+                                <Border x:Name="BeatOffChip" Background="{DynamicResource AppPanelBackground}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="4,0,0,4" Margin="0,0,1,0" ToolTip.Tip="Off">
+                                    <TextBlock x:Name="BeatOffText" Text="Off" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AppTextSecondary}"/>
+                                </Border>
+                                <Border x:Name="BeatMeasChip" Background="{DynamicResource AppPanelBackground}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" Margin="0,0,1,0" ToolTip.Tip="Measure (Bar Downbeat)">
+                                    <TextBlock x:Name="BeatMeasText" Text="M" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AppTextSecondary}"/>
+                                </Border>
+                                <Border x:Name="BeatWeakChip" Background="{DynamicResource AppPanelBackground}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" Margin="0,0,1,0" ToolTip.Tip="Weak Beat">
+                                    <TextBlock x:Name="BeatWeakText" Text="W" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AppTextSecondary}"/>
+                                </Border>
+                                <Border x:Name="BeatStrongChip" Background="{DynamicResource AppPanelBackground}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="0,4,4,0" ToolTip.Tip="Strong Beat">
+                                    <TextBlock x:Name="BeatStrongText" Text="S" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AppTextSecondary}"/>
+                                </Border>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <!-- Row 1: Post Processing, Spotlight, Fog, Bonus -->
+                        
+                        <!-- Col 0: Post Processing -->
+                        <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,8,0">
+                            <TextBlock Text="Post Processing" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                            <TextBlock x:Name="PostProcessingText" Text="Default" Foreground="{DynamicResource AppTextPrimary}" FontSize="13" FontWeight="SemiBold" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+
+                        <!-- Col 1: Spotlight -->
+                        <StackPanel Grid.Column="1" Grid.Row="1" Margin="4,0,8,0">
+                            <TextBlock Text="Spotlight" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                            <TextBlock x:Name="SpotlightText" Text="None" Foreground="{DynamicResource AppTextPrimary}" FontSize="13" FontWeight="SemiBold" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+
+                        <!-- Col 2: Fog -->
+                        <StackPanel Grid.Column="2" Grid.Row="1" Margin="4,0,8,0">
+                            <TextBlock Text="Fog" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                            <Border x:Name="FogBadge" 
+                                    Background="{DynamicResource AppPanelBackground}" 
+                                    BorderBrush="{DynamicResource AppBorder}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="10" 
+                                    Padding="10,2" 
+                                    Margin="0,3,0,0" 
+                                    HorizontalAlignment="Left">
+                                <TextBlock x:Name="FogStateText" 
+                                           Text="OFF" 
+                                           Foreground="{DynamicResource AppTextSecondary}" 
+                                           FontWeight="Bold" 
+                                           FontSize="11"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Col 3: Bonus -->
+                        <StackPanel Grid.Column="3" Grid.Row="1" Margin="4,0,0,0">
+                            <TextBlock Text="Bonus" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" FontWeight="Medium"/>
+                            <Border x:Name="BonusBadge" 
+                                    Background="{DynamicResource AppPanelBackground}" 
+                                    BorderBrush="{DynamicResource AppBorder}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="10" 
+                                    Padding="10,2" 
+                                    Margin="0,3,0,0" 
+                                    HorizontalAlignment="Left">
+                                <TextBlock x:Name="BonusEffectText" 
+                                           Text="OFF" 
+                                           Foreground="{DynamicResource AppTextSecondary}" 
+                                           FontWeight="Bold" 
+                                           FontSize="11"/>
+                            </Border>
+                        </StackPanel>
+
+                    </Grid>
+                </Border>
+
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

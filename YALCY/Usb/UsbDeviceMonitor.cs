@@ -241,6 +241,11 @@ public class UsbDeviceMonitor
         Interlocked.Exchange(ref _outputSuppressed, 0);
     }
 
+    public static void SimulateStageKitCommand(StageKitTalker.CommandId commandId, byte parameter)
+    {
+        DispatchReport(commandId, parameter);
+    }
+
     private static void DispatchReport(StageKitTalker.CommandId commandId, byte parameter)
     {
         var subscribers = OnStageKitCommand?.GetInvocationList();

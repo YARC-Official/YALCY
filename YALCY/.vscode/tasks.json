@@ -38,23 +38,45 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "publish-and-run",
-            "dependsOrder": "sequence",
-            "dependsOn": ["publish-release"],
+            "label": "publish-single-file",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/YALCY.csproj",
+                "-c",
+                "Release",
+                "-p:PublishSingleFile=true",
+                "-o",
+                "${workspaceFolder}/publish"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "open-single-file-app",
+            "type": "shell",
             "windows": {
                 "command": "cmd",
-                "args": ["/c", "start", "YALCY.exe"]
+                "args": ["/c", "start", "", "${workspaceFolder}\\publish\\YALCY.exe"]
             },
-            "options": {
-                "cwd": "${workspaceFolder}/publish"
+            "osx": {
+                "command": "open",
+                "args": ["${workspaceFolder}/publish/YALCY"]
             },
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
-            }
+            "linux": {
+                "command": "sh",
+                "args": ["-c", "\"${workspaceFolder}/publish/YALCY\" &"]
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Publish & Run",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "publish-single-file",
+                "open-single-file-app"
+            ],
+            "problemMatcher": []
         }
     ]
 }

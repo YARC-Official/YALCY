@@ -29,8 +29,45 @@ public class DeviceZoneCategory : ReactiveObject
             _category = value;
             UpdateDeviceCategoryList(_category);
             OnPropertyChanged(nameof(Category));
+            OnPropertyChanged(nameof(IsLightPodOrHybrid));
         }
     }
+
+    public bool IsLightPodOrHybrid => Category == 1 || Category == 4;
+
+    private int _blendMode = 0; // 0 = Discrete, 1 = Uniform Wash, 2 = Smooth Gradient
+    public int BlendMode
+    {
+        get => _blendMode;
+        set
+        {
+            var clamped = Math.Clamp(value, 0, 2);
+            if (_blendMode == clamped) return;
+            this.RaiseAndSetIfChanged(ref _blendMode, clamped);
+            if (_blendMode != 0)
+            {
+                IsCustomizingLeds = false;
+            }
+            if (_viewModel != null)
+            {
+                var key = GetZoneKey();
+                lock (_viewModel.OpenRgbTalker.Lock)
+                {
+                    _viewModel.OpenRgbTalker.ZoneBlendModes[key] = (OpenRgbBlendMode)_blendMode;
+                }
+                _viewModel.OpenRgbTalker.ResetLightPodColors();
+            }
+            this.RaisePropertyChanged(nameof(IsBlendDiscrete));
+            this.RaisePropertyChanged(nameof(IsBlendUniformWash));
+            this.RaisePropertyChanged(nameof(IsBlendSmoothGradient));
+        }
+    }
+
+    public bool IsBlendDiscrete => _blendMode == 0;
+    public bool IsBlendUniformWash => _blendMode == 1;
+    public bool IsBlendSmoothGradient => _blendMode == 2;
+
+    public ICommand SelectBlendModeCommand { get; }
 
     private void RemoveFromCategoryList(int category)
     {
@@ -49,6 +86,7 @@ public class DeviceZoneCategory : ReactiveObject
                 case 1:
                     _viewModel.OpenRgbTalker.LightPodZones.Remove(key);
                     _viewModel.OpenRgbTalker.LightPodZoneStates.Remove(key);
+                    _viewModel.OpenRgbTalker.LightPodZoneRawStates.Remove(key);
                     break;
 
                 case 2:
@@ -62,6 +100,7 @@ public class DeviceZoneCategory : ReactiveObject
                 case 4:
                     _viewModel.OpenRgbTalker.LightPodZones.Remove(key);
                     _viewModel.OpenRgbTalker.LightPodZoneStates.Remove(key);
+                    _viewModel.OpenRgbTalker.LightPodZoneRawStates.Remove(key);
                     _viewModel.OpenRgbTalker.StrobeZones.Remove(key);
                     _viewModel.OpenRgbTalker.LightPodStrobeZones.Remove(key);
                     break;
@@ -103,7 +142,9 @@ public class DeviceZoneCategory : ReactiveObject
                         // Initialize the light pod state for this zone
                         int ledCount = (int)Zone.LedCount;
                         _viewModel.OpenRgbTalker.LightPodZoneStates[key] = new Color[ledCount];
+                        _viewModel.OpenRgbTalker.LightPodZoneRawStates[key] = new Color[ledCount];
                     }
+                    _viewModel.OpenRgbTalker.ZoneBlendModes[key] = (OpenRgbBlendMode)_blendMode;
                     break;
 
                 case 2:
@@ -122,7 +163,9 @@ public class DeviceZoneCategory : ReactiveObject
                     {
                         int ledCount = (int)Zone.LedCount;
                         _viewModel.OpenRgbTalker.LightPodZoneStates[key] = new Color[ledCount];
+                        _viewModel.OpenRgbTalker.LightPodZoneRawStates[key] = new Color[ledCount];
                     }
+                    _viewModel.OpenRgbTalker.ZoneBlendModes[key] = (OpenRgbBlendMode)_blendMode;
                     break;
             }
         }
@@ -208,9 +251,9 @@ public class DeviceZoneCategory : ReactiveObject
     public bool IsYellowSelected => _selectedPaintAreaIndex >= 24 && _selectedPaintAreaIndex <= 31;
     public bool HasSubGroup => !IsOffSelected;
 
-    public string OffBg => IsOffSelected ? "#FFFFFF" : "#111325";
-    public string OffFg => IsOffSelected ? "#000000" : "#94A3B8";
-    public string OffBorder => IsOffSelected ? "#FFFFFF" : "#2B2F4E";
+    public string OffBg => IsOffSelected ? "#FFFFFF" : "#1A1A1A";
+    public string OffFg => IsOffSelected ? "#000000" : "#A0A0A0";
+    public string OffBorder => IsOffSelected ? "#FFFFFF" : "#444444";
 
     public string BlueBg => IsBlueSelected ? "#FFFFFF" : "#1E3A8A";
     public string BlueFg => IsBlueSelected ? "#000000" : "#93C5FD";
@@ -322,6 +365,13 @@ public class DeviceZoneCategory : ReactiveObject
         SelectPaintGroupCommand = ReactiveCommand.Create<string>(group => SelectPaintGroup(group));
         SelectSubChannelCommand = ReactiveCommand.Create<object>(param => SelectSubChannel(param));
         PaintCellCommand = ReactiveCommand.Create<MatrixCellViewModel>(cell => PaintCell(cell));
+        SelectBlendModeCommand = ReactiveCommand.Create<object>(param =>
+        {
+            if (param is int i)
+                BlendMode = i;
+            else if (param != null && int.TryParse(param.ToString(), out int parsed))
+                BlendMode = parsed;
+        });
 
         InitializeLedItems();
         UpdateDeviceCategoryList(_category);

@@ -8,7 +8,7 @@
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
 
-    <Border Background="#1A1A1A" Padding="20,10,20,10" BorderBrush="#333333" BorderThickness="0,1,0,0">
+    <Border Background="{DynamicResource AppPanelBackground}" Padding="20,10,20,10" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,1,0,0">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -22,62 +22,62 @@
                 <!-- YARG UDP -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="UdpStatusEllipse" />
-                    <TextBlock Text="YARG UDP" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="YARG UDP" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- Stage Kit -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="StageKitStatusEllipse" />
-                    <TextBlock Text="Stage Kit" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Stage Kit" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- DMX/sACN -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="DmxStatusEllipse" />
-                    <TextBlock Text="DMX/sACN" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="DMX/sACN" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- RB3E -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="Rb3eStatusEllipse" />
-                    <TextBlock Text="RB3E" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="RB3E" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- Serial -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="SerialStatusEllipse" />
-                    <TextBlock Text="Serial" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Serial" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- Hue -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="HueStatusEllipse" />
-                    <TextBlock Text="Hue" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Hue" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <!-- LIFX -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="LifxStatusEllipse" />
-                    <TextBlock Text="LIFX" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="LIFX" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <!-- Home Assistant -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="HomeAssistantStatusEllipse" />
-                    <TextBlock Text="Home Assistant" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Home Assistant" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- OpenRGB -->
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <Ellipse Width="10" Height="10" Fill="#808080" x:Name="OpenRgbStatusEllipse" />
-                    <TextBlock Text="OpenRGB" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="OpenRGB" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
                 </StackPanel>
                 
             </StackPanel>
             
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="16,0"
                         HorizontalAlignment="Right" VerticalAlignment="Center">
-                <TextBlock Text="{Binding YargStreamStatus}" Foreground="White" FontSize="12"
+                <TextBlock Text="{Binding YargStreamStatus}" Foreground="{DynamicResource AppTextSecondary}" FontSize="12"
                            VerticalAlignment="Center" />
                 <Button Content="{Binding BlackoutButtonText}" Command="{Binding ToggleBlackoutCommand}"
                         Background="#B00020" Foreground="White" FontWeight="Bold"
@@ -86,8 +86,8 @@
 
             <!-- Right side - App name and version -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
-                <TextBlock Text="YALCY" Foreground="White" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding Source={x:Static app:App.Version}, StringFormat=' v{0}'}" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Text="YALCY" Foreground="{DynamicResource AppTextPrimary}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Source={x:Static app:App.Version}, StringFormat=' v{0}'}" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
             </StackPanel>
             
         </Grid>

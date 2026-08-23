@@ -16,6 +16,13 @@ using Device = OpenRGB.NET.Device;
 
 namespace YALCY.Integrations.OpenRGB;
 
+public enum OpenRgbBlendMode
+{
+    Discrete = 0,
+    UniformWash = 1,
+    SmoothGradient = 2
+}
+
 public class ZoneInfo
 {
     public Device Device { get; set; } = null!;
@@ -41,6 +48,8 @@ public class OpenRgbTalker
     public Dictionary<string, ZoneInfo> StrobeZones { get; } = new();
     public Dictionary<string, ZoneInfo> FoggerZones { get; } = new();
     public Dictionary<string, Color[]> LightPodZoneStates { get; } = new();
+    public Dictionary<string, Color[]> LightPodZoneRawStates { get; } = new();
+    public Dictionary<string, OpenRgbBlendMode> ZoneBlendModes { get; } = new();
 
     // Hybrid LightPod + Strobe tracking collections
     public HashSet<int> LightPodStrobeDevices { get; } = new();
@@ -354,6 +363,11 @@ public class OpenRgbTalker
 
     #region StageKit Event Dispatching
 
+    private byte _stageKitBlueParam;
+    private byte _stageKitRedParam;
+    private byte _stageKitGreenParam;
+    private byte _stageKitYellowParam;
+
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
         try
@@ -361,18 +375,22 @@ public class OpenRgbTalker
             switch (commandId)
             {
                 case StageKitTalker.CommandId.BlueLeds:
+                    _stageKitBlueParam = parameter;
                     UpdateLightPodColor(parameter, new Color(0, 0, 255), 0);
                     break;
 
                 case StageKitTalker.CommandId.RedLeds:
+                    _stageKitRedParam = parameter;
                     UpdateLightPodColor(parameter, new Color(255, 0, 0), 8);
                     break;
 
                 case StageKitTalker.CommandId.GreenLeds:
+                    _stageKitGreenParam = parameter;
                     UpdateLightPodColor(parameter, new Color(0, 255, 0), 16);
                     break;
 
                 case StageKitTalker.CommandId.YellowLeds:
+                    _stageKitYellowParam = parameter;
                     UpdateLightPodColor(parameter, new Color(255, 255, 0), 24);
                     break;
 
@@ -400,10 +418,14 @@ public class OpenRgbTalker
                     StopBreathingEffect();
                     SetDeviceBrightness(0);
                     SetZoneBrightness(0);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 0);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 8);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 16);
-                    UpdateLightPodColor(parameter, new Color(0, 0, 0), 24);
+                    _stageKitBlueParam = 0;
+                    _stageKitRedParam = 0;
+                    _stageKitGreenParam = 0;
+                    _stageKitYellowParam = 0;
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 0);
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 8);
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 16);
+                    UpdateLightPodColor(0, new Color(0, 0, 0), 24);
                     break;
             }
         }
@@ -693,11 +715,20 @@ public class OpenRgbTalker
 
             var keysPerArea = Math.Max(1, (int)zoneInfo.Zone.LedCount / numAreas);
             Color[]? colors;
+            Color[]? rawColors;
             int[]? customMap;
+            OpenRgbBlendMode blendMode = OpenRgbBlendMode.Discrete;
+
             lock (Lock)
             {
                 if (!LightPodZoneStates.TryGetValue(zoneKey, out colors)) continue;
+                if (!LightPodZoneRawStates.TryGetValue(zoneKey, out rawColors) || rawColors.Length != colors.Length)
+                {
+                    rawColors = new Color[colors.Length];
+                    LightPodZoneRawStates[zoneKey] = rawColors;
+                }
                 CustomLedMappings.TryGetValue(zoneKey, out customMap);
+                ZoneBlendModes.TryGetValue(zoneKey, out blendMode);
             }
 
             if (customMap != null && customMap.Length == (int)zoneInfo.Zone.LedCount)
@@ -707,11 +738,11 @@ public class OpenRgbTalker
                     int area = customMap[ledIndex];
                     if (area < 0)
                     {
-                        colors[ledIndex] = new Color(0, 0, 0);
+                        rawColors[ledIndex] = new Color(0, 0, 0);
                     }
                     else if (area >= areaOffset && area < areaOffset + 8)
                     {
-                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                        rawColors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                     }
                 }
             }
@@ -723,25 +754,132 @@ public class OpenRgbTalker
                     {
                         var ledIndex = area * keysPerArea + key;
                         if (ledIndex >= zoneInfo.Zone.LedCount) continue;
-                        colors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
+                        rawColors[ledIndex] = (parameter & (1 << (area - areaOffset))) != 0 ? color : new Color(0, 0, 0);
                     }
                 }
             }
+
+            ApplyZoneBlending(rawColors, colors, blendMode);
         }
 
         // Offload TCP socket flush to background task with frame coalescing
         TriggerLightPodFlush();
     }
 
+    private void ApplyZoneBlending(Color[] raw, Color[] output, OpenRgbBlendMode mode)
+    {
+        if (raw.Length != output.Length || raw.Length == 0) return;
+
+        if (mode == OpenRgbBlendMode.Discrete)
+        {
+            Array.Copy(raw, output, raw.Length);
+            return;
+        }
+
+        // Calculate the 8 StageKit Pod mixed colors (Pod 1 to Pod 8) from active B, R, G, Y
+        Span<Color> podColors = stackalloc Color[8];
+        int activePodCount = 0;
+
+        for (int k = 0; k < 8; k++)
+        {
+            bool isB = (_stageKitBlueParam & (1 << k)) != 0;
+            bool isR = (_stageKitRedParam & (1 << k)) != 0;
+            bool isG = (_stageKitGreenParam & (1 << k)) != 0;
+            bool isY = (_stageKitYellowParam & (1 << k)) != 0;
+
+            var (r, g, b, isActive) = StageKitColorBlender.BlendPod(isB, isR, isG, isY);
+            podColors[k] = new Color(r, g, b);
+            if (isActive)
+            {
+                activePodCount++;
+            }
+        }
+
+        if (mode == OpenRgbBlendMode.UniformWash)
+        {
+            if (activePodCount == 0)
+            {
+                Array.Clear(output, 0, output.Length);
+                return;
+            }
+
+            int sumR = 0, sumG = 0, sumB = 0;
+            for (int k = 0; k < 8; k++)
+            {
+                var pc = podColors[k];
+                if (pc.R != 0 || pc.G != 0 || pc.B != 0)
+                {
+                    sumR += pc.R;
+                    sumG += pc.G;
+                    sumB += pc.B;
+                }
+            }
+
+            int max = Math.Max(sumR, Math.Max(sumG, sumB));
+            double scale = max > 0 ? 255.0 / max : 1.0;
+            var washColor = new Color(
+                (byte)Math.Clamp(sumR * scale, 0, 255),
+                (byte)Math.Clamp(sumG * scale, 0, 255),
+                (byte)Math.Clamp(sumB * scale, 0, 255)
+            );
+
+            for (int i = 0; i < output.Length; i++)
+            {
+                output[i] = washColor;
+            }
+        }
+        else if (mode == OpenRgbBlendMode.SmoothGradient)
+        {
+            if (activePodCount == 0)
+            {
+                Array.Clear(output, 0, output.Length);
+                return;
+            }
+
+            int n = output.Length;
+            if (n == 1)
+            {
+                output[0] = podColors[0];
+                return;
+            }
+
+            // Distribute the 8 Pod Colors evenly across the N LEDs of the strip with smooth linear interpolation
+            for (int i = 0; i < n; i++)
+            {
+                double pos = (double)i / (n - 1) * 7.0; // Continuous range [0.0 .. 7.0]
+                int k0 = (int)pos;
+                int k1 = Math.Min(7, k0 + 1);
+                double t = pos - k0;
+
+                var c0 = podColors[k0];
+                var c1 = podColors[k1];
+
+                byte r = (byte)Math.Clamp(c0.R + (c1.R - c0.R) * t, 0, 255);
+                byte g = (byte)Math.Clamp(c0.G + (c1.G - c0.G) * t, 0, 255);
+                byte b = (byte)Math.Clamp(c0.B + (c1.B - c0.B) * t, 0, 255);
+
+                output[i] = new Color(r, g, b);
+            }
+        }
+    }
+
     public void ResetLightPodColors()
     {
         lock (Lock)
         {
+            _stageKitBlueParam = 0;
+            _stageKitRedParam = 0;
+            _stageKitGreenParam = 0;
+            _stageKitYellowParam = 0;
             foreach (var colors in LightPodStates.Values)
             {
                 Array.Clear(colors, 0, colors.Length);
             }
             foreach (var colors in LightPodZoneStates.Values)
+            {
+                Array.Clear(colors, 0, colors.Length);
+            }
+            foreach (var colors in LightPodZoneRawStates.Values)
             {
                 Array.Clear(colors, 0, colors.Length);
             }

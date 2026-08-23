@@ -36,6 +36,32 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         this.RaisePropertyChanged(propertyName);
     }
 
+    private string _themeVariant = SettingsManager.SystemThemeVariant;
+    public IReadOnlyList<string> ThemeVariants { get; } =
+        new[]
+        {
+            SettingsManager.SystemThemeVariant,
+            SettingsManager.DarkThemeVariant,
+            SettingsManager.LightThemeVariant
+        };
+
+    public string ThemeVariant
+    {
+        get => _themeVariant;
+        set
+        {
+            var normalized = SettingsManager.NormalizeThemeVariant(value);
+            if (_themeVariant == normalized)
+            {
+                return;
+            }
+
+            this.RaiseAndSetIfChanged(ref _themeVariant, normalized);
+            SettingsManager.ThemeVariant = normalized;
+            (Application.Current as App)?.SetThemeVariant(normalized);
+        }
+    }
+
     private readonly IClassicDesktopStyleApplicationLifetime? _desktop;
     private readonly bool _isHeadless;
     private bool _closeToTrayOnClose;
@@ -62,6 +88,95 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
         get => _closeToTrayOnClose;
         set => this.RaiseAndSetIfChanged(ref _closeToTrayOnClose, value);
+    }
+
+    private bool _showLedLabels;
+    public bool ShowLedLabels
+    {
+        get => _showLedLabels;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _showLedLabels, value);
+            LedDisplay.GlobalShowLabels = value;
+        }
+    }
+
+    private double _windowWidth = 1700;
+    public double WindowWidth
+    {
+        get => _windowWidth;
+        set
+        {
+            if (Math.Abs(_windowWidth - value) > 0.1)
+            {
+                this.RaiseAndSetIfChanged(ref _windowWidth, value);
+                UpdateLayoutBreakpoints();
+            }
+        }
+    }
+
+    private bool _isCompactMode;
+    public bool IsCompactMode
+    {
+        get => _isCompactMode;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isCompactMode, value);
+            this.RaisePropertyChanged(nameof(IsVisualizerCardVisible));
+        }
+    }
+
+    private bool _isNarrowMode;
+    public bool IsNarrowMode
+    {
+        get => _isNarrowMode;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isNarrowMode, value);
+        }
+    }
+
+    private bool _isVisualizerDetached;
+    public bool IsVisualizerDetached
+    {
+        get => _isVisualizerDetached;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isVisualizerDetached, value);
+            this.RaisePropertyChanged(nameof(IsVisualizerCardVisible));
+        }
+    }
+
+    public bool IsVisualizerCardVisible => !IsNarrowMode && !IsVisualizerDetached;
+
+    private int _gridColumns4 = 4;
+    public int GridColumns4
+    {
+        get => _gridColumns4;
+        set => this.RaiseAndSetIfChanged(ref _gridColumns4, value);
+    }
+
+    private int _gridColumns3 = 3;
+    public int GridColumns3
+    {
+        get => _gridColumns3;
+        set => this.RaiseAndSetIfChanged(ref _gridColumns3, value);
+    }
+
+    private int _gridColumns2 = 2;
+    public int GridColumns2
+    {
+        get => _gridColumns2;
+        set => this.RaiseAndSetIfChanged(ref _gridColumns2, value);
+    }
+
+    private void UpdateLayoutBreakpoints()
+    {
+        GridColumns4 = _windowWidth < 650 ? 1 : (_windowWidth < 1050 ? 2 : 4);
+        GridColumns3 = _windowWidth < 700 ? 1 : (_windowWidth < 1050 ? 2 : 3);
+        GridColumns2 = _windowWidth < 1200 ? 1 : 2;
+        IsCompactMode = _windowWidth < 1200;
+        IsNarrowMode = GridColumns4 <= 2;
     }
 
     public MainWindowViewModel(bool isHeadless = false)
@@ -212,6 +327,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     private void FeedInAppSettings()
     {
         CloseToTrayOnClose = SettingsManager.CloseToTrayOnClose;
+        _themeVariant = SettingsManager.NormalizeThemeVariant(SettingsManager.ThemeVariant);
+        this.RaisePropertyChanged(nameof(ThemeVariant));
+        (Application.Current as App)?.SetThemeVariant(_themeVariant);
     }
 
     private void InitializeCommands()
@@ -222,13 +340,6 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         AddHomeAssistantEntityCommand = ReactiveCommand.Create(AddHomeAssistantEntity);
         ConnectToOpenRgbServerCommand = ReactiveCommand.CreateFromTask(() =>
             OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort));
-    }
-
-    private async void ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
-    {
-        e.Cancel = true;
-        await ShutdownAsync();
-        _desktop?.Shutdown();
     }
 
     /// <summary>
@@ -268,6 +379,17 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
         // Turn off the UDP listener
         await UdpIntake.EnableUdpIntake(false, this);
+    }
+
+    private bool _isShuttingDown;
+    private async void ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
+    {
+        if (_isShuttingDown) return;
+        _isShuttingDown = true;
+
+        e.Cancel = true;
+        await ShutdownAsync();
+        _desktop?.Shutdown();
     }
 }
 

@@ -39,12 +39,14 @@ public partial class UdpIntake : ReactiveObject
         int Index { get; }
         string ValueDescription { get; }
         object Value { get; }
+        bool IsHighlighted { get; set; }
     }
 
 
     public class DatapacketMember<T> : IDatapacketMember, INotifyPropertyChanged
     {
         private T _value;
+        private bool _isHighlighted;
         private readonly Func<T, string> _descriptionFunc;
         private readonly Action<T> _onValueChangedAction;
 
@@ -59,6 +61,19 @@ public partial class UdpIntake : ReactiveObject
         public string Name { get; set; }
         public int Index { get; set; }
         public string ValueDescription { get; private set; }
+
+        public bool IsHighlighted
+        {
+            get => _isHighlighted;
+            set
+            {
+                if (_isHighlighted != value)
+                {
+                    _isHighlighted = value;
+                    OnPropertyChanged(nameof(IsHighlighted));
+                }
+            }
+        }
 
         public T Value
         {
@@ -97,33 +112,33 @@ public partial class UdpIntake : ReactiveObject
         public DatapacketMember<bool> IsActive { get; }
     }
 
-    public DatapacketMember<uint> Header { get; private set; } = new ("Header", (byte)ByteIndexName.Header, GetHeaderByteDescription);
-    public DatapacketMember<byte> DatagramVersion { get; private set; } = new ("Datagram Version", (byte)ByteIndexName.DatagramVersion, GetDatagramVersionByteDescription);
-    public DatapacketMember<byte> Platform { get; private set; } = new ("Platform", (byte)ByteIndexName.Platform, GetPlatformByteDescription);
-    public DatapacketMember<byte> CurrentScene { get; private set; } = new ("scene", (byte)ByteIndexName.CurrentScene, GetSceneIndexByteDescription);
-    public DatapacketMember<byte> Paused { get; private set; } = new ("Paused", (byte)ByteIndexName.PauseState, GetPauseByteDescription);
-    public static DatapacketMember<byte> Venue { get; private set; } = new ("Venue", (byte)ByteIndexName.VenueSize, GetVenueSizeByteDescription);
-    public static DatapacketMember<float> BeatsPerMinute { get; private set; } = new ("Beats per minute", (byte)ByteIndexName.BeatsPerMinute, value => $"{value}");
-    public DatapacketMember<byte> CurrentSongSection { get; private set; } = new ("song section", (byte)ByteIndexName.SongSection, GetSongSectionByteDescription);
-    public DatapacketMember<byte> CurrentGuitarNotes { get; private set; } = new ("Guitar notes", (byte)ByteIndexName.GuitarNotes, GetInstrumentByteDescription);
-    public DatapacketMember<byte> CurrentBassNotes { get; private set; } = new ("Bass notes", (byte)ByteIndexName.BassNotes, GetInstrumentByteDescription);
-    public DatapacketMember<byte> CurrentDrumNotes { get; private set; } = new ("Drum notes", (byte)ByteIndexName.DrumsNotes, GetDrumsByteDescription);
-    public DatapacketMember<byte> CurrentKeysNotes { get; private set; } = new ("Keys notes", (byte)ByteIndexName.KeysNotes, GetInstrumentByteDescription);
-    public DatapacketMember<float> CurrentVocalNote { get; private set; } = new ("Vocal note", (byte)ByteIndexName.VocalsNote, GetVocalHarmonyByteDescription);
-    public DatapacketMember<float> CurrentHarmony0Note { get; private set; } = new ("Harmony 0 note", (byte)ByteIndexName.Harmony0Note, GetVocalHarmonyByteDescription);
-    public DatapacketMember<float> CurrentHarmony1Note { get; private set; } = new ("Harmony 1 note", (byte)ByteIndexName.Harmony1Note, GetVocalHarmonyByteDescription);
-    public DatapacketMember<float> CurrentHarmony2Note { get; private set; } = new ("Harmony 2 note", (byte)ByteIndexName.Harmony2Note, GetVocalHarmonyByteDescription);
-    public DatapacketMember<byte> LightingCue { get; private set; } = new ("Lighting cue", (byte)ByteIndexName.LightingCue, GetCueByteDescription);
-    public DatapacketMember<byte> PostProcessing { get; private set; } = new ("Post processing", (byte)ByteIndexName.PostProcessing, GetPostProcessingByteDescription);
-    public DatapacketMember<bool> FogState { get; private set; } = new ("Fog state", (byte)ByteIndexName.FogState, GetFogStateByteDescription);
-    public DatapacketMember<ushort> FogRemainingCentiseconds { get; private set; } = new ("Fog remaining", (byte)ByteIndexName.FogRemainingCentiseconds, GetFogRemainingCentisecondsDescription);
-    public DatapacketMember<byte> StrobeState { get; private set; } = new ("Strobe state", (byte)ByteIndexName.StrobeState, GetStrobeByteDescription);
-    public DatapacketMember<byte> Beat { get; private set; } = new ("Beat", (byte)ByteIndexName.Beat, GetBeatlineByteDescription);
-    public DatapacketMember<byte> Keyframe { get; private set; } = new ("Keyframe", (byte)ByteIndexName.Keyframe, GetKeyFrameDescription);
-    public DatapacketMember<bool> BonusEffect { get; private set; } = new ("Bonus effect", (byte)ByteIndexName.BonusEffect, GetBonusEffectByteDescription);
-    public DatapacketMember<bool> AutoGen { get; private set; } = new ("AutoGen track", (byte)ByteIndexName.AutoGen, GetAutoGenByteDescription);
-    public DatapacketMember<byte> Spotlight { get; private set; } = new ("Spotlight", (byte)ByteIndexName.Spotlight, GetPerformerDescription);
-    public DatapacketMember<byte> Singalong { get; private set; } = new ("Singalong", (byte)ByteIndexName.Singalong, GetPerformerDescription);
+    public DatapacketMember<uint> Header { get; private set; } = new("Header", (byte)ByteIndexName.Header, GetHeaderByteDescription);
+    public DatapacketMember<byte> DatagramVersion { get; private set; } = new("Datagram Version", (byte)ByteIndexName.DatagramVersion, GetDatagramVersionByteDescription);
+    public DatapacketMember<byte> Platform { get; private set; } = new("Platform", (byte)ByteIndexName.Platform, GetPlatformByteDescription);
+    public DatapacketMember<byte> CurrentScene { get; private set; } = new("Scene", (byte)ByteIndexName.CurrentScene, GetSceneIndexByteDescription);
+    public DatapacketMember<byte> Paused { get; private set; } = new("Paused", (byte)ByteIndexName.PauseState, GetPauseByteDescription);
+    public static DatapacketMember<byte> Venue { get; private set; } = new("Venue", (byte)ByteIndexName.VenueSize, GetVenueSizeByteDescription);
+    public static DatapacketMember<float> BeatsPerMinute { get; private set; } = new("Beats per minute", (byte)ByteIndexName.BeatsPerMinute, value => $"{value}");
+    public DatapacketMember<byte> CurrentSongSection { get; private set; } = new("Song Section", (byte)ByteIndexName.SongSection, GetSongSectionByteDescription);
+    public DatapacketMember<byte> CurrentGuitarNotes { get; private set; } = new("Guitar notes", (byte)ByteIndexName.GuitarNotes, GetInstrumentByteDescription);
+    public DatapacketMember<byte> CurrentBassNotes { get; private set; } = new("Bass notes", (byte)ByteIndexName.BassNotes, GetInstrumentByteDescription);
+    public DatapacketMember<byte> CurrentDrumNotes { get; private set; } = new("Drum notes", (byte)ByteIndexName.DrumsNotes, GetDrumsByteDescription);
+    public DatapacketMember<byte> CurrentKeysNotes { get; private set; } = new("Keys notes", (byte)ByteIndexName.KeysNotes, GetInstrumentByteDescription);
+    public DatapacketMember<float> CurrentVocalNote { get; private set; } = new("Vocal note", (byte)ByteIndexName.VocalsNote, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony0Note { get; private set; } = new("Harmony 0 note", (byte)ByteIndexName.Harmony0Note, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony1Note { get; private set; } = new("Harmony 1 note", (byte)ByteIndexName.Harmony1Note, GetVocalHarmonyByteDescription);
+    public DatapacketMember<float> CurrentHarmony2Note { get; private set; } = new("Harmony 2 note", (byte)ByteIndexName.Harmony2Note, GetVocalHarmonyByteDescription);
+    public DatapacketMember<byte> LightingCue { get; private set; } = new("Lighting cue", (byte)ByteIndexName.LightingCue, GetCueByteDescription);
+    public DatapacketMember<byte> PostProcessing { get; private set; } = new("Post processing", (byte)ByteIndexName.PostProcessing, GetPostProcessingByteDescription);
+    public DatapacketMember<bool> FogState { get; private set; } = new("Fog state", (byte)ByteIndexName.FogState, GetFogStateByteDescription);
+    public DatapacketMember<ushort> FogRemainingCentiseconds { get; private set; } = new("Fog remaining", (byte)ByteIndexName.FogRemainingCentiseconds, GetFogRemainingCentisecondsDescription);
+    public DatapacketMember<byte> StrobeState { get; private set; } = new("Strobe state", (byte)ByteIndexName.StrobeState, GetStrobeByteDescription);
+    public DatapacketMember<byte> Beat { get; private set; } = new("Beat", (byte)ByteIndexName.Beat, GetBeatlineByteDescription);
+    public DatapacketMember<byte> Keyframe { get; private set; } = new("Keyframe", (byte)ByteIndexName.Keyframe, GetKeyFrameDescription);
+    public DatapacketMember<bool> BonusEffect { get; private set; } = new("Bonus effect", (byte)ByteIndexName.BonusEffect, GetBonusEffectByteDescription);
+    public DatapacketMember<bool> AutoGen { get; private set; } = new("AutoGen track", (byte)ByteIndexName.AutoGen, GetAutoGenByteDescription);
+    public DatapacketMember<byte> Spotlight { get; private set; } = new("Spotlight", (byte)ByteIndexName.Spotlight, GetPerformerDescription);
+    public DatapacketMember<byte> Singalong { get; private set; } = new("Singalong", (byte)ByteIndexName.Singalong, GetPerformerDescription);
 
     public DatapacketMember<byte> CameraCutConstraint { get; private set; } = new("Camera cut constraint",
         (byte)ByteIndexName.CameraCutConstraint, GetCameraCutConstraintDescription);
@@ -176,7 +191,7 @@ public partial class UdpIntake : ReactiveObject
                 Console.WriteLine($"Starting UDP client on port {_mainViewModel.UdpListenPort}");
                 _udpClient = new UdpClient(_mainViewModel.UdpListenPort);
                 _udpClient.Client.ReceiveBufferSize = 8192; // Increase buffer size
-                
+
                 _healthCheckTimer = new Timer(HealthCheckCallback, this, HEALTH_CHECK_INTERVAL_MS, HEALTH_CHECK_INTERVAL_MS);
             }
             catch (Exception ex)
@@ -186,14 +201,25 @@ public partial class UdpIntake : ReactiveObject
                 return;
             }
 
-            _cancellationTokenSource = new CancellationTokenSource();
+            var cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = cancellationTokenSource;
+            var udpClient = _udpClient;
+
+            if (udpClient == null)
+            {
+                Console.WriteLine("UDP client was not initialized.");
+                cancellationTokenSource.Dispose();
+                _cancellationTokenSource = null;
+                return;
+            }
+
             await Task.Run(async () =>
             {
                 try
                 {
-                    while (!_cancellationTokenSource.Token.IsCancellationRequested)
+                    while (!cancellationTokenSource.Token.IsCancellationRequested)
                     {
-                        var result = await _udpClient.ReceiveAsync().ConfigureAwait(false);
+                        var result = await udpClient.ReceiveAsync().ConfigureAwait(false);
 
                         DeserializePacket(result.Buffer);
                     }
@@ -212,7 +238,7 @@ public partial class UdpIntake : ReactiveObject
                     Console.WriteLine($"Error receiving UDP data: {ex.Message}");
                     StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
                 }
-            }, _cancellationTokenSource.Token);
+            }, cancellationTokenSource.Token);
         }
         else
         {
@@ -239,71 +265,71 @@ public partial class UdpIntake : ReactiveObject
             using (MemoryStream ms = new MemoryStream(data))
             using (BinaryReader reader = new BinaryReader(ms))
             {
-            Header.Value = reader.ReadUInt32(); // byte count: 4
-            DatagramVersion.Value = reader.ReadByte(); // 5
-            UpdateVersionedMemberIndexes(DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration);
-            Platform.Value = reader.ReadByte(); // 6
-            CurrentScene.Value = reader.ReadByte(); // 7
-            Paused.Value = reader.ReadByte(); // 8
-            Venue.Value = reader.ReadByte(); // 9
-            BeatsPerMinute.Value = reader.ReadSingle(); // 10-13
-            CurrentSongSection.Value = reader.ReadByte(); // 14
+                Header.Value = reader.ReadUInt32(); // byte count: 4
+                DatagramVersion.Value = reader.ReadByte(); // 5
+                UpdateVersionedMemberIndexes(DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration);
+                Platform.Value = reader.ReadByte(); // 6
+                CurrentScene.Value = reader.ReadByte(); // 7
+                Paused.Value = reader.ReadByte(); // 8
+                Venue.Value = reader.ReadByte(); // 9
+                BeatsPerMinute.Value = reader.ReadSingle(); // 10-13
+                CurrentSongSection.Value = reader.ReadByte(); // 14
 
-            CurrentGuitarNotes.Value = reader.ReadByte(); // 15
-            CurrentBassNotes.Value = reader.ReadByte(); // 16
-            CurrentDrumNotes.Value = reader.ReadByte(); // 17
-            CurrentKeysNotes.Value = reader.ReadByte(); // 18
+                CurrentGuitarNotes.Value = reader.ReadByte(); // 15
+                CurrentBassNotes.Value = reader.ReadByte(); // 16
+                CurrentDrumNotes.Value = reader.ReadByte(); // 17
+                CurrentKeysNotes.Value = reader.ReadByte(); // 18
 
-            CurrentVocalNote.Value = reader.ReadSingle(); // 19-22
-            CurrentHarmony0Note.Value = reader.ReadSingle(); // 23-26
-            CurrentHarmony1Note.Value = reader.ReadSingle(); // 27-30
-            CurrentHarmony2Note.Value = reader.ReadSingle(); // 31-34
+                CurrentVocalNote.Value = reader.ReadSingle(); // 19-22
+                CurrentHarmony0Note.Value = reader.ReadSingle(); // 23-26
+                CurrentHarmony1Note.Value = reader.ReadSingle(); // 27-30
+                CurrentHarmony2Note.Value = reader.ReadSingle(); // 31-34
 
-            LightingCue.Value = reader.ReadByte(); // 35
-            PostProcessing.Value = reader.ReadByte(); // 36
-            var fogState = reader.ReadBoolean(); // Offset 36
-            if (DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration)
-            {
-                FogRemainingCentiseconds.Value = reader.ReadUInt16(); // Offsets 37-38 in v5+
-            }
-            else
-            {
-                FogRemainingCentiseconds.Value = ushort.MaxValue;
-            }
-            FogState.Value = fogState;
-            UpdateEffectiveFogState(fogState, FogRemainingCentiseconds.Value);
-            StrobeState.Value = reader.ReadByte();
-            Beat.Value = reader.ReadByte(); // 39
-            Keyframe.Value = reader.ReadByte(); // 40
-            BonusEffect.Value = reader.ReadBoolean(); // 41
-
-            AutoGen.Value = reader.ReadBoolean(); // 42
-            Spotlight.Value = reader.ReadByte(); // 43
-            Singalong.Value = reader.ReadByte(); // 44
-            CameraCutConstraint.Value = reader.ReadByte(); //45
-            CameraCutPriority.Value = reader.ReadByte(); //46
-            CameraCutSubject.Value = reader.ReadByte(); //47
-
-            if (DatagramVersion.Value >= (byte)DatagramVersionByte.PlayerStarPower)
-            {
-                var fixedPacketSize = DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration
-                    ? CURRENT_FIXED_PACKET_SIZE
-                    : V4_FIXED_PACKET_SIZE;
-                PlayerStarPowerCount.Value = reader.ReadUInt16();
-                EnsurePlayerStarPowerMemberCount(PlayerStarPowerCount.Value, fixedPacketSize);
-
-                for (var i = 0; i < PlayerStarPowerCount.Value; i++)
+                LightingCue.Value = reader.ReadByte(); // 35
+                PostProcessing.Value = reader.ReadByte(); // 36
+                var fogState = reader.ReadBoolean(); // Offset 36
+                if (DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration)
                 {
-                    var playerStarPower = _playerStarPowerMembers[i];
-                    playerStarPower.Amount.Value = reader.ReadByte();
-                    playerStarPower.IsActive.Value = reader.ReadByte() != 0;
+                    FogRemainingCentiseconds.Value = reader.ReadUInt16(); // Offsets 37-38 in v5+
                 }
-            }
-            else
-            {
-                PlayerStarPowerCount.Value = 0;
-                EnsurePlayerStarPowerMemberCount(0);
-            }
+                else
+                {
+                    FogRemainingCentiseconds.Value = ushort.MaxValue;
+                }
+                FogState.Value = fogState;
+                UpdateEffectiveFogState(fogState, FogRemainingCentiseconds.Value);
+                StrobeState.Value = reader.ReadByte();
+                Beat.Value = reader.ReadByte(); // 39
+                Keyframe.Value = reader.ReadByte(); // 40
+                BonusEffect.Value = reader.ReadBoolean(); // 41
+
+                AutoGen.Value = reader.ReadBoolean(); // 42
+                Spotlight.Value = reader.ReadByte(); // 43
+                Singalong.Value = reader.ReadByte(); // 44
+                CameraCutConstraint.Value = reader.ReadByte(); //45
+                CameraCutPriority.Value = reader.ReadByte(); //46
+                CameraCutSubject.Value = reader.ReadByte(); //47
+
+                if (DatagramVersion.Value >= (byte)DatagramVersionByte.PlayerStarPower)
+                {
+                    var fixedPacketSize = DatagramVersion.Value >= (byte)DatagramVersionByte.FogRemainingDuration
+                        ? CURRENT_FIXED_PACKET_SIZE
+                        : V4_FIXED_PACKET_SIZE;
+                    PlayerStarPowerCount.Value = reader.ReadUInt16();
+                    EnsurePlayerStarPowerMemberCount(PlayerStarPowerCount.Value, fixedPacketSize);
+
+                    for (var i = 0; i < PlayerStarPowerCount.Value; i++)
+                    {
+                        var playerStarPower = _playerStarPowerMembers[i];
+                        playerStarPower.Amount.Value = reader.ReadByte();
+                        playerStarPower.IsActive.Value = reader.ReadByte() != 0;
+                    }
+                }
+                else
+                {
+                    PlayerStarPowerCount.Value = 0;
+                    EnsurePlayerStarPowerMemberCount(0);
+                }
 
             }
 
@@ -450,6 +476,7 @@ public partial class UdpIntake : ReactiveObject
             if (!_mainViewModel.CombinedCollection.Contains(member))
             {
                 _mainViewModel.CombinedCollection.Add(member);
+                _mainViewModel.RegisterMemberForReordering(member);
             }
         }
 

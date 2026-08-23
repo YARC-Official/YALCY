@@ -5,56 +5,41 @@
              xmlns:vm="clr-namespace:YALCY.ViewModels"
              xmlns:openrgb="clr-namespace:YALCY.ViewModels.OpenRGB"
              xmlns:tabs="clr-namespace:YALCY.Views.Tabs"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
              x:Class="YALCY.Views.Tabs.OpenRgbTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
     <UserControl.Resources>
         <vm:DeviceTypeToIconConverter x:Key="DeviceTypeToIconConverter"/>
     </UserControl.Resources>
-    <Grid Margin="20,15">
+        <Grid Margin="20,16,20,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         
-        <!-- Hero Header Section -->
-        <Border Grid.Row="0" 
-                Background="#101224"
-                BorderThickness="2" 
-                CornerRadius="12"
-                Padding="28,22"
-                Margin="0,0,0,16">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                                
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="OpenRGB Integration" 
-                               FontSize="20" 
-                               FontWeight="Black" 
-                               Foreground="#FFFFFF"
-                               Margin="0,0,0,0"/>
-                    <TextBlock Text="Synchronize RGB lighting across all your devices" 
-                               FontSize="13" 
-                               Foreground="#AAAAAA"
-                               FontWeight="Medium"/>
+        <components:TabHeroHeader Grid.Row="0"
+                                  Margin="0,0,0,16"
+                                  HeaderTitle="OpenRGB Integration"
+                                  Subtitle="Synchronize RGB lighting across all your devices"
+                                  IconData="{StaticResource IconOpenRgb}">
+            <components:TabHeroHeader.BadgeContent>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <ToggleSwitch ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
+                                  IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                  OnContent=""
+                                  OffContent=""
+                                  HorizontalAlignment="Right"
+                                  Margin="0" />
+                    <TextBlock Text="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppTextSecondary}"
+                               HorizontalAlignment="Right"
+                               Margin="0,4,0,0" />
                 </StackPanel>
-                
-                <ToggleButton Grid.Column="2" 
-                              ToolTip.Tip="{Binding OpenRgbEnabledSetting.ToolTip}"
-                              Content="{Binding OpenRgbEnabledSetting.ToggleButtonContent}"
-                              IsChecked="{Binding OpenRgbEnabledSetting.IsEnabled, Mode=TwoWay}"
-                              MinWidth="140"
-                              Height="40"
-                              FontWeight="SemiBold"
-                              HorizontalContentAlignment="Center"
-                              VerticalContentAlignment="Center"
-                              VerticalAlignment="Center"/>
-            </Grid>
-        </Border>
+            </components:TabHeroHeader.BadgeContent>
+        </components:TabHeroHeader>
         
         <!-- Two Column Layout -->
         <Grid Grid.Row="1" x:Name="ContentGrid">
@@ -69,7 +54,8 @@
             
             <!-- Connection Settings Card -->
             <Border Grid.Column="0" x:Name="ConnectionCard"
-                    Background="#101224" 
+                 Background="{DynamicResource AppPanelBackground}"
+                 BorderBrush="{DynamicResource AppBorder}"
                     BorderThickness="1" 
                     CornerRadius="12"
                     Padding="20"
@@ -81,16 +67,16 @@
                             <TextBlock Text="Server Connection" 
                                        FontSize="15" 
                                        FontWeight="Bold" 
-                                       Foreground="#FFFFFF"/>
+                                       Foreground="{DynamicResource AppTextPrimary}"/>
                             <TextBlock x:Name="HeaderSubtitle"
                                        Text="Configure OpenRGB server" 
                                        FontSize="11" 
-                                       Foreground="#888888"/>
+                                       Foreground="{DynamicResource AppTextMuted}"/>
                         </StackPanel>
                         <!-- Compact Mode Vertical Divider -->
                         <Border x:Name="CompactDivider"
                                 Width="1"
-                                Background="#2A2D4A"
+                                Background="{DynamicResource AppBorderStrong}"
                                 VerticalAlignment="Stretch"
                                 Margin="4,0"
                                 IsVisible="False"/>
@@ -98,8 +84,8 @@
                     
                     <!-- Setup Info -->
                     <Border Grid.Row="1" x:Name="RequirementsPanel" 
-                            Background="#090b13"
-                            BorderBrush="#222643"
+                            Background="{DynamicResource AppInputBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
                             BorderThickness="1" 
                             CornerRadius="8" 
                             Padding="14"
@@ -110,15 +96,15 @@
                                 <TextBlock Text="Requirements" 
                                            FontSize="12" 
                                            FontWeight="Bold" 
-                                           Foreground="#FFFFFF"/>
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
                             </StackPanel>
                             <TextBlock Text="• OpenRGB Server must be running" 
                                        FontSize="11" 
-                                       Foreground="#AAAAAA"
+                                       Foreground="{DynamicResource AppTextSecondary}"
                                        Margin="22,0,0,0"/>
                             <TextBlock Text="• Set devices to Direct mode" 
                                        FontSize="11" 
-                                       Foreground="#AAAAAA"
+                                       Foreground="{DynamicResource AppTextSecondary}"
                                        Margin="22,0,0,0"/>
                         </StackPanel>
                     </Border>
@@ -129,7 +115,7 @@
                             <TextBlock x:Name="ServerIpLabel" Text="Server IP" 
                                        FontSize="11" 
                                        FontWeight="SemiBold"
-                                       Foreground="#AAAAAA"
+                                       Foreground="{DynamicResource AppTextSecondary}"
                                        Margin="0,0,0,6"/>
                             <TextBox x:Name="ServerIpInput"
                                      Text="{Binding OpenRgbServerIp}" 
@@ -144,7 +130,7 @@
                             <TextBlock x:Name="ServerPortLabel" Text="Port" 
                                        FontSize="11" 
                                        FontWeight="SemiBold"
-                                       Foreground="#AAAAAA"
+                                       Foreground="{DynamicResource AppTextSecondary}"
                                        Margin="0,0,0,6"/>
                             <NumericUpDown x:Name="ServerPortInput"
                                            Minimum="1" 
@@ -171,25 +157,30 @@
                     </StackPanel>
 
                     <!-- Strobe Behavior -->
-                    <StackPanel Grid.Row="3" x:Name="StrobeModePanel" Margin="0,0,10,8" VerticalAlignment="Bottom">
-                        <TextBlock x:Name="StrobeModeLabel" Text="Strobe behavior" FontSize="11" FontWeight="SemiBold" Foreground="#AAAAAA" Margin="0,0,0,6" />
-                        <StackPanel x:Name="StrobeModeRadioGroup" Orientation="Horizontal">
-                            <RadioButton Content="Strobe command"
+                    <StackPanel Grid.Row="3" x:Name="StrobeModePanel" Margin="0,0,0,18" VerticalAlignment="Bottom">
+                        <TextBlock x:Name="StrobeModeLabel" Text="Strobe behavior" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AppTextSecondary}" Margin="0,0,0,6" />
+                        <Grid x:Name="StrobeModeRadioGroup" ColumnDefinitions="*,*" Margin="0,2,0,0">
+                            <RadioButton Grid.Column="0"
+                                         Content="Strobe command"
                                          GroupName="OpenRgbStrobeMode"
                                          IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
-                                         FontSize="11"
-                                         Margin="0,0,10,0" />
-                            <RadioButton Content="Manual flash strobe"
+                                         Classes="SegmentedToggle"
+                                         HorizontalAlignment="Stretch"
+                                         Margin="0,0,3,0"/>
+                            <RadioButton Grid.Column="1"
+                                         Content="Manual flash"
                                          GroupName="OpenRgbStrobeMode"
                                          IsChecked="{Binding OpenRgbStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
-                                         FontSize="11"/>
-                        </StackPanel>
+                                         Classes="SegmentedToggle"
+                                         HorizontalAlignment="Stretch"
+                                         Margin="3,0,0,0"/>
+                        </Grid>
                     </StackPanel>
                     
                     <!-- Status -->
                     <Border Grid.Row="4" x:Name="StatusPanel" Margin="0,16,0,0" 
-                            Background="#090b13"
-                            BorderBrush="#222643"
+                            Background="{DynamicResource AppInputBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
                             BorderThickness="1" 
                             CornerRadius="8" 
                             Padding="12"
@@ -199,7 +190,7 @@
                             <TextBlock x:Name="StatusText"
                                        Text="{Binding OpenRgbStatus}" 
                                        FontSize="11" 
-                                       Foreground="#BBBBBB"
+                                       Foreground="{DynamicResource AppTextMuted}"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"
                                        TextWrapping="NoWrap"/>
@@ -210,7 +201,8 @@
             
             <!-- Devices Panel -->
             <Border Grid.Column="1" x:Name="DevicesCard"
-                    Background="#101224" 
+                    Background="{DynamicResource AppPanelBackground}" 
+                    BorderBrush="{DynamicResource AppBorder}"
                     BorderThickness="1" 
                     CornerRadius="12"
                     Padding="20">
@@ -226,10 +218,10 @@
                             <TextBlock Text="Connected Devices" 
                                        FontSize="15" 
                                        FontWeight="Bold" 
-                                       Foreground="#FFFFFF"/>
+                                       Foreground="{DynamicResource AppTextPrimary}"/>
                             <TextBlock Text="Configure zones for each device" 
                                        FontSize="11" 
-                                       Foreground="#888888"/>
+                                       Foreground="{DynamicResource AppTextMuted}"/>
                         </StackPanel>
                     </StackPanel>
                     
@@ -239,74 +231,82 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <!-- Modern Device Card -->
-                                <Border Background="#1A1D35" 
-                                        BorderBrush="#4A4E7A" 
+                                <Border Background="{DynamicResource AppCardBackground}" 
+                                        BorderBrush="{DynamicResource AppBorderStrong}" 
                                         BorderThickness="2" 
                                         CornerRadius="16"
                                         Margin="0,0,0,20"
                                         Padding="0">
                                     <StackPanel>
                                          <!-- Device Header with Gradient -->
-                                         <Border Background="#252B48"
+                                         <Border Background="{DynamicResource AppInputBackground}"
                                                  CornerRadius="16,16,0,0"
                                                  Padding="20,16"
-                                                 BorderBrush="#4A4E7A"
-                                                 BorderThickness="0,0,0,2">
+                                                 BorderBrush="{DynamicResource AppBorder}"
+                                                 BorderThickness="0,0,0,1">
                                              <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                                  <!-- Left Info Column -->
                                                  <Grid Grid.Column="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center" Margin="0,0,16,0">
                                                      <!-- Device Icon -->
                                                      <Border Grid.Column="0"
-                                                             Background="#6366F1" 
+                                                             Background="{DynamicResource SystemAccentColor}" 
                                                              Width="50" 
                                                              Height="50"
                                                              CornerRadius="12"
                                                              VerticalAlignment="Center"
                                                              Margin="0,0,16,0">
-                                                         <Viewbox Width="26" Height="26"
-                                                                  HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center"
-                                                                  Stretch="Uniform">
-                                                             <Canvas Width="24" Height="24">
-                                                                 <Path Fill="#FFFFFF"
-                                                                       Data="{Binding Device.Type, Converter={StaticResource DeviceTypeToIconConverter}}"/>
-                                                             </Canvas>
-                                                         </Viewbox>
+                                                         <PathIcon Data="{StaticResource IconDeviceHw}" 
+                                                                   Width="26" 
+                                                                   Height="26" 
+                                                                   Foreground="{DynamicResource SystemAccentContrastBrush}" 
+                                                                   HorizontalAlignment="Center" 
+                                                                   VerticalAlignment="Center"/>
                                                      </Border>
                                                      
-                                                     <!-- Title & Sub-Badges -->
                                                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                          <TextBlock Text="{Binding Device.Name}" 
                                                                     FontSize="17" 
                                                                     FontWeight="ExtraBold" 
-                                                                    Foreground="#FFFFFF"
+                                                                    Foreground="{DynamicResource AppTextPrimary}"
                                                                     Margin="0,0,0,6"
                                                                     TextTrimming="CharacterEllipsis"
                                                                     ToolTip.Tip="{Binding Device.Name}"/>
-                                                         <WrapPanel Orientation="Horizontal">
-                                                             <Border Background="#6366F1" 
+                                                         <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                             <Border Background="{DynamicResource SystemAccentColor}" 
                                                                      CornerRadius="6" 
-                                                                     Padding="8,4"
-                                                                     Margin="0,2,6,2">
+                                                                     Height="24"
+                                                                     Padding="10,0"
+                                                                     Margin="0,2,6,2"
+                                                                     VerticalAlignment="Center">
                                                                  <TextBlock Text="{Binding Device.Type}" 
                                                                             FontSize="10" 
-                                                                            FontWeight="Bold"
-                                                                            Foreground="#FFFFFF"/>
+                                                                            FontWeight="Bold" 
+                                                                            Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                                                            VerticalAlignment="Center"
+                                                                            HorizontalAlignment="Center"/>
                                                              </Border>
-                                                             <Border Background="#1F2339" 
+                                                             <Border Background="{DynamicResource AppCardBackground}" 
+                                                                     BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                     BorderThickness="1"
                                                                      CornerRadius="6" 
-                                                                     Padding="8,4"
-                                                                     Margin="0,2,6,2">
+                                                                     Height="24"
+                                                                     Padding="10,0"
+                                                                     Margin="0,2,6,2"
+                                                                     VerticalAlignment="Center">
                                                                  <TextBlock Text="{Binding Device.Vendor}" 
                                                                             FontSize="10" 
-                                                                            Foreground="#A5A8C8"
-                                                                            FontWeight="SemiBold"/>
+                                                                            Foreground="{DynamicResource AppTextSecondary}"
+                                                                            FontWeight="SemiBold"
+                                                                            VerticalAlignment="Center"
+                                                                            HorizontalAlignment="Center"/>
                                                              </Border>
                                                              <Button Command="{Binding IdentifyDeviceCommand}"
-                                                                     Background="#14162B"
-                                                                     CornerRadius="6"
+                                                                     Background="{DynamicResource AppCardBackground}"
+                                                                     BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                     BorderThickness="1"
+                                                                     CornerRadius="6" 
                                                                      Height="24"
-                                                                     Padding="8,0"
+                                                                     Padding="10,0"
                                                                      Margin="0,2,0,2"
                                                                      VerticalContentAlignment="Center"
                                                                      VerticalAlignment="Center"
@@ -316,7 +316,7 @@
                                                                      <TextBlock Text="Identify" 
                                                                                 FontSize="10" 
                                                                                 FontWeight="Bold" 
-                                                                                Foreground="#8B8FB5" 
+                                                                                Foreground="{DynamicResource AppTextSecondary}" 
                                                                                 VerticalAlignment="Center"/>
                                                                  </StackPanel>
                                                              </Button>
@@ -326,7 +326,7 @@
                                                  
                                                  <!-- Right Docked Zones Counter Badge -->
                                                  <Border Grid.Column="1"
-                                                         Background="#6366F1"
+                                                         Background="{DynamicResource SystemAccentColor}"
                                                          CornerRadius="10" 
                                                          Padding="14,8"
                                                          VerticalAlignment="Center"
@@ -335,11 +335,11 @@
                                                          <TextBlock Text="{Binding Zones.Count}" 
                                                                     FontSize="20" 
                                                                     FontWeight="Black" 
-                                                                    Foreground="#FFFFFF"
+                                                                    Foreground="{DynamicResource SystemAccentContrastBrush}"
                                                                     HorizontalAlignment="Center"/>
                                                          <TextBlock Text="ZONES" 
                                                                     FontSize="8" 
-                                                                    Foreground="#E0E1FF" 
+                                                                    Foreground="{DynamicResource SystemAccentContrastBrush}" 
                                                                     FontWeight="Bold"
                                                                     HorizontalAlignment="Center"
                                                                     Opacity="0.8"/>
@@ -353,40 +353,40 @@
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <!-- Modern Zone Card -->
-                                                    <Border Background="#1F2339" 
-                                                            BorderBrush="#3F4363" 
+                                                    <Border Background="{DynamicResource AppCardBackground}" 
+                                                            BorderBrush="{DynamicResource AppBorderStrong}" 
                                                             BorderThickness="1" 
                                                             CornerRadius="12" 
                                                             Margin="0,0,0,10"
                                                             Padding="0">
                                                         <StackPanel>
                                                             <!-- Zone Header -->
-                                                            <Border Background="#252B48"
+                                                            <Border Background="{DynamicResource AppInputBackground}"
                                                                     CornerRadius="12,12,0,0"
                                                                     Padding="14,10"
-                                                                    BorderBrush="#3F4363"
+                                                                    BorderBrush="{DynamicResource AppBorder}"
                                                                     BorderThickness="0,0,0,1">
                                                                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                                                     <StackPanel Grid.Column="0"
                                                                                 Orientation="Horizontal" 
-                                                                                Spacing="10"
+                                                                                Spacing="10" 
                                                                                 VerticalAlignment="Center"
                                                                                 Margin="0,2,14,2">
-                                                                        <Border Background="#6366F1"
+                                                                        <Border Background="{DynamicResource SystemAccentColor}"
                                                                                 Width="28"
                                                                                 Height="28"
                                                                                 CornerRadius="7">
                                                                             <TextBlock Text="{Binding ZoneIndex}" 
                                                                                        FontSize="13" 
                                                                                        FontWeight="Black" 
-                                                                                       Foreground="#FFFFFF"
-                                                                                       HorizontalAlignment="Center"
+                                                                                       Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                                                                       HorizontalAlignment="Center" 
                                                                                        VerticalAlignment="Center"/>
                                                                         </Border>
                                                                         <TextBlock Text="{Binding Zone.Name}" 
                                                                                    FontSize="14" 
                                                                                    FontWeight="Bold" 
-                                                                                   Foreground="#FFFFFF"
+                                                                                   Foreground="{DynamicResource AppTextPrimary}"
                                                                                    VerticalAlignment="Center"
                                                                                    TextTrimming="CharacterEllipsis"/>
                                                                     </StackPanel>
@@ -396,7 +396,9 @@
                                                                                HorizontalAlignment="Right"
                                                                                VerticalAlignment="Center">
                                                                         <Button Command="{Binding IdentifyZoneCommand}"
-                                                                                Background="#14162B"
+                                                                                Background="{DynamicResource AppCardBackground}"
+                                                                                BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                                BorderThickness="1"
                                                                                 CornerRadius="6"
                                                                                 MinHeight="26"
                                                                                 Height="26"
@@ -410,11 +412,13 @@
                                                                                 <TextBlock Text="Identify" 
                                                                                            FontSize="10" 
                                                                                            FontWeight="Bold" 
-                                                                                           Foreground="#8B8FB5" 
+                                                                                           Foreground="{DynamicResource AppTextSecondary}" 
                                                                                            VerticalAlignment="Center"/>
                                                                             </StackPanel>
                                                                         </Button>
-                                                                        <Border Background="#14162B" 
+                                                                        <Border Background="{DynamicResource AppCardBackground}" 
+                                                                                BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                                BorderThickness="1"
                                                                                 CornerRadius="6" 
                                                                                 MinHeight="26"
                                                                                 Height="26"
@@ -423,11 +427,13 @@
                                                                                 VerticalAlignment="Center">
                                                                             <TextBlock Text="{Binding Zone.Type}" 
                                                                                        FontSize="10" 
-                                                                                       FontWeight="Bold"
-                                                                                       Foreground="#8B8FB5"
+                                                                                       FontWeight="Bold" 
+                                                                                       Foreground="{DynamicResource AppTextSecondary}"
                                                                                        VerticalAlignment="Center" />
                                                                         </Border>
-                                                                        <Border Background="#14162B" 
+                                                                        <Border Background="{DynamicResource AppCardBackground}" 
+                                                                                BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                                BorderThickness="1"
                                                                                 CornerRadius="6" 
                                                                                 MinHeight="26"
                                                                                 Height="26"
@@ -437,12 +443,12 @@
                                                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                                                 <TextBlock Text="{Binding Zone.LedCount}" 
                                                                                            FontSize="10" 
-                                                                                           FontWeight="Bold"
-                                                                                           Foreground="#8B8FB5"
+                                                                                           FontWeight="Bold" 
+                                                                                           Foreground="{DynamicResource AppTextSecondary}"
                                                                                            VerticalAlignment="Center"/>
                                                                                 <TextBlock Text=" LEDs" 
                                                                                            FontSize="10"
-                                                                                           Foreground="#8B8FB5"
+                                                                                           Foreground="{DynamicResource AppTextSecondary}"
                                                                                            VerticalAlignment="Center"/>
                                                                             </StackPanel>
                                                                         </Border>
@@ -451,14 +457,14 @@
                                                             </Border>
 
                                                             <!-- Function Selector with Visual Pills -->
-                                                            <Border Background="#14162B"
+                                                            <Border Background="{DynamicResource AppPanelBackground}"
                                                                     CornerRadius="0,0,12,12"
                                                                     Padding="14,10">
                                                                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                                                     <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                                     <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                                                          <TextBlock Text="MODE" 
                                                                                     FontSize="10" 
-                                                                                    Foreground="#6B6F8F" 
+                                                                                    Foreground="{DynamicResource AppTextMuted}" 
                                                                                     VerticalAlignment="Center"
                                                                                     FontWeight="Black"
                                                                                     Margin="0,4,14,4"
@@ -467,7 +473,7 @@
                                                                          <RadioButton Content="Off" 
                                                                                       GroupName="{Binding GetZoneKeyProperty}"
                                                                                       IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
-                                                                                      Foreground="#D1D5FB"
+                                                                                      Foreground="{DynamicResource AppTextSecondary}"
                                                                                       FontSize="11"
                                                                                       FontWeight="SemiBold"
                                                                                       Padding="10,5"
@@ -477,7 +483,7 @@
                                                                          <RadioButton Content="LightPod" 
                                                                                       GroupName="{Binding GetZoneKeyProperty}"
                                                                                       IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
-                                                                                      Foreground="#D1D5FB"
+                                                                                      Foreground="{DynamicResource AppTextSecondary}"
                                                                                       FontSize="11"
                                                                                       FontWeight="SemiBold"
                                                                                       Padding="10,5"
@@ -487,7 +493,7 @@
                                                                          <RadioButton Content="Strobe" 
                                                                                       GroupName="{Binding GetZoneKeyProperty}"
                                                                                       IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}"
-                                                                                      Foreground="#D1D5FB"
+                                                                                      Foreground="{DynamicResource AppTextSecondary}"
                                                                                       FontSize="11"
                                                                                       FontWeight="SemiBold"
                                                                                       Padding="10,5"
@@ -497,7 +503,7 @@
                                                                          <RadioButton Content="Fogger" 
                                                                                        GroupName="{Binding GetZoneKeyProperty}"
                                                                                        IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=3}"
-                                                                                       Foreground="#D1D5FB"
+                                                                                       Foreground="{DynamicResource AppTextSecondary}"
                                                                                        FontSize="11"
                                                                                        FontWeight="SemiBold"
                                                                                        Padding="10,5"
@@ -507,36 +513,182 @@
                                                                          <RadioButton Content="LightPod + Strobe" 
                                                                                        GroupName="{Binding GetZoneKeyProperty}"
                                                                                        IsChecked="{Binding Category, Converter={StaticResource IntToBoolConverter}, ConverterParameter=4}"
-                                                                                       Foreground="#D1D5FB"
+                                                                                       Foreground="{DynamicResource AppTextSecondary}"
                                                                                        FontSize="11"
                                                                                        FontWeight="SemiBold"
                                                                                        Padding="10,5"
                                                                                        CornerRadius="7"
                                                                                        Margin="0,2,4,2"/>
                                                                      </WrapPanel>
+                                                                </Grid>
+                                                            </Border>
 
-                                                                     <Button Grid.Column="1" Command="{Binding ToggleCustomizeLedsCommand}"
-                                                                             Background="#1F2339"
-                                                                             Foreground="#A5B4FC"
-                                                                             FontSize="11"
-                                                                             FontWeight="Bold"
-                                                                             Padding="10,5"
-                                                                             CornerRadius="7"
-                                                                             HorizontalAlignment="Right"
-                                                                             VerticalAlignment="Center"
-                                                                             Margin="0,2,0,2">
-                                                                         <StackPanel Orientation="Horizontal" Spacing="6">
-                                                                             <TextBlock Text="⚙️" FontSize="11" VerticalAlignment="Center"/>
-                                                                             <TextBlock Text="Customize LEDs" VerticalAlignment="Center"/>
-                                                                         </StackPanel>
-                                                                     </Button>
-                                                                 </Grid>
+                                                            <!-- Colour Blending Mode Selector Row (LightPod & LightPod+Strobe only) -->
+                                                            <Border IsVisible="{Binding IsLightPodOrHybrid}"
+                                                                    Background="{DynamicResource AppCardBackground}"
+                                                                    BorderBrush="{DynamicResource AppBorder}"
+                                                                    BorderThickness="0,1,0,0"
+                                                                    Padding="14,8">
+                                                                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                                                    <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                        <TextBlock Text="🎨 BLENDING" 
+                                                                                   FontSize="10" 
+                                                                                   Foreground="{DynamicResource AppTextMuted}" 
+                                                                                   VerticalAlignment="Center" 
+                                                                                   FontWeight="Black"
+                                                                                   Margin="0,4,12,4"
+                                                                                   LetterSpacing="1"/>
+
+                                                                        <!-- Discrete (1:1) -->
+                                                                        <RadioButton Content="Discrete (1:1)" 
+                                                                                     GroupName="{Binding GetZoneKeyProperty, StringFormat='{}{0}_blend'}"
+                                                                                     IsChecked="{Binding IsBlendDiscrete, Mode=OneWay}"
+                                                                                     Command="{Binding SelectBlendModeCommand}"
+                                                                                     CommandParameter="0"
+                                                                                     Foreground="{DynamicResource AppTextSecondary}"
+                                                                                     FontSize="11"
+                                                                                     FontWeight="SemiBold"
+                                                                                     Padding="10,4"
+                                                                                     CornerRadius="6"
+                                                                                     Margin="0,2,4,2"
+                                                                                     ToolTip.Tip="Maps discrete StageKit channels directly to individual LEDs"/>
+
+                                                                        <!-- Uniform Wash -->
+                                                                        <RadioButton Content="Uniform Wash" 
+                                                                                     GroupName="{Binding GetZoneKeyProperty, StringFormat='{}{0}_blend'}"
+                                                                                     IsChecked="{Binding IsBlendUniformWash, Mode=OneWay}"
+                                                                                     Command="{Binding SelectBlendModeCommand}"
+                                                                                     CommandParameter="1"
+                                                                                     Foreground="{DynamicResource AppTextSecondary}"
+                                                                                     FontSize="11"
+                                                                                     FontWeight="SemiBold"
+                                                                                     Padding="10,4"
+                                                                                     CornerRadius="6"
+                                                                                     Margin="0,2,4,2"
+                                                                                     ToolTip.Tip="Blends all currently active StageKit colors into a harmonious uniform wash across all LEDs"/>
+
+                                                                        <!-- Smooth Gradient -->
+                                                                        <RadioButton Content="Smooth Gradient" 
+                                                                                     GroupName="{Binding GetZoneKeyProperty, StringFormat='{}{0}_blend'}"
+                                                                                     IsChecked="{Binding IsBlendSmoothGradient, Mode=OneWay}"
+                                                                                     Command="{Binding SelectBlendModeCommand}"
+                                                                                     CommandParameter="2"
+                                                                                     Foreground="{DynamicResource AppTextSecondary}"
+                                                                                     FontSize="11"
+                                                                                     FontWeight="SemiBold"
+                                                                                     Padding="10,4"
+                                                                                     CornerRadius="6"
+                                                                                     Margin="0,2,8,2"
+                                                                                     ToolTip.Tip="Interpolates smooth color gradients between active LEDs across the entire strip without black gaps"/>
+
+                                                                        <!-- Info Button with Guide Flyout -->
+                                                                        <Button Width="22" Height="22"
+                                                                                Padding="3"
+                                                                                Background="Transparent"
+                                                                                BorderThickness="0"
+                                                                                CornerRadius="11"
+                                                                                VerticalAlignment="Center"
+                                                                                Cursor="Hand"
+                                                                                Margin="4,0,0,0"
+                                                                                ToolTip.Tip="Colour Blending Guide">
+                                                                            <Button.Flyout>
+                                                                                <Flyout Placement="BottomEdgeAlignedLeft">
+                                                                                    <Border Background="{DynamicResource AppCardBackground}"
+                                                                                            BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                                            BorderThickness="1"
+                                                                                            CornerRadius="12"
+                                                                                            Padding="14"
+                                                                                            Width="330">
+                                                                                        <StackPanel Spacing="10">
+                                                                                            <!-- Header -->
+                                                                                            <StackPanel Spacing="2">
+                                                                                                <TextBlock Text="Colour Blending Guide"
+                                                                                                           FontSize="12"
+                                                                                                           FontWeight="Bold"
+                                                                                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                                                                                <TextBlock Text="How StageKit commands render on LEDs"
+                                                                                                           FontSize="10"
+                                                                                                           Foreground="{DynamicResource AppTextMuted}"/>
+                                                                                            </StackPanel>
+
+                                                                                            <!-- Card 1: Discrete (1:1) -->
+                                                                                            <Border Background="{DynamicResource AppInputBackground}"
+                                                                                                    BorderBrush="{DynamicResource AppBorder}"
+                                                                                                    BorderThickness="1"
+                                                                                                    CornerRadius="8"
+                                                                                                    Padding="10,8">
+                                                                                                <StackPanel Spacing="3">
+                                                                                                    <TextBlock Text="🎯 Discrete (1:1)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}"/>
+                                                                                                    <TextBlock Text="Direct channel-to-LED mapping. Supports manual LED / matrix customization." FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap"/>
+                                                                                                </StackPanel>
+                                                                                            </Border>
+
+                                                                                            <!-- Card 2: Uniform Wash -->
+                                                                                            <Border Background="{DynamicResource AppInputBackground}"
+                                                                                                    BorderBrush="{DynamicResource AppBorder}"
+                                                                                                    BorderThickness="1"
+                                                                                                    CornerRadius="8"
+                                                                                                    Padding="10,8">
+                                                                                                <StackPanel Spacing="3">
+                                                                                                    <TextBlock Text="🌈 Uniform Wash" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}"/>
+                                                                                                    <TextBlock Text="Blends all active pods into a single solid color on all LEDs. Ideal for fans &amp; RAM." FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap"/>
+                                                                                                </StackPanel>
+                                                                                            </Border>
+
+                                                                                            <!-- Card 3: Smooth Gradient -->
+                                                                                            <Border Background="{DynamicResource AppInputBackground}"
+                                                                                                    BorderBrush="{DynamicResource AppBorder}"
+                                                                                                    BorderThickness="1"
+                                                                                                    CornerRadius="8"
+                                                                                                    Padding="10,8">
+                                                                                                <StackPanel Spacing="3">
+                                                                                                    <TextBlock Text="〰️ Smooth Gradient" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}"/>
+                                                                                                    <TextBlock Text="Interpolates smooth transitions from Pod 1 to 8 across the strip. Rotations flow like waves." FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap"/>
+                                                                                                </StackPanel>
+                                                                                            </Border>
+                                                                                        </StackPanel>
+                                                                                    </Border>
+                                                                                </Flyout>
+                                                                            </Button.Flyout>
+                                                                            <Path Data="{StaticResource IconInfo}"
+                                                                                  Stroke="{DynamicResource AppTextSecondary}"
+                                                                                  StrokeThickness="2"
+                                                                                  StrokeLineCap="Round"
+                                                                                  StrokeJoin="Round"
+                                                                                  Width="14"
+                                                                                  Height="14"
+                                                                                  Stretch="Uniform"
+                                                                                  HorizontalAlignment="Center"
+                                                                                  VerticalAlignment="Center"/>
+                                                                        </Button>
+                                                                    </WrapPanel>
+
+                                                                    <!-- Customize LEDs Button (Visible only in Discrete 1:1 mode) -->
+                                                                    <Button Grid.Column="1" Command="{Binding ToggleCustomizeLedsCommand}"
+                                                                            IsVisible="{Binding IsBlendDiscrete}"
+                                                                            Background="{DynamicResource AppPanelBackground}"
+                                                                            BorderBrush="{DynamicResource AppBorderStrong}"
+                                                                            BorderThickness="1"
+                                                                            Foreground="{DynamicResource AppTextSecondary}"
+                                                                            FontSize="11"
+                                                                            FontWeight="Bold"
+                                                                            Padding="10,5"
+                                                                            CornerRadius="7"
+                                                                            HorizontalAlignment="Right"
+                                                                            VerticalAlignment="Center"
+                                                                            Margin="0,2,0,2">
+                                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                            <TextBlock Text="⚙️" FontSize="11" VerticalAlignment="Center"/>
+                                                                            <TextBlock Text="Customize LEDs" VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                    </Button>
+                                                                </Grid>
                                                             </Border>
 
                                                             <!-- Expandable LED Customization Drawer (2D Matrix & Linear Layout) -->
                                                             <Border IsVisible="{Binding IsCustomizingLeds}"
-                                                                    Background="#0B0D1B"
-                                                                    BorderBrush="#252A4A"
+                                                                    Background="{DynamicResource AppInputBackground}"
+                                                                    BorderBrush="{DynamicResource AppBorder}"
                                                                     BorderThickness="0,1,0,0"
                                                                     Padding="18,16"
                                                                     CornerRadius="0,0,12,12">
@@ -547,7 +699,7 @@
                                                                                          Text="STAGEKIT LED MATRIX" 
                                                                                          FontSize="11" 
                                                                                          FontWeight="Black" 
-                                                                                         Foreground="#818CF8"
+                                                                                         Foreground="{DynamicResource AppTextPrimary}"
                                                                                          LetterSpacing="1"
                                                                                          VerticalAlignment="Center"
                                                                                          TextTrimming="CharacterEllipsis"
@@ -555,9 +707,9 @@
 
                                                                               <!-- Quick Action Presets (Docked Right) -->
                                                                               <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                                                  <Button Content="🔄 Default" Command="{Binding SetDefaultCommand}" Background="#334155" Foreground="#F8FAFC" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
-                                                                                  <Button Content="⚡ Auto Divide" Command="{Binding AutoDivideCommand}" Background="#1E293B" Foreground="#CBD5E1" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
-                                                                                  <Button Content="🔢 Auto Sequential" Command="{Binding AutoSequentialCommand}" Background="#1E293B" Foreground="#CBD5E1" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="🔄 Default" Command="{Binding SetDefaultCommand}" Background="{DynamicResource AppCardBackground}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="1" Foreground="{DynamicResource AppTextPrimary}" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="⚡ Auto Divide" Command="{Binding AutoDivideCommand}" Background="{DynamicResource AppCardBackground}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="1" Foreground="{DynamicResource AppTextSecondary}" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
+                                                                                  <Button Content="🔢 Auto Sequential" Command="{Binding AutoSequentialCommand}" Background="{DynamicResource AppCardBackground}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="1" Foreground="{DynamicResource AppTextSecondary}" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
                                                                                   <Button Content="🔵 All Blue" Command="{Binding SetAllBlueCommand}" Background="#1E3A8A" Foreground="#93C5FD" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
                                                                                   <Button Content="🔴 All Red" Command="{Binding SetAllRedCommand}" Background="#881337" Foreground="#FCA5A5" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
                                                                                   <Button Content="🟢 All Green" Command="{Binding SetAllGreenCommand}" Background="#064E3B" Foreground="#6EE7B7" FontSize="10" FontWeight="Bold" Padding="8,4" CornerRadius="5" Margin="0,2,4,2"/>
@@ -566,9 +718,9 @@
                                                                           </Grid>
 
                                                                          <!-- Paint Palette Bar (Inline Expanding Accordion Palette) -->
-                                                                         <Border Background="#14172E" BorderBrush="#252A4A" BorderThickness="1" CornerRadius="8" Padding="10,8">
+                                                                         <Border Background="{DynamicResource AppCardBackground}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="1" CornerRadius="8" Padding="10,8">
                                                                              <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                                                 <TextBlock Text="🎨 Paint Tool:" FontSize="10" FontWeight="Bold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                                                 <TextBlock Text="🎨 Paint Tool:" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AppTextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                                                                  
                                                                                  <!-- OFF Button -->
                                                                                  <Button Content="⬛ Off" Command="{Binding SelectPaintGroupCommand}" CommandParameter="OFF" Background="{Binding OffBg}" Foreground="{Binding OffFg}" BorderBrush="{Binding OffBorder}" BorderThickness="2" FontSize="10" FontWeight="Bold" Padding="10,5" Margin="2" CornerRadius="6"/>
