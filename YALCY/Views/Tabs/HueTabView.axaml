@@ -6,6 +6,7 @@
              x:Class="YALCY.Views.Tabs.HueTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="5">
         <!-- Toggle Button -->
         <ToggleButton ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
@@ -18,7 +19,7 @@
         <TextBlock Text="2) Find and enter the IP address of your hub into the box." Margin="5" />
         <TextBlock Text="3) Create an &quot;entertainment area&quot; in your phillips hue app and name it YARG"
                    Margin="5" />
-        <TextBlock Text="4) Add 8 lights to the area. Less will work, but you won't see full effects."
+        <TextBlock Text="4) Add your lights to the area, then use 'Discover lamps' below to assign them."
                    Margin="5" />
         <TextBlock
             Text="5) Link this program to your hub. Push the button on the hub FIRST, then click the register button"
@@ -31,6 +32,53 @@
             <RadioButton Content="Manual flash strobe"
                          GroupName="HueStrobeMode"
                          IsChecked="{Binding HueStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+        </StackPanel>
+        <TextBlock Text="Lamps assigned as 'Strobe' always flash on strobe cues and ignore the colour patterns. Without strobe lamps, 'Manual flash strobe' flashes all lamps."
+                   Margin="5,0,5,8"
+                   TextWrapping="Wrap" />
+
+        <!-- Lamp assignment -->
+        <TextBlock Text="Lamps in the YARG entertainment area" Margin="5,8,5,0" FontWeight="Bold" />
+        <TextBlock Text="Auto = share the 8 Stage Kit positions with the other Auto lamps. Light N / Lights N+M = fixed positions. Strobe = dedicated strobe lamp. Off = not used."
+                   Margin="5,0,5,4"
+                   TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,4" Spacing="8">
+            <Button Content="Discover lamps" Command="{Binding DiscoverHueLampsCommand}" />
+            <TextBlock Text="{Binding HueLampStatus}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+        <ScrollViewer Margin="5,0,5,8" MaxHeight="360" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding HueLamps}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HueLampViewModel">
+                        <Border Background="{Binding RowBackground}" CornerRadius="3" Padding="8,6" Margin="0,0,0,3">
+                            <Grid ColumnDefinitions="*,150,180">
+                                <TextBlock Grid.Column="0" Text="{Binding DisplayName}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Text="{Binding Position}" VerticalAlignment="Center" Margin="8,0,8,0" />
+                                <ComboBox Grid.Column="2"
+                                          ItemsSource="{Binding AvailableRoles}"
+                                          SelectedItem="{Binding SelectedRole, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Strobe lamp idle state -->
+        <TextBlock Text="Strobe lamps when not strobing" Margin="5,0,5,0" FontWeight="Bold" />
+        <Grid ColumnDefinitions="150,120,40" RowDefinitions="Auto,Auto" Margin="5,4,5,8">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Colour (hex)" VerticalAlignment="Center" />
+            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding HueStrobeIdleColor, Mode=TwoWay}" Watermark="FFFFFF" />
+            <Border Grid.Row="0" Grid.Column="2" Background="{Binding HueStrobeIdlePreview}"
+                    Width="24" Height="24" CornerRadius="3" Margin="8,0,0,0" BorderBrush="Gray" BorderThickness="1" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Brightness" VerticalAlignment="Center" Margin="0,6,0,0" />
+            <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding HueStrobeIdleBrightness, Mode=TwoWay}" Margin="0,6,0,0" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding HueStrobeIdleBrightness, StringFormat='{}{0:0} %'}" VerticalAlignment="Center" Margin="8,6,0,0" />
+        </Grid>
+        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="8">
+            <Button Content="Test strobe (3 s)" Command="{Binding TestHueStrobeCommand}" />
+            <TextBlock Text="Needs Hue streaming to be on. Status appears next to 'Discover lamps'."
+                       VerticalAlignment="Center" TextWrapping="Wrap" />
         </StackPanel>
         <!-- IP Address Input -->
         <TextBlock Text="Enter Hue Bridge IP" />
@@ -45,4 +93,5 @@
         <!-- Error Output -->
         <TextBlock Text="{Binding HueMessage}" Margin="5" Foreground="Red" />
     </StackPanel>
+    </ScrollViewer>
 </UserControl>

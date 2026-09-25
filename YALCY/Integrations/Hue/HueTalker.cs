@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -101,13 +102,46 @@ public class HueTalker : IDisposable
                 _baseEntLayer = _streamingGroup.GetNewLayer(isBaseLayer: true);
                 _effectLayer = _streamingGroup.GetNewLayer();
 
-                _baseEntLayer.SetState(_cancellationTokenSource.Token, new RGBColor("FFFFFF"), 1);
+                _baseEntLayer.SetState(_cancellationTokenSource.Token, new RGBColor("000000"), 0);
+                lock (_ledStateLock)
+                {
+                    RenderLeds();
+                    ApplyStrobeIdle();
+                }
+
                 UsbDeviceMonitor.OnStageKitCommand += SendRequest;
 
                 StatusFooter.UpdateStatus("Hue", IntegrationStatus.Connected);
+                _streamingActive = true;
 
-                // Start auto-updating this entertainment group
-                await _client.AutoUpdateAsync(_streamingGroup, _cancellationTokenSource.Token, 50, onlySendDirtyStates: false);
+                // YALCY only reacts to changes. Re-send the current cue/strobe so Hue doesn't wait for the next cue.
+                mainViewModel.UdpIntake.ReplayOutputState();
+
+                // Stream in the background. AutoUpdateAsync only returns when streaming stops; awaiting it here
+                // blocked YALCY's startup sequence, so the UDP intake (started after Hue) never came up.
+                var client = _client;
+                var streamingGroup = _streamingGroup;
+                var token = _cancellationTokenSource.Token;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await client.AutoUpdateAsync(streamingGroup, token, 50, onlySendDirtyStates: false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Hue was switched off.
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Hue streaming stopped: {ex.Message}");
+                        StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                    }
+                    finally
+                    {
+                        _streamingActive = false;
+                    }
+                });
             }
             catch (UnauthorizedAccessException)
             {
@@ -140,6 +174,7 @@ public class HueTalker : IDisposable
         else
         {
             Console.WriteLine("Disabling Hue.");
+            _streamingActive = false;
             // Cancel any ongoing operations
             _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
             _cancellationTokenSource?.Cancel();
@@ -247,7 +282,6 @@ public class HueTalker : IDisposable
             return;
         }
 
-        RGBColor color;
         switch (commandId)
         {
             case StageKitTalker.CommandId.StrobeSlow:
@@ -258,80 +292,367 @@ public class HueTalker : IDisposable
                 return;
 
             case StageKitTalker.CommandId.StrobeOff:
-                _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
-                return;
-
-            case StageKitTalker.CommandId.BlueLeds:
-                color = new RGBColor("0000FF");
-                break;
-
-            case StageKitTalker.CommandId.GreenLeds:
-                color = new RGBColor("00FF00");
-                break;
-
-            case StageKitTalker.CommandId.RedLeds:
-                color = new RGBColor("FF0000");
-                break;
-
-            case StageKitTalker.CommandId.YellowLeds:
-                color = new RGBColor("FFFF00");
-                break;
-
-            case StageKitTalker.CommandId.DisableAll:
-                _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
-                color = new RGBColor("000000");
-                break;
-
-            default:
+                StopStrobe();
                 return;
         }
 
-        for (int i = 0; i < 8; i++)
+        lock (_ledStateLock)
         {
-            var light = _baseEntLayer?.FirstOrDefault(x => x.Id == i);
-            if (light == null)
+            // Each Stage Kit colour command only describes ITS colour. Remember the latest mask per colour
+            // instead of overwriting the whole rig, so parallel patterns (e.g. red + yellow + blue in Sweep)
+            // stay visible together.
+            switch (commandId)
+            {
+                case StageKitTalker.CommandId.BlueLeds:
+                    _blueMask = parameter;
+                    break;
+
+                case StageKitTalker.CommandId.GreenLeds:
+                    _greenMask = parameter;
+                    break;
+
+                case StageKitTalker.CommandId.YellowLeds:
+                    _yellowMask = parameter;
+                    break;
+
+                case StageKitTalker.CommandId.RedLeds:
+                    _redMask = parameter;
+                    break;
+
+                case StageKitTalker.CommandId.DisableAll:
+                    StopStrobe();
+                    _blueMask = _greenMask = _yellowMask = _redMask = 0;
+                    break;
+
+                default:
+                    return;
+            }
+
+            RenderLeds();
+        }
+    }
+
+    private readonly object _ledStateLock = new();
+    private byte _blueMask;
+    private byte _greenMask;
+    private byte _yellowMask;
+    private byte _redMask;
+    private bool _strobeRunning;
+    private volatile bool _streamingActive;
+    private volatile bool _testStrobeActive;
+    private int _testStrobeRunning;
+
+    /// <summary>
+    /// Flashes the strobe lamps (or all lamps if none are assigned) for 3 seconds at a fixed 120 BPM,
+    /// independent of the game and of the strobe mode setting.
+    /// </summary>
+    public async Task TestStrobeAsync(MainWindowViewModel viewModel)
+    {
+        if (!_streamingActive || _baseEntLayer == null)
+        {
+            viewModel.SetHueLampStatus("Strobe test: Hue is not streaming. Turn Hue on and wait for 'Streaming is active'.");
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _testStrobeRunning, 1) == 1)
+        {
+            return;
+        }
+
+        try
+        {
+            viewModel.SetHueLampStatus(HasDedicatedStrobeLamps()
+                ? "Strobe test: flashing the strobe lamps for 3 seconds..."
+                : "Strobe test: no lamp is set to 'Strobe', flashing all lamps for 3 seconds...");
+
+            _testStrobeActive = true;
+            lock (_ledStateLock)
+            {
+                _strobeRunning = true;
+            }
+
+            _manualStrobeFlasher.Start(StageKitTalker.CommandId.StrobeSlow, 120f, SetManualStrobeStateAsync);
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+        finally
+        {
+            _testStrobeActive = false;
+            StopStrobe();
+            Interlocked.Exchange(ref _testStrobeRunning, 0);
+            viewModel.SetHueLampStatus("Strobe test: done.");
+        }
+    }
+
+    private sealed class LampSettingsSnapshot
+    {
+        public static readonly LampSettingsSnapshot Empty =
+            new(new Dictionary<int, string>(), HueColorHelper.DefaultStrobeIdleColor, 0);
+
+        public LampSettingsSnapshot(IReadOnlyDictionary<int, string> roles, string idleColor, double idleBrightness)
+        {
+            Roles = roles;
+            IdleColor = idleColor;
+            IdleBrightness = idleBrightness;
+        }
+
+        public IReadOnlyDictionary<int, string> Roles { get; }
+        public string IdleColor { get; }
+        public double IdleBrightness { get; }
+
+        public string RoleFor(int channelId)
+        {
+            return Roles.TryGetValue(channelId, out var role) ? role : HueLampRoles.Auto;
+        }
+    }
+
+    private volatile LampSettingsSnapshot _lampSettings = LampSettingsSnapshot.Empty;
+
+    /// <summary>
+    /// Receives lamp roles and the strobe idle state from the UI. Safe to call at any time, also while streaming.
+    /// </summary>
+    public void ApplyLampSettings(IEnumerable<HueLampAssignmentSetting> assignments, string idleColorHex, double idleBrightness)
+    {
+        var roles = assignments
+            .GroupBy(a => a.ChannelId)
+            .ToDictionary(g => g.Key, g => HueLampRoles.Normalize(g.First().Role));
+
+        _lampSettings = new LampSettingsSnapshot(
+            roles,
+            HueColorHelper.NormalizeHex(idleColorHex) ?? HueColorHelper.DefaultStrobeIdleColor,
+            Math.Clamp(idleBrightness, 0, 1));
+
+        lock (_ledStateLock)
+        {
+            if (HasDedicatedStrobeLamps())
+            {
+                // With dedicated strobe lamps the "flash everything" layer must not cover the pattern lamps.
+                _effectLayer?.SetState(CancellationToken.None, new RGBColor("000000"), 0);
+            }
+
+            RenderLeds();
+            if (!_strobeRunning)
+            {
+                ApplyStrobeIdle();
+            }
+        }
+    }
+
+    private bool HasDedicatedStrobeLamps()
+    {
+        var layer = _baseEntLayer;
+        var settings = _lampSettings;
+        return layer != null && layer.Any(light => settings.RoleFor(light.Id) == HueLampRoles.Strobe);
+    }
+
+    /// <summary>
+    /// Renders the Stage Kit LED state onto all pattern lamps.
+    /// "Auto" lamps share the 8 positions (folded in channel order, e.g. 4 lamps: 1+5, 2+6, 3+7, 4+8),
+    /// "Light N" / "Lights N+M" lamps show exactly those positions, strobe and off lamps are skipped here.
+    /// Must be called while holding _ledStateLock.
+    /// </summary>
+    private void RenderLeds()
+    {
+        var layer = _baseEntLayer;
+        if (layer == null)
+        {
+            return;
+        }
+
+        var settings = _lampSettings;
+        var lights = layer.OrderBy(x => x.Id).ToList();
+        var autoLights = lights.Where(l => settings.RoleFor(l.Id) == HueLampRoles.Auto).ToList();
+
+        foreach (var light in lights)
+        {
+            var role = settings.RoleFor(light.Id);
+            if (role == HueLampRoles.Strobe)
             {
                 continue;
             }
-            if ((parameter & (1 << i)) != 0)
+
+            if (role == HueLampRoles.Off)
             {
-                light.SetBrightness(CancellationToken.None, 1);
-                light.SetColor(CancellationToken.None, color);
+                light.SetState(CancellationToken.None, new RGBColor("000000"), 0);
+                continue;
             }
-            else
+
+            byte positions;
+            if (!HueLampRoles.TryGetFixedPositions(role, out positions))
             {
-                light.SetBrightness(CancellationToken.None, 1);
-                light.SetColor(CancellationToken.None, new RGBColor("000000"));
+                var autoIndex = autoLights.IndexOf(light);
+                var autoCount = autoLights.Count;
+                positions = 0;
+                if (autoCount <= 8)
+                {
+                    for (var position = autoIndex; position < 8; position += autoCount)
+                    {
+                        positions |= (byte)(1 << position);
+                    }
+                }
+                else
+                {
+                    positions = (byte)(1 << (autoIndex % 8));
+                }
             }
+
+            var (r, g, b, isActive) = StageKitColorBlender.BlendPod(
+                (_blueMask & positions) != 0,
+                (_redMask & positions) != 0,
+                (_greenMask & positions) != 0,
+                (_yellowMask & positions) != 0);
+
+            light.SetState(CancellationToken.None, new RGBColor($"{r:X2}{g:X2}{b:X2}"), isActive ? 1 : 0);
+        }
+    }
+
+    /// <summary>Puts dedicated strobe lamps into their idle colour/brightness. Must hold _ledStateLock.</summary>
+    private void ApplyStrobeIdle()
+    {
+        var layer = _baseEntLayer;
+        if (layer == null)
+        {
+            return;
+        }
+
+        var settings = _lampSettings;
+        foreach (var light in layer.Where(l => settings.RoleFor(l.Id) == HueLampRoles.Strobe))
+        {
+            light.SetState(CancellationToken.None, new RGBColor(settings.IdleColor), settings.IdleBrightness);
         }
     }
 
     private void HandleStrobeCommand(StageKitTalker.CommandId commandId)
     {
-        if (_mainViewModel?.HueStrobeMode != StrobeOutputModes.ManualFlash)
+        // Dedicated strobe lamps always flash. Without them, only flash everything in "Manual flash" mode.
+        if (!HasDedicatedStrobeLamps() && _mainViewModel?.HueStrobeMode != StrobeOutputModes.ManualFlash)
         {
-            _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+            StopStrobe();
             return;
+        }
+
+        lock (_ledStateLock)
+        {
+            _strobeRunning = true;
         }
 
         _manualStrobeFlasher.Start(commandId, UdpIntake.BeatsPerMinute.Value, SetManualStrobeStateAsync);
     }
 
+    private void StopStrobe()
+    {
+        _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+        lock (_ledStateLock)
+        {
+            _strobeRunning = false;
+            ApplyStrobeIdle();
+        }
+    }
+
     private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
     {
-        if (UsbDeviceMonitor.IsOutputSuppressed)
-        {
-            isOn = false;
-        }
-
-        var layer = _effectLayer ?? _baseEntLayer;
-        if (layer == null)
+        // A flash step that races with Stop() must not leave the lamps on.
+        if (isOn && cancellationToken.IsCancellationRequested)
         {
             return Task.CompletedTask;
         }
 
-        layer.SetState(cancellationToken, new RGBColor(isOn ? "FFFFFF" : "000000"), isOn ? 1 : 0);
+        // The safety blackout (no data from YARG) would swallow the test flashes, so the test bypasses it.
+        if (UsbDeviceMonitor.IsOutputSuppressed && !_testStrobeActive)
+        {
+            isOn = false;
+        }
+
+        lock (_ledStateLock)
+        {
+            if (HasDedicatedStrobeLamps())
+            {
+                var settings = _lampSettings;
+                foreach (var light in _baseEntLayer!.Where(l => settings.RoleFor(l.Id) == HueLampRoles.Strobe))
+                {
+                    light.SetState(CancellationToken.None, new RGBColor(isOn ? "FFFFFF" : "000000"), isOn ? 1 : 0);
+                }
+
+                return Task.CompletedTask;
+            }
+
+            var layer = _effectLayer ?? _baseEntLayer;
+            layer?.SetState(CancellationToken.None, new RGBColor(isOn ? "FFFFFF" : "000000"), isOn ? 1 : 0);
+        }
+
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Reads the channels of the "YARG" entertainment area and resolves a readable name per channel
+    /// (entertainment service -> owning device -> device name). Does not need streaming to be active.
+    /// </summary>
+    public async Task DiscoverLampsAsync(MainWindowViewModel viewModel)
+    {
+        _mainViewModel ??= viewModel;
+
+        var ip = viewModel.HueBridgeIp;
+        var username = viewModel.HueAuthResult?.Username;
+        if (string.IsNullOrWhiteSpace(ip) || string.IsNullOrWhiteSpace(username))
+        {
+            viewModel.SetHueLampStatus("Lamps: register with the bridge first (IP + link button).");
+            return;
+        }
+
+        try
+        {
+            viewModel.SetHueLampStatus("Lamps: reading entertainment areas from the bridge...");
+            var api = new LocalHueApi(ip, username);
+
+            var configurations = await api.GetEntertainmentConfigurationsAsync();
+            var area = configurations.Data.FirstOrDefault(c =>
+                string.Equals(c.Metadata?.Name, "yarg", StringComparison.OrdinalIgnoreCase));
+
+            if (area == null)
+            {
+                viewModel.SetHueLampStatus("Lamps: no entertainment area named 'YARG' found. Create it in the Hue app.");
+                return;
+            }
+
+            var services = (await api.GetEntertainmentServicesAsync()).Data;
+            var devices = (await api.GetDevicesAsync()).Data;
+
+            var deviceNames = devices.ToDictionary(d => d.Id, d => d.Metadata?.Name ?? "Unknown device");
+            var serviceToDeviceName = services.ToDictionary(
+                s => s.Id,
+                s => s.Owner != null && deviceNames.TryGetValue(s.Owner.Rid, out var name) ? name : "Unknown device");
+
+            var channelNames = area.Channels
+                .OrderBy(c => c.ChannelId)
+                .Select(c => new
+                {
+                    Channel = c,
+                    Name = string.Join(" + ", c.Members
+                        .Select(m => m.Service != null && serviceToDeviceName.TryGetValue(m.Service.Rid, out var n)
+                            ? n
+                            : "Unknown device")
+                        .Distinct())
+                })
+                .ToList();
+
+            // Gradient strips and similar devices expose several channels; number their segments.
+            var lamps = new List<HueLampModel>();
+            foreach (var group in channelNames.GroupBy(c => c.Name))
+            {
+                var segments = group.ToList();
+                for (var i = 0; i < segments.Count; i++)
+                {
+                    var name = segments.Count > 1 ? $"{segments[i].Name} (segment {i + 1})" : segments[i].Name;
+                    var position = segments[i].Channel.Position;
+                    lamps.Add(new HueLampModel(segments[i].Channel.ChannelId, name, position.X, position.Y));
+                }
+            }
+
+            viewModel.SetHueLamps(lamps);
+        }
+        catch (Exception ex)
+        {
+            viewModel.SetHueLampStatus($"Lamps: discovery failed: {ex.Message}");
+        }
     }
 
     public void Dispose()

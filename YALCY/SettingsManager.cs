@@ -6,6 +6,7 @@ using HueApi.Models.Clip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using YALCY.Integrations.HomeAssistant;
+using YALCY.Integrations.Hue;
 using YALCY.Integrations.Lifx;
 using YALCY.ViewModels;
 
@@ -34,6 +35,9 @@ public class SettingsContainer
     public int? SerialStrobeMode { get; set; }
     public int? Rb3eStrobeMode { get; set; }
     public int? HueStrobeMode { get; set; }
+    public List<HueLampAssignmentSetting>? HueLampAssignments { get; set; }
+    public string? HueStrobeIdleColor { get; set; }
+    public int? HueStrobeIdleBrightness { get; set; }
     public int? LifxStrobeMode { get; set; }
     public int? OpenRgbStrobeMode { get; set; }
     public int? HomeAssistantStrobeMode { get; set; }
@@ -87,6 +91,9 @@ internal static class SettingsManager
         SerialStrobeMode = StrobeOutputModes.StrobeCommand,
         Rb3eStrobeMode = StrobeOutputModes.StrobeCommand,
         HueStrobeMode = StrobeOutputModes.StrobeCommand,
+        HueLampAssignments = new List<HueLampAssignmentSetting>(),
+        HueStrobeIdleColor = HueColorHelper.DefaultStrobeIdleColor,
+        HueStrobeIdleBrightness = HueColorHelper.DefaultStrobeIdleBrightness,
         LifxStrobeMode = StrobeOutputModes.StrobeCommand,
         OpenRgbStrobeMode = StrobeOutputModes.ManualFlash,
         HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand,
@@ -160,6 +167,10 @@ internal static class SettingsManager
     public static int SerialStrobeMode { get; set; }
     public static int Rb3eStrobeMode { get; set; }
     public static int HueStrobeMode { get; set; }
+    public static IReadOnlyList<HueLampAssignmentSetting> HueLampAssignments { get; private set; } =
+        Array.Empty<HueLampAssignmentSetting>();
+    public static string HueStrobeIdleColor { get; private set; } = HueColorHelper.DefaultStrobeIdleColor;
+    public static int HueStrobeIdleBrightness { get; private set; } = HueColorHelper.DefaultStrobeIdleBrightness;
     public static int LifxStrobeMode { get; set; }
     public static int OpenRgbStrobeMode { get; set; }
     public static int HomeAssistantStrobeMode { get; set; }
@@ -274,6 +285,12 @@ internal static class SettingsManager
         settings.SerialStrobeMode = mainViewModel.SerialStrobeMode;
         settings.Rb3eStrobeMode = mainViewModel.Rb3eStrobeMode;
         settings.HueStrobeMode = mainViewModel.HueStrobeMode;
+        settings.HueLampAssignments = new List<HueLampAssignmentSetting>(mainViewModel.GetHueLampAssignments());
+        settings.HueStrobeIdleColor = HueColorHelper.NormalizeHex(mainViewModel.HueStrobeIdleColor) ?? HueColorHelper.DefaultStrobeIdleColor;
+        settings.HueStrobeIdleBrightness = (int)Math.Round(mainViewModel.HueStrobeIdleBrightness);
+        HueLampAssignments = settings.HueLampAssignments;
+        HueStrobeIdleColor = settings.HueStrobeIdleColor;
+        HueStrobeIdleBrightness = settings.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness;
         settings.LifxStrobeMode = mainViewModel.LifxStrobeMode;
         settings.OpenRgbStrobeMode = mainViewModel.OpenRgbStrobeMode;
         settings.HomeAssistantStrobeMode = mainViewModel.HomeAssistantStrobeMode;
@@ -520,6 +537,16 @@ internal static class SettingsManager
             SerialStrobeMode = StrobeOutputModes.Normalize(container.SerialStrobeMode ?? StrobeOutputModes.StrobeCommand);
             Rb3eStrobeMode = StrobeOutputModes.Normalize(container.Rb3eStrobeMode ?? StrobeOutputModes.StrobeCommand);
             HueStrobeMode = StrobeOutputModes.Normalize(container.HueStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            HueLampAssignments = (container.HueLampAssignments ?? new List<HueLampAssignmentSetting>())
+                .Select(assignment => new HueLampAssignmentSetting
+                {
+                    ChannelId = assignment.ChannelId,
+                    Name = assignment.Name ?? string.Empty,
+                    Role = HueLampRoles.Normalize(assignment.Role)
+                })
+                .ToList();
+            HueStrobeIdleColor = HueColorHelper.NormalizeHex(container.HueStrobeIdleColor) ?? HueColorHelper.DefaultStrobeIdleColor;
+            HueStrobeIdleBrightness = Math.Clamp(container.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness, 0, 100);
             LifxStrobeMode = StrobeOutputModes.Normalize(container.LifxStrobeMode ?? StrobeOutputModes.StrobeCommand);
             OpenRgbStrobeMode = StrobeOutputModes.Normalize(container.OpenRgbStrobeMode ?? StrobeOutputModes.ManualFlash);
             HomeAssistantStrobeMode =
@@ -567,6 +594,9 @@ internal static class SettingsManager
             SerialStrobeMode = StrobeOutputModes.StrobeCommand;
             Rb3eStrobeMode = StrobeOutputModes.StrobeCommand;
             HueStrobeMode = StrobeOutputModes.StrobeCommand;
+            HueLampAssignments = Array.Empty<HueLampAssignmentSetting>();
+            HueStrobeIdleColor = HueColorHelper.DefaultStrobeIdleColor;
+            HueStrobeIdleBrightness = HueColorHelper.DefaultStrobeIdleBrightness;
             LifxStrobeMode = StrobeOutputModes.StrobeCommand;
             OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
             HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
