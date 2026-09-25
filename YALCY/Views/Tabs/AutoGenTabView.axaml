@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             x:Class="YALCY.Views.Tabs.AutoGenTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="5" Spacing="6">
+            <TextBlock Text="Strobe" FontWeight="Bold" FontSize="16" Margin="5,0,5,0" />
+            <TextBlock Margin="5,0,5,0" TextWrapping="Wrap"
+                       Text="YALCY can trigger strobes itself from gameplay data. The result goes to every output (Hue strobe lamps, DMX, Stage Kit ...). A strobe that comes from the chart always takes priority." />
+
+            <Grid ColumnDefinitions="150,360" RowDefinitions="Auto,Auto" Margin="5,4,5,0">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Active" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding AutoStrobeModeOptions}"
+                          SelectedItem="{Binding AutoStrobeMode, Mode=TwoWay}" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Strobe speed" VerticalAlignment="Center" Margin="0,6,0,0" />
+                <ComboBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0,6,0,0"
+                          ItemsSource="{Binding AutoStrobeSpeedOptions}"
+                          SelectedItem="{Binding AutoStrobeSpeed, Mode=TwoWay}" />
+            </Grid>
+            <TextBlock Margin="5,0,5,0" TextWrapping="Wrap" Opacity="0.7"
+                       Text="By BPM: the flashes stay locked to the song's beat grid and the subdivision is picked so the flash rate stays watchable." />
+            <TextBlock Text="{Binding AutoStrobeStatus}" Margin="5,4,5,8" FontWeight="SemiBold" />
+
+            <!-- Double bass -->
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="8" Margin="5,0,5,0">
+                <StackPanel Spacing="4">
+                    <CheckBox Content="Double bass (runs of fast kick drum notes)" IsChecked="{Binding AutoStrobeDoubleBass, Mode=TwoWay}" />
+                    <Grid ColumnDefinitions="260,140" RowDefinitions="Auto,Auto,Auto,Auto" Margin="24,0,0,0">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Kicks in a row before strobing" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Row="0" Grid.Column="1" Minimum="2" Maximum="32" Increment="1" FormatString="0"
+                                       Value="{Binding AutoStrobeDoubleBassMinKicks, Mode=TwoWay}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Max gap between kicks (ms, 0 = auto)" VerticalAlignment="Center" Margin="0,4,0,0" />
+                        <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="1000" Increment="10" FormatString="0" Margin="0,4,0,0"
+                                       Value="{Binding AutoStrobeDoubleBassMaxGapMs, Mode=TwoWay}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Only above BPM (0 = always)" VerticalAlignment="Center" Margin="0,4,0,0" />
+                        <NumericUpDown Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="400" Increment="5" FormatString="0" Margin="0,4,0,0"
+                                       Value="{Binding AutoStrobeDoubleBassMinBpm, Mode=TwoWay}" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Keep strobing after last kick (ms)" VerticalAlignment="Center" Margin="0,4,0,0" />
+                        <NumericUpDown Grid.Row="3" Grid.Column="1" Minimum="0" Maximum="3000" Increment="50" FormatString="0" Margin="0,4,0,0"
+                                       Value="{Binding AutoStrobeDoubleBassReleaseMs, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Star power -->
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="8" Margin="5,0,5,0">
+                <StackPanel Spacing="4">
+                    <CheckBox Content="Star power activated (needs YARG nightly)" IsChecked="{Binding AutoStrobeStarPower, Mode=TwoWay}" />
+                    <CheckBox Content="Strobe the whole time star power is active (otherwise a burst)" Margin="24,0,0,0"
+                              IsChecked="{Binding AutoStrobeStarPowerWhileActive, Mode=TwoWay}" />
+                    <Grid ColumnDefinitions="260,140" Margin="24,0,0,0">
+                        <TextBlock Grid.Column="0" Text="Burst length (ms)" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Column="1" Minimum="100" Maximum="20000" Increment="100" FormatString="0"
+                                       Value="{Binding AutoStrobeStarPowerBurstMs, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Cues -->
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="8" Margin="5,0,5,0">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Lighting cues (strobe for as long as the cue lasts)" />
+                    <WrapPanel Margin="24,0,0,0">
+                        <CheckBox Content="Frenzy" Margin="0,0,16,0" IsChecked="{Binding AutoStrobeCueFrenzy, Mode=TwoWay}" />
+                        <CheckBox Content="Big Rock Ending" Margin="0,0,16,0" IsChecked="{Binding AutoStrobeCueBigRockEnding, Mode=TwoWay}" />
+                        <CheckBox Content="Flare (fast)" Margin="0,0,16,0" IsChecked="{Binding AutoStrobeCueFlareFast, Mode=TwoWay}" />
+                        <CheckBox Content="Flare (slow)" Margin="0,0,16,0" IsChecked="{Binding AutoStrobeCueFlareSlow, Mode=TwoWay}" />
+                        <CheckBox Content="Stomp" Margin="0,0,16,0" IsChecked="{Binding AutoStrobeCueStomp, Mode=TwoWay}" />
+                        <CheckBox Content="Dischord" Margin="0,0,16,0" IsChecked="{Binding AutoStrobeCueDischord, Mode=TwoWay}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- BonusFX -->
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="8" Margin="5,0,5,0">
+                <StackPanel Spacing="4">
+                    <CheckBox Content="BonusFX (pyro / lightning events of the venue)" IsChecked="{Binding AutoStrobeBonusFx, Mode=TwoWay}" />
+                    <Grid ColumnDefinitions="260,140" Margin="24,0,0,0">
+                        <TextBlock Grid.Column="0" Text="Burst length (ms)" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Column="1" Minimum="50" Maximum="10000" Increment="50" FormatString="0"
+                                       Value="{Binding AutoStrobeBonusFxBurstMs, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Crash on downbeat -->
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="8" Margin="5,0,5,8">
+                <StackPanel Spacing="4">
+                    <CheckBox Content="Crash cymbal on a downbeat (short accent)" IsChecked="{Binding AutoStrobeCrashDownbeat, Mode=TwoWay}" />
+                    <Grid ColumnDefinitions="260,140" Margin="24,0,0,0">
+                        <TextBlock Grid.Column="0" Text="Flash length (ms)" VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Column="1" Minimum="50" Maximum="5000" Increment="50" FormatString="0"
+                                       Value="{Binding AutoStrobeCrashFlashMs, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

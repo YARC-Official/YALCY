@@ -159,6 +159,22 @@ public partial class UdpIntake : ReactiveObject
     private static Timer? _healthCheckTimer;
     private const int HEALTH_CHECK_INTERVAL_MS = 1000; // Check once per second
 
+    /// <summary>
+    /// Star power per player from the last packet (datagram v4+, YARG nightly). Empty for older YARG versions.
+    /// Call from the UDP receive thread (e.g. inside PacketProcessed).
+    /// </summary>
+    internal IReadOnlyList<(byte Amount, bool IsActive)> GetPlayerStarPowerSnapshot()
+    {
+        var count = Math.Min(PlayerStarPowerCount.Value, _playerStarPowerMembers.Count);
+        var result = new (byte Amount, bool IsActive)[count];
+        for (var i = 0; i < count; i++)
+        {
+            result[i] = (_playerStarPowerMembers[i].Amount.Value, _playerStarPowerMembers[i].IsActive.Value);
+        }
+
+        return result;
+    }
+
     internal void SetSafetyController(LightingSafetyController safetyController)
     {
         _safetyController = safetyController;

@@ -259,6 +259,12 @@ public sealed class HueLampViewModel : ReactiveObject
         get => _selectedRole;
         set
         {
+            if (value == null)
+            {
+                // ComboBoxes can push null while (re)loading their items; keep the current role.
+                return;
+            }
+
             var normalized = HueLampRoles.Normalize(value);
             if (_selectedRole == normalized)
             {

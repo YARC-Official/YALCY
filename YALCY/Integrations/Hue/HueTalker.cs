@@ -535,7 +535,36 @@ public class HueTalker : IDisposable
             _strobeRunning = true;
         }
 
-        _manualStrobeFlasher.Start(commandId, UdpIntake.BeatsPerMinute.Value, SetManualStrobeStateAsync);
+        _manualStrobeFlasher.Start(commandId, HueSafeBpm(commandId, UdpIntake.BeatsPerMinute.Value), SetManualStrobeStateAsync);
+    }
+
+    /// <summary>
+    /// Very short flash phases look irregular on Hue lamps (the stream runs at 50 fps, and the bridge and lamps add
+    /// their own latency), so the tempo used for flashing is capped per speed to phases of at least ~75 ms
+    /// (the beat grid is kept).
+    /// </summary>
+    private static float HueSafeBpm(StageKitTalker.CommandId commandId, float bpm)
+    {
+        var noteValue = commandId switch
+        {
+            StageKitTalker.CommandId.StrobeSlow => 16,
+            StageKitTalker.CommandId.StrobeMedium => 24,
+            StageKitTalker.CommandId.StrobeFast => 32,
+            StageKitTalker.CommandId.StrobeFastest => 64,
+            _ => 16
+        };
+
+        const double minPhaseMs = 75;
+        var maxBpm = (float)(60000.0 * 4 / (noteValue * minPhaseMs));
+        var effective = bpm > 0 ? bpm : 120f;
+
+        // Halve the tempo until it fits, so flashes still land on the beat grid.
+        while (effective > maxBpm)
+        {
+            effective /= 2f;
+        }
+
+        return effective;
     }
 
     private void StopStrobe()
