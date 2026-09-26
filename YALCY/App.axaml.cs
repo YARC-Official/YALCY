@@ -144,17 +144,34 @@ public class App : Application
     {
         var mainViewModel = MainViewModel;
 
-        mainViewModel.UsbDeviceMonitor.StartUsbDeviceMonitor(mainViewModel);
-        mainViewModel.DmxTalker.EnableDmxTalker(mainViewModel.DmxEnabledSetting.IsEnabled, mainViewModel);
-        mainViewModel.SerialTalker.EnableSerialTalker(mainViewModel.SerialEnabledSetting.IsEnabled, mainViewModel);
-        mainViewModel.Rb3ETalker.EnableRb3eTalker(mainViewModel.Rb3eEnabledSetting.IsEnabled, mainViewModel);
-        mainViewModel.StageKitTalker.EnableStageKitTalker(mainViewModel.StageKitEnabledSetting.IsEnabled);
+        // Each integration is started on its own: if one of them fails (e.g. an sACN adapter that can't be bound),
+        // the others - above all the UDP intake from YARG - must still come up.
+        TryStart("USB monitor", () => mainViewModel.UsbDeviceMonitor.StartUsbDeviceMonitor(mainViewModel));
+        TryStart("DMX", () => mainViewModel.DmxTalker.EnableDmxTalker(mainViewModel.DmxEnabledSetting.IsEnabled, mainViewModel));
+        TryStart("Serial", () => mainViewModel.SerialTalker.EnableSerialTalker(mainViewModel.SerialEnabledSetting.IsEnabled, mainViewModel));
+        TryStart("RB3E", () => mainViewModel.Rb3ETalker.EnableRb3eTalker(mainViewModel.Rb3eEnabledSetting.IsEnabled, mainViewModel));
+        TryStart("StageKit", () => mainViewModel.StageKitTalker.EnableStageKitTalker(mainViewModel.StageKitEnabledSetting.IsEnabled));
 
         _ = InitializeAsync(mainViewModel);
     }
 
+    private static void TryStart(string name, Action start)
+    {
+        try
+        {
+            start();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing {name}: {ex.Message}");
+        }
+    }
+
     private static async Task InitializeAsync(MainWindowViewModel mainViewModel)
     {
+        // Start listening to YARG first and don't wait for it: the receive loop only returns when UDP is switched off.
+        _ = StartUdpIntakeAsync(mainViewModel);
+
         try
         {
             await mainViewModel.HueTalker.EnableHue(mainViewModel.HueEnabledSetting.IsEnabled, mainViewModel.HueBridgeIp, mainViewModel);
@@ -194,6 +211,10 @@ public class App : Application
             Console.WriteLine($"Error initializing OpenRGB: {ex.Message}");
         }
 
+    }
+
+    private static async Task StartUdpIntakeAsync(MainWindowViewModel mainViewModel)
+    {
         try
         {
             await mainViewModel.UdpIntake.EnableUdpIntake(mainViewModel.UdpEnableSetting.IsEnabled, mainViewModel);

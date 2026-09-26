@@ -41,6 +41,7 @@ public partial class MainWindow : Window
     {
         if (_allowClose)
         {
+            SaveSettingsSafely();
             YargTabView.CloseAllDetachedWindows();
             return;
         }
@@ -52,7 +53,28 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Save now: closing the main window shuts the app down without raising ShutdownRequested,
+        // so the save in MainWindowViewModel.ShutdownAsync is not reached on a normal close.
+        SaveSettingsSafely();
+
         // Close all detached windows first
         YargTabView.CloseAllDetachedWindows();
+    }
+
+    private void SaveSettingsSafely()
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        try
+        {
+            SettingsManager.SaveSettings(viewModel);
+        }
+        catch (System.Exception ex)
+        {
+            System.Console.WriteLine($"Error saving settings: {ex.Message}");
+        }
     }
 }
