@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="YALCY.Views.Components.LogPanel">
+    <Expander x:Name="LogExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+        <Expander.Header><TextBlock x:Name="Summary" Text="Log" /></Expander.Header>
+        <Grid RowDefinitions="Auto,Auto,*" Height="220" MinHeight="130" MaxHeight="420" Margin="8,0,8,6" x:Name="LogBody">
+            <Thumb Grid.Row="0" Height="6" HorizontalAlignment="Stretch" Cursor="SizeNorthSouth"
+                   DragDelta="ResizeLog" ToolTip.Tip="Drag to resize the log">
+                <Thumb.Template>
+                    <ControlTemplate>
+                        <Border Background="Transparent">
+                            <Border Width="64" Height="3" CornerRadius="2" Background="{DynamicResource AppBorderStrong}" />
+                        </Border>
+                    </ControlTemplate>
+                </Thumb.Template>
+            </Thumb>
+            <WrapPanel Grid.Row="1" Margin="0,4">
+                <ComboBox x:Name="SourceFilter" Width="150" Margin="0,0,8,4" ToolTip.Tip="Log source" />
+                <ComboBox x:Name="LevelFilter" Width="140" Margin="0,0,8,4" ToolTip.Tip="Minimum severity" />
+                <CheckBox x:Name="AutoScroll" Content="Live / auto-scroll" IsChecked="True" Margin="0,0,12,4" ToolTip.Tip="Uncheck to pause this view; logging continues" />
+                <CheckBox x:Name="DebugLogging" Content="Debug logging" Margin="0,0,12,4" />
+                <Button Content="Copy" Click="CopyLog" Margin="0,0,6,4" ToolTip.Tip="Copy filtered entries" />
+                <Button Content="Save…" Click="SaveLog" Margin="0,0,6,4" ToolTip.Tip="Save filtered entries" />
+                <Button Content="Clear" Click="ClearLog" Margin="0,0,6,4" ToolTip.Tip="Clear in-memory history; log files are retained" />
+            </WrapPanel>
+            <ListBox Grid.Row="2" x:Name="LogLines" FontFamily="monospace" FontSize="12"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+        </Grid>
+    </Expander>
+</UserControl>

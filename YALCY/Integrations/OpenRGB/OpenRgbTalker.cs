@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,7 +69,7 @@ public class OpenRgbTalker
     private bool _isLightPodSendPending = false;
 
     // Manual strobe flasher and fogger breathing cancellation tokens
-    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"OpenRGB manual strobe error: {ex.Message}"));
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "OpenRGB", $"OpenRGB manual strobe error: {ex.Message}"));
     private CancellationTokenSource _fogCts = new();
     private Task _fogTask = Task.CompletedTask;
 
@@ -115,16 +116,21 @@ public class OpenRgbTalker
 
         if (_mainViewModel == null)
         {
-            Console.WriteLine("OpenRgbTalker: No ViewModel provided.");
+            AppLog.Write(LogLevel.Warning, "OpenRGB", "OpenRgbTalker: No ViewModel provided.");
             return;
         }
 
         var mainViewModel = _mainViewModel;
-        Console.WriteLine("Connecting to OpenRGB server...");
+        AppLog.Write(LogLevel.Information, "OpenRGB", "Connecting to OpenRGB server...");
 
         var (isValid, statusMessage) = Helpers.IpValidator(serverIp);
         mainViewModel.OpenRgbStatus = statusMessage;
-        if (!isValid) return;
+        if (!isValid)
+        {
+            StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Error,
+                $"Cannot connect: '{serverIp}' is not a valid server IP address. Check the OpenRGB server address in settings.");
+            return;
+        }
 
         try
         {
@@ -163,7 +169,8 @@ public class OpenRgbTalker
         catch (Exception ex)
         {
             mainViewModel.OpenRgbStatus = $"OpenRGB status: {ex.Message}";
-            StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Error);
+            StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Error,
+                $"Could not connect to or initialize OpenRGB at {serverIp}:{serverPort}: {ex.GetType().Name}: {ex.Message} Check that OpenRGB's SDK server is running and the address/port are correct.");
         }
     }
 
@@ -306,7 +313,7 @@ public class OpenRgbTalker
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"UpdateZoneLedsSafely error: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "OpenRGB", $"UpdateZoneLedsSafely error: {ex.Message}");
         }
     }
 
@@ -340,7 +347,7 @@ public class OpenRgbTalker
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"ToggleDeviceLeds error: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "OpenRGB", $"ToggleDeviceLeds error: {ex.Message}");
         }
     }
 
@@ -355,7 +362,7 @@ public class OpenRgbTalker
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"ToggleZoneLeds error: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "OpenRGB", $"ToggleZoneLeds error: {ex.Message}");
         }
     }
 
@@ -431,7 +438,7 @@ public class OpenRgbTalker
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"OnStageKitEvent error: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "OpenRGB", $"OnStageKitEvent error: {ex.Message}");
         }
     }
 
@@ -611,7 +618,7 @@ public class OpenRgbTalker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"SetDeviceBrightness error: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "OpenRGB", $"SetDeviceBrightness error: {ex.Message}");
             }
         }
     }
@@ -641,7 +648,7 @@ public class OpenRgbTalker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"SetZoneBrightness error: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "OpenRGB", $"SetZoneBrightness error: {ex.Message}");
             }
         }
     }
@@ -937,7 +944,7 @@ public class OpenRgbTalker
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"FlushLightPodLeds device error: {ex.Message}");
+                        AppLog.Write(LogLevel.Error, "OpenRGB", $"FlushLightPodLeds device error: {ex.Message}");
                     }
                 }
 
@@ -971,7 +978,7 @@ public class OpenRgbTalker
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"FlushLightPodLeds zone error: {ex.Message}");
+                        AppLog.Write(LogLevel.Error, "OpenRGB", $"FlushLightPodLeds zone error: {ex.Message}");
                     }
                 }
             }
@@ -1015,7 +1022,7 @@ public class OpenRgbTalker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Identify device error: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "OpenRGB", $"Identify device error: {ex.Message}");
             }
             finally
             {
@@ -1054,7 +1061,7 @@ public class OpenRgbTalker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Identify zone error: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "OpenRGB", $"Identify zone error: {ex.Message}");
             }
             finally
             {

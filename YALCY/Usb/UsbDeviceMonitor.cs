@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,7 +91,7 @@ public class UsbDeviceMonitor
 
     private void OnDeviceListChanged()
     {
-        Console.WriteLine("Device list changed, waiting for update...");
+        AppLog.Write(LogLevel.Information, "StageKit", "Device list changed, waiting for update...");
 
         _updateCts?.Cancel();
         _updateCts?.Dispose();
@@ -167,38 +168,38 @@ public class UsbDeviceMonitor
             {
                 foreach (var oldDev in removedSerialDevices)
                 {
-                    Console.WriteLine("Serial device removed");
+                    AppLog.Write(LogLevel.Information, "StageKit", "Serial device removed");
                     DeviceRemoved?.Invoke(oldDev);
                 }
 
                 foreach (var oldDev in removedHidDevices)
                 {
-                    Console.WriteLine("HID device removed");
+                    AppLog.Write(LogLevel.Information, "StageKit", "HID device removed");
                     DeviceRemoved?.Invoke(oldDev);
                 }
 
                 foreach (var oldDev in removedBleDevices)
                 {
-                    Console.WriteLine("BLE device removed");
+                    AppLog.Write(LogLevel.Information, "StageKit", "BLE device removed");
                     DeviceRemoved?.Invoke(oldDev);
                 }
 
                 foreach (var newDev in addedSerialDevices)
                 {
-                    Console.WriteLine("Serial device added");
+                    AppLog.Write(LogLevel.Information, "StageKit", "Serial device added");
                     SerialDeviceAdded?.Invoke(newDev); //this is mostly for the serial talker watch dog
                     DeviceInserted?.Invoke(newDev);
                 }
 
                 foreach (var newDev in addedHidDevices)
                 {
-                    Console.WriteLine("HID device added");
+                    AppLog.Write(LogLevel.Information, "StageKit", "HID device added");
                     DeviceInserted?.Invoke(newDev);
                 }
 
                 foreach (var newDev in addedBleDevices)
                 {
-                    Console.WriteLine("BLE device added");
+                    AppLog.Write(LogLevel.Information, "StageKit", "BLE device added");
                     DeviceInserted?.Invoke(newDev);
                 }
             });
@@ -259,7 +260,7 @@ public class UsbDeviceMonitor
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Stage Kit command subscriber failed: {ex.Message}");
+                    AppLog.Write(LogLevel.Error, "StageKit", $"Stage Kit command subscriber failed: {ex.Message}");
                 }
             }
         }
@@ -303,7 +304,7 @@ public class UsbDeviceMonitor
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to send HID report: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "StageKit", $"Failed to send HID report: {ex.Message}");
                 lock (DeviceStateLock)
                 {
                     _connectedHidDevices.RemoveAll(connected => connected.DevicePath == device.DevicePath);
@@ -325,7 +326,7 @@ public class UsbDeviceMonitor
 
     private void UpdateConnectedXInputStageKits()
     {
-        Console.WriteLine("Updating connected XInput Stage Kits...");
+        AppLog.Write(LogLevel.Debug, "StageKit", "Updating connected XInput Stage Kits...");
         var stageKitIndices = new List<int>();
 
         for (var controllerIndex = 0; controllerIndex < XInputMaxControllers; controllerIndex++)

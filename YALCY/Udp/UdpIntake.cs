@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Buffers.Binary;
@@ -173,7 +174,7 @@ public partial class UdpIntake : ReactiveObject
 
         if (_mainViewModel == null)
         {
-            Console.WriteLine("UdpIntake: No ViewModel provided and none cached.");
+            AppLog.Write(LogLevel.Warning, "UDP", "UdpIntake: No ViewModel provided and none cached.");
             return;
         }
 
@@ -182,13 +183,13 @@ public partial class UdpIntake : ReactiveObject
             StatusFooter.UpdateStatus("UDP", IntegrationStatus.Connecting);
             if (_udpClient != null)
             {
-                Console.WriteLine("UDP client already running.");
+                AppLog.Write(LogLevel.Information, "UDP", "UDP client already running.");
                 return;
             }
 
             try
             {
-                Console.WriteLine($"Starting UDP client on port {_mainViewModel.UdpListenPort}");
+                AppLog.Write(LogLevel.Information, "UDP", $"Starting UDP client on port {_mainViewModel.UdpListenPort}");
                 _udpClient = new UdpClient(_mainViewModel.UdpListenPort);
                 _udpClient.Client.ReceiveBufferSize = 8192; // Increase buffer size
 
@@ -196,8 +197,8 @@ public partial class UdpIntake : ReactiveObject
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error initializing UDP client: {ex.Message}");
-                StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error,
+                    $"Could not open the YARG UDP listener on port {_mainViewModel.UdpListenPort}: {ex.GetType().Name}: {ex.Message} Check the configured port and whether another application or YALCY instance is already listening on it.");
                 return;
             }
 
@@ -207,7 +208,7 @@ public partial class UdpIntake : ReactiveObject
 
             if (udpClient == null)
             {
-                Console.WriteLine("UDP client was not initialized.");
+                AppLog.Write(LogLevel.Warning, "UDP", "UDP client was not initialized.");
                 cancellationTokenSource.Dispose();
                 _cancellationTokenSource = null;
                 return;
@@ -226,17 +227,18 @@ public partial class UdpIntake : ReactiveObject
                 }
                 catch (ObjectDisposedException)
                 {
-                    Console.WriteLine("UdpClient has been disposed.");
-                    StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
+                    if (!cancellationTokenSource.IsCancellationRequested)
+                        StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error,
+                            "The YARG UDP listening socket was closed unexpectedly. Disable and re-enable UDP input to restart the listener.");
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
                 {
-                    Console.WriteLine("UdpClient operation aborted.");
+                    AppLog.Write(LogLevel.Information, "UDP", "UdpClient operation aborted.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error receiving UDP data: {ex.Message}");
-                    StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
+                    StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error,
+                        $"The YARG UDP listener stopped while receiving data: {ex.GetType().Name}: {ex.Message} Check network access, then disable and re-enable UDP input.");
                 }
             }, cancellationTokenSource.Token);
         }
@@ -253,10 +255,12 @@ public partial class UdpIntake : ReactiveObject
 
     internal bool TryDeserializePacket(byte[] data)
     {
+        if (AppLog.DebugEnabled)
+            AppLog.Write(LogLevel.Debug, "UDP", $"Received {data.AsSpan().Length} bytes from YARG input.");
         if (!TryValidatePacket(data, out var validationError))
         {
-            Console.WriteLine($"Invalid UDP packet: {validationError}");
-            Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+            AppLog.Write(LogLevel.Warning, "UDP", $"Invalid UDP packet: {validationError}");
+            AppLog.Write(LogLevel.Debug, "UDP", $"Bad UDP packet details: {DescribePacket(data)}");
             return false;
         }
 
@@ -339,8 +343,8 @@ public partial class UdpIntake : ReactiveObject
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error reading UDP data: {ex.Message}");
-            Console.WriteLine($"Bad UDP packet details: {DescribePacket(data)}");
+            AppLog.Write(LogLevel.Error, "UDP", $"Error reading UDP data: {ex.Message}");
+            AppLog.Write(LogLevel.Debug, "UDP", $"Bad UDP packet details: {DescribePacket(data)}");
             return false;
         }
     }
@@ -614,7 +618,7 @@ public partial class UdpIntake : ReactiveObject
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in UDP health check: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "UDP", $"Error in UDP health check: {ex.Message}");
         }
     }
 
@@ -636,8 +640,8 @@ public partial class UdpIntake : ReactiveObject
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error stopping UDP client: {ex.Message}");
-            StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error);
+            StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error,
+                $"Could not shut down the YARG UDP listener cleanly: {ex.GetType().Name}: {ex.Message}");
         }
     }
 }

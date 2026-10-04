@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using Dmx.Net.Controllers;
 using System.Threading;
@@ -26,7 +27,7 @@ public class SerialTalker: IDisposable
     private static Timer? _checkerTimer;
     private MainWindowViewModel? _mainViewModel;
     private static bool SerialEnabled = false;
-    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"Serial manual strobe error: {ex.Message}"));
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "Serial", $"Serial manual strobe error: {ex.Message}"));
 
     public void EnableSerialTalker(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
@@ -37,7 +38,7 @@ public class SerialTalker: IDisposable
 
         if (_mainViewModel == null)
         {
-            Console.WriteLine("SerialTalker: No ViewModel provided and none cached.");
+            AppLog.Write(LogLevel.Warning, "Serial", "SerialTalker: No ViewModel provided and none cached.");
             return;
         }
 
@@ -56,7 +57,8 @@ public class SerialTalker: IDisposable
                 if (string.IsNullOrWhiteSpace(devicePath))
                 {
                     _mainViewModel.SerialMessage = "Error: No serial devices found for DMX output.";
-                    StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error);
+                    StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error,
+                        "No serial device was found for DMX output. Connect the USB DMX adapter and check device permissions. Waiting for a device to be added.");
                     UsbDeviceMonitor.SerialDeviceAdded += SerialDeviceAdded;
                     return;
                 }
@@ -74,7 +76,8 @@ public class SerialTalker: IDisposable
             catch (Exception e)
             {
                 _mainViewModel.SerialMessage = $"Error: {e.Message}";
-                StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("Serial", IntegrationStatus.Error,
+                    $"Could not open or start the serial DMX controller: {e.GetType().Name}: {e.Message} Check the adapter connection, driver, and whether another application is using it.");
                 UsbDeviceMonitor.SerialDeviceAdded += SerialDeviceAdded;  //start the watchdog.
             }
         }

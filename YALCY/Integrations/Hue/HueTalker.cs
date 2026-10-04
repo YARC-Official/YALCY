@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,11 +29,11 @@ public class HueTalker : IDisposable
     private StreamingHueClient? _client;
     private CancellationTokenSource? _cancellationTokenSource;
     private MainWindowViewModel? _mainViewModel;
-    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"Hue manual strobe error: {ex.Message}"));
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "Hue", $"Hue manual strobe error: {ex.Message}"));
 
     public async Task EnableHue(bool isEnabled, string? bridgeIp, MainWindowViewModel? viewModel = null)
     {
-        Console.WriteLine("EnableHue called.");
+        AppLog.Write(LogLevel.Debug, "Hue", "EnableHue called.");
 
         if (viewModel != null)
         {
@@ -41,7 +42,7 @@ public class HueTalker : IDisposable
 
         if (_mainViewModel == null)
         {
-            Console.WriteLine("HueTalker: No ViewModel provided and none cached.");
+            AppLog.Write(LogLevel.Warning, "Hue", "HueTalker: No ViewModel provided and none cached.");
             return;
         }
 
@@ -49,7 +50,7 @@ public class HueTalker : IDisposable
 
         if (isEnabled)
         {
-            Console.WriteLine("Enabling Hue.");
+            AppLog.Write(LogLevel.Information, "Hue", "Enabling Hue.");
             StatusFooter.UpdateStatus("Hue", IntegrationStatus.Connecting);
             var (isValid, statusMessage) = Helpers.IpValidator(bridgeIp);
 
@@ -57,6 +58,8 @@ public class HueTalker : IDisposable
 
             if (!isValid)
             {
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                    $"Cannot enable Hue: '{bridgeIp}' is not a valid bridge IP address. Check the Hue bridge address in settings.");
                 return;
             }
 
@@ -78,6 +81,8 @@ public class HueTalker : IDisposable
                 if (group == null)
                 {
                     mainViewModel.HueEntertainmentGroupStatus = "Entertainment Group Status: No Entertainment Group found named 'YARG', use your Hue app to make it.";
+                    StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                        "The bridge has no entertainment group named 'YARG'. Create one in the Hue app and add your lights, then enable Hue again.");
                     return;
                 }
                 else
@@ -134,8 +139,8 @@ public class HueTalker : IDisposable
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Hue streaming stopped: {ex.Message}");
-                        StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                        StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                            $"Entertainment streaming to bridge {bridgeIp} stopped unexpectedly: {ex.GetType().Name}: {ex.Message} Check bridge connectivity, then disable and re-enable Hue.");
                     }
                     finally
                     {
@@ -145,7 +150,8 @@ public class HueTalker : IDisposable
             }
             catch (UnauthorizedAccessException)
             {
-                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                    $"Bridge {bridgeIp} denied access while starting entertainment streaming. Press the bridge link button and register YALCY again.");
                 mainViewModel.HueStreamingClientStatus = $"Streaming Client Status: Streaming Client not created. Unauthorized access. Remember to push the link button on the bridge before registering!";
 
                 // Reset the HueAuthResult in case it's invalid
@@ -153,27 +159,30 @@ public class HueTalker : IDisposable
                 mainViewModel.HueAuthResult.StreamingClientKey = "";
                 mainViewModel.HueAuthResult.Ip = "";
             }
-            catch (NullReferenceException)
+            catch (NullReferenceException ex)
             {
-                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                    $"Hue streaming initialization encountered missing data: {ex.Message} Check bridge registration and entertainment-group configuration; if both are valid, this may be a YALCY bug.");
                 mainViewModel.HueStreamingClientStatus = "Streaming client status: Initialize streaming client failed: YALCY probably isn't registered with the bridge. Try registering again and remember to push the link button on the bridge first!";
                 mainViewModel.HueEntertainmentGroupStatus = "Entertainment Group Status: Can't get entertainment group without a streaming client!";
                 mainViewModel.HueStreamingActiveStatus = "Streaming is not active";
             }
-            catch (HueEntertainmentException)
+            catch (HueEntertainmentException ex)
             {
-                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                    $"Could not start Hue entertainment output: {ex.Message} Check that the bridge has an entertainment group named 'YARG' with lights assigned.");
                 mainViewModel.HueEntertainmentGroupStatus = "Entertainment Group Status: No Entertainment Group found. Create one in your Phillips Hue app and name it YARG.";
             }
             catch (Exception ex)
             {
-                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                    $"Could not initialize entertainment streaming on bridge {bridgeIp}: {ex.GetType().Name}: {ex.Message}");
                 mainViewModel.HueMessage = $"Error: {ex.Message}";
             }
         }
         else
         {
-            Console.WriteLine("Disabling Hue.");
+            AppLog.Write(LogLevel.Information, "Hue", "Disabling Hue.");
             _streamingActive = false;
             // Cancel any ongoing operations
             _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
@@ -200,7 +209,7 @@ public class HueTalker : IDisposable
 
         if (_mainViewModel == null)
         {
-            Console.WriteLine("HueTalker: No ViewModel provided and none cached.");
+            AppLog.Write(LogLevel.Warning, "Hue", "HueTalker: No ViewModel provided and none cached.");
             return;
         }
 
@@ -212,6 +221,8 @@ public class HueTalker : IDisposable
 
         if (!isValid)
         {
+            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                $"Cannot register Hue: '{bridgeIp}' is not a valid bridge IP address. Check the bridge address in settings.");
             return;
         }
 
@@ -226,12 +237,14 @@ public class HueTalker : IDisposable
             catch (LinkButtonNotPressedException ex)
             {
                 mainViewModel.HueRegisterStatus = $"Registering Status: Link button not pressed exception: {ex.Message}";
-                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                    $"Registration with bridge {bridgeIp} failed because its link button was not pressed: {ex.Message} Press the physical link button, then register again.");
             }
             catch (Exception ex)
             {
                 mainViewModel.HueRegisterStatus = $"Registering Status: Probably wrong bridge IP address: {ex.Message}";
-                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                    $"Could not register with bridge {bridgeIp}: {ex.GetType().Name}: {ex.Message} Check the bridge IP and network connectivity.");
             }
         }
         else
@@ -261,7 +274,8 @@ public class HueTalker : IDisposable
             {
                 _mainViewModel.HueStreamingClientStatus = "Streaming Client Status: Operation timed out.";
             }
-            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                $"Creating the streaming client for bridge {bridgeIp} timed out after 25 seconds. Check that the bridge is powered on and reachable.");
             return null;
         }
         catch (Exception e)
@@ -270,7 +284,8 @@ public class HueTalker : IDisposable
             {
                 _mainViewModel.HueStreamingClientStatus = $"Streaming Client Status: Error - {e.Message}";
             }
-            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error);
+            StatusFooter.UpdateStatus("Hue", IntegrationStatus.Error,
+                $"Could not create the streaming client for bridge {bridgeIp}: {e.GetType().Name}: {e.Message} Check bridge registration and connection settings.");
             return null;
         }
     }

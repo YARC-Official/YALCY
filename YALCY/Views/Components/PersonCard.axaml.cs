@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -106,7 +107,7 @@ namespace YALCY.Views.Components
                     }
                     else
                     {
-                        Console.WriteLine($"[PersonCard] Failed to load UI Avatars for: {displayName}");
+                        AppLog.Write(LogLevel.Error, "Application", $"[PersonCard] Failed to load UI Avatars for: {displayName}");
                     }
                 }
                 else
@@ -130,7 +131,7 @@ namespace YALCY.Views.Components
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PersonCard] Error loading avatar for {DisplayName ?? "Unknown"}: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "Application", $"[PersonCard] Error loading avatar for {DisplayName ?? "Unknown"}: {ex.Message}");
             }
             finally
             {
@@ -177,7 +178,7 @@ namespace YALCY.Views.Components
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PersonCard] Error loading image: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "Application", $"[PersonCard] Error loading image: {ex.Message}");
             }
             return null;
         }

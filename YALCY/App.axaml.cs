@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -163,7 +164,7 @@ public class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error initializing {name}: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error initializing {name}: {ex.Message}");
         }
     }
 
@@ -178,7 +179,7 @@ public class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error initializing Hue: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error initializing Hue: {ex.Message}");
         }
 
         try
@@ -187,7 +188,7 @@ public class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error initializing LIFX: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error initializing LIFX: {ex.Message}");
         }
 
         try
@@ -198,7 +199,7 @@ public class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error initializing Home Assistant: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error initializing Home Assistant: {ex.Message}");
         }
 
         try
@@ -208,7 +209,7 @@ public class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error initializing OpenRGB: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error initializing OpenRGB: {ex.Message}");
         }
 
     }
@@ -221,7 +222,7 @@ public class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error initializing UDP: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error initializing UDP: {ex.Message}");
         }
     }
 }

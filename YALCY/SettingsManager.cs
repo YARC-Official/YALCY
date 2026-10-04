@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,6 +15,7 @@ namespace YALCY;
 
 public class SettingsContainer
 {
+    public LifxOptions LifxOptions { get; set; } = new();
     public List<EnableSetting> CurrentEnableSettings { get; set; }
     public List<DmxSingleSetting> CurrentSingleSettings { get; set; }
     public List<DmxChannelSetting> CurrentChannelSettings { get; set; }
@@ -54,6 +56,7 @@ public sealed class LifxZoneAssignmentSetting
 
 internal static class SettingsManager
 {
+    public static LifxOptions LifxOptions { get; private set; } = new();
     public const string SystemThemeVariant = "System";
     public const string DarkThemeVariant = "Dark";
     public const string LightThemeVariant = "Light";
@@ -292,6 +295,7 @@ internal static class SettingsManager
         HueStrobeIdleColor = settings.HueStrobeIdleColor;
         HueStrobeIdleBrightness = settings.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness;
         settings.LifxStrobeMode = mainViewModel.LifxStrobeMode;
+        settings.LifxOptions = mainViewModel.LifxOptions;
         settings.OpenRgbStrobeMode = mainViewModel.OpenRgbStrobeMode;
         settings.HomeAssistantStrobeMode = mainViewModel.HomeAssistantStrobeMode;
         settings.CloseToTrayOnClose = mainViewModel.CloseToTrayOnClose;
@@ -548,6 +552,7 @@ internal static class SettingsManager
             HueStrobeIdleColor = HueColorHelper.NormalizeHex(container.HueStrobeIdleColor) ?? HueColorHelper.DefaultStrobeIdleColor;
             HueStrobeIdleBrightness = Math.Clamp(container.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness, 0, 100);
             LifxStrobeMode = StrobeOutputModes.Normalize(container.LifxStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            LifxOptions = container.LifxOptions ?? new();
             OpenRgbStrobeMode = StrobeOutputModes.Normalize(container.OpenRgbStrobeMode ?? StrobeOutputModes.ManualFlash);
             HomeAssistantStrobeMode =
                 StrobeOutputModes.Normalize(container.HomeAssistantStrobeMode ?? StrobeOutputModes.StrobeCommand);
@@ -556,7 +561,7 @@ internal static class SettingsManager
         }
         else // File is either garbage or doesn't exist. Load defaults.
         {
-            Console.WriteLine("Settings file is either garbage or doesn't exist. Loading defaults.");
+            AppLog.Write(LogLevel.Warning, "Settings", "Settings file is either garbage or doesn't exist. Loading defaults.");
 
             UdpEnableSettingIsEnabled = true;
             DmxEnabledSettingIsEnabled = true;
@@ -598,6 +603,7 @@ internal static class SettingsManager
             HueStrobeIdleColor = HueColorHelper.DefaultStrobeIdleColor;
             HueStrobeIdleBrightness = HueColorHelper.DefaultStrobeIdleBrightness;
             LifxStrobeMode = StrobeOutputModes.StrobeCommand;
+            LifxOptions = new();
             OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
             HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
             CloseToTrayOnClose = false;

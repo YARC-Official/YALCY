@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +34,7 @@ public sealed class HomeAssistantTalker : IDisposable
     private bool _isEnabled;
     private bool _isSubscribedToStageKit;
     private bool _lastStrobeOn;
-    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"Home Assistant manual strobe error: {ex.Message}"));
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "HomeAssistant", $"Home Assistant manual strobe error: {ex.Message}"));
 
     public async Task EnableHomeAssistant(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
@@ -46,7 +47,7 @@ public sealed class HomeAssistantTalker : IDisposable
         {
             if (_mainViewModel == null)
             {
-                Console.WriteLine("HomeAssistantTalker: No ViewModel provided and none cached.");
+                AppLog.Write(LogLevel.Warning, "HomeAssistant", "HomeAssistantTalker: No ViewModel provided and none cached.");
                 return;
             }
 
@@ -81,7 +82,8 @@ public sealed class HomeAssistantTalker : IDisposable
                 _client = null;
 
                 _mainViewModel.SetHomeAssistantStatus("Home Assistant status: Connection failed.", $"Error: {ex.Message}");
-                StatusFooter.UpdateStatus("HomeAssistant", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("HomeAssistant", IntegrationStatus.Error,
+                    $"Could not initialize the Home Assistant connection: {ex.GetType().Name}: {ex.Message} Check the configured server URL, network access, and access token.");
             }
 
             return;
@@ -120,7 +122,7 @@ public sealed class HomeAssistantTalker : IDisposable
 
         if (_mainViewModel == null)
         {
-            Console.WriteLine("HomeAssistantTalker: No ViewModel provided and none cached.");
+            AppLog.Write(LogLevel.Warning, "HomeAssistant", "HomeAssistantTalker: No ViewModel provided and none cached.");
             return;
         }
 
@@ -160,7 +162,8 @@ public sealed class HomeAssistantTalker : IDisposable
             _mainViewModel.SetHomeAssistantStatus("Home Assistant status: Discovery failed.", $"Error: {ex.Message}");
             if (shouldUpdateFooter)
             {
-                StatusFooter.UpdateStatus("HomeAssistant", IntegrationStatus.Error);
+                StatusFooter.UpdateStatus("HomeAssistant", IntegrationStatus.Error,
+                    $"Could not discover Home Assistant lights: {ex.GetType().Name}: {ex.Message} Check server availability and token permissions.");
             }
         }
         finally
@@ -339,7 +342,8 @@ public sealed class HomeAssistantTalker : IDisposable
 
                 if (_isEnabled)
                 {
-                    StatusFooter.UpdateStatus("HomeAssistant", IntegrationStatus.Error);
+                    StatusFooter.UpdateStatus("HomeAssistant", IntegrationStatus.Error,
+                        $"Could not send a lighting cue to Home Assistant: {ex.GetType().Name}: {ex.Message} Check server connectivity and the assigned light entities.");
                 }
             }
         }, cancellationTokenSource.Token);

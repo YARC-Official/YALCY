@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Threading.Tasks;
 using OpenRGB.NET;
@@ -81,7 +82,7 @@ public class DeviceCategory : ReactiveObject
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"TurnOffDeviceLeds error: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "OpenRGB", $"TurnOffDeviceLeds error: {ex.Message}");
             }
         });
     }

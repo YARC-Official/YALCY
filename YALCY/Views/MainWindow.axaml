@@ -114,7 +114,7 @@
         </Style>
     </Window.Styles>
     
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*,Auto,Auto">
         <!-- Main content area -->
         <TabControl Grid.Row="0" Margin="0" TabStripPlacement="Top">
             <TabItem>
@@ -186,6 +186,7 @@
         </TabControl>
         
         <!-- Status Footer -->
-        <components:StatusFooter Grid.Row="1" />
+        <components:LogPanel Grid.Row="1" />
+        <components:StatusFooter Grid.Row="2" />
     </Grid>
 </Window>

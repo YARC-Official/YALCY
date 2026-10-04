@@ -130,6 +130,7 @@ internal sealed class LifxLanDeviceModel
     public int Port { get; }
     public string Label { get; set; } = string.Empty;
     public bool IsPowered { get; set; }
+    public bool HasState { get; set; }
     public LifxHsbk BaseColor { get; set; }
     public int ExpectedZoneCount { get; set; } = 1;
     public List<LifxZoneModel> Zones { get; }

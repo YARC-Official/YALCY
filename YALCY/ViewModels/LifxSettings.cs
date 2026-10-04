@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +12,11 @@ namespace YALCY.ViewModels;
 
 public partial class MainWindowViewModel
 {
+    public LifxOptions LifxOptions { get; } = SettingsManager.LifxOptions;
+    public IReadOnlyList<string> LifxTestColors => LifxPalette.Names;
+    public string LifxTestColor { get; set; } = "Blue";
+    private ICommand? _testLifxColorCommand;
+    public ICommand TestLifxColorCommand => _testLifxColorCommand ??= ReactiveCommand.CreateFromTask(() => LifxTalker.TestColorAsync(LifxTestColor));
     private string _lifxStatus = string.Empty;
     private string _lifxMessage = string.Empty;
     private List<LifxZoneAssignmentSetting> _savedLifxZoneAssignments = new();
@@ -56,7 +62,7 @@ public partial class MainWindowViewModel
     {
         if (LifxDevices.Count > 0)
         {
-            return BuildLifxZoneAssignments(LifxDevices);
+            return MergeAssignments(_savedLifxZoneAssignments, BuildLifxZoneAssignments(LifxDevices));
         }
 
         return CloneAssignments(_savedLifxZoneAssignments);
@@ -66,6 +72,7 @@ public partial class MainWindowViewModel
     {
         void UpdateCollection()
         {
+            _savedLifxZoneAssignments = GetLifxZoneAssignments().ToList();
             LifxDevices.Clear();
             foreach (var device in devices)
             {
@@ -74,7 +81,7 @@ public partial class MainWindowViewModel
 
             if (devices.Count > 0)
             {
-                _savedLifxZoneAssignments = BuildLifxZoneAssignments(devices);
+                _savedLifxZoneAssignments = MergeAssignments(_savedLifxZoneAssignments, BuildLifxZoneAssignments(devices));
             }
         }
 
@@ -132,6 +139,10 @@ public partial class MainWindowViewModel
             .ToList();
     }
 
+    private static List<LifxZoneAssignmentSetting> MergeAssignments(IEnumerable<LifxZoneAssignmentSetting> saved,
+        IEnumerable<LifxZoneAssignmentSetting> current) => saved.Concat(current)
+        .GroupBy(a => (a.Serial.ToLowerInvariant(), a.ZoneIndex)).Select(g => g.Last()).ToList();
+
     private static List<LifxZoneAssignmentSetting> CloneAssignments(IEnumerable<LifxZoneAssignmentSetting> assignments)
     {
         return assignments
@@ -159,7 +170,7 @@ public sealed class LifxDeviceViewModel
         Zones = new ObservableCollection<LifxZoneViewModel>(
             device.Zones
                 .OrderBy(zone => zone.ZoneIndex)
-                .Select(zone => new LifxZoneViewModel(zone)));
+                .Select(zone => new LifxZoneViewModel(zone, device.Label)));
     }
 
     public string Label { get; }
@@ -175,10 +186,12 @@ public sealed class LifxDeviceViewModel
 public sealed class LifxZoneViewModel : ReactiveObject
 {
     private readonly LifxZoneModel _zone;
+    private readonly string _deviceLabel;
     private string _selectedStageLight;
 
-    internal LifxZoneViewModel(LifxZoneModel zone)
+    internal LifxZoneViewModel(LifxZoneModel zone, string deviceLabel)
     {
+        _deviceLabel = deviceLabel;
         _zone = zone;
         _selectedStageLight = LifxStageAssignments.Normalize(zone.AssignedStageLight);
     }
@@ -201,6 +214,7 @@ public sealed class LifxZoneViewModel : ReactiveObject
 
             this.RaiseAndSetIfChanged(ref _selectedStageLight, normalized);
             _zone.AssignedStageLight = normalized;
+            AppLog.Write(LogLevel.Information, "LIFX", $"{_deviceLabel}, {ZoneLabel}: assignment changed to {normalized}.");
         }
     }
 }

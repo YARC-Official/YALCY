@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,7 +31,7 @@ public class DmxTalker
     private SACNClient? _sendClient;
 
     private readonly byte[] _currentDataPacket = new byte[UniverseSize];
-    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"DMX manual strobe error: {ex.Message}"));
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "DMX", $"DMX manual strobe error: {ex.Message}"));
 
     private Timer? _timer;
 
@@ -112,7 +113,7 @@ public class DmxTalker
 
                 if (_mainViewModel == null)
                 {
-                    Console.WriteLine("DmxTalker: No ViewModel provided and none cached.");
+                    AppLog.Write(LogLevel.Warning, "DMX", "DmxTalker: No ViewModel provided and none cached.");
                     return;
                 }
 
@@ -465,7 +466,7 @@ public class DmxTalker
     {
         if (udpBuffer == null || udpBuffer.Length < UdpIntake.MIN_PACKET_SIZE)
         {
-            Console.WriteLine($"Invalid UDP buffer length: {udpBuffer?.Length ?? 0}");
+            AppLog.Write(LogLevel.Warning, "DMX", $"Invalid UDP buffer length: {udpBuffer?.Length ?? 0}");
             return;
         }
         // Let's deal with floats first. They all get cast from float to byte (0-255). If more precision needed, consider adding another byte channel.

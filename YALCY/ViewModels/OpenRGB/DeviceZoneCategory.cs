@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -115,7 +116,7 @@ public class DeviceZoneCategory : ReactiveObject
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"TurnOffZoneLeds error: {ex.Message}");
+                AppLog.Write(LogLevel.Error, "OpenRGB", $"TurnOffZoneLeds error: {ex.Message}");
             }
         });
     }

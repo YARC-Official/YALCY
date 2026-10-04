@@ -1,4 +1,5 @@
-﻿using System;
+using YALCY.Diagnostics;
+using System;
 using System.Collections.Generic;
 using YALCY.Udp;
 using YALCY.Usb;
@@ -80,7 +81,7 @@ public class StageKitTalker
         var cue = CreateCue((UdpIntake.CueByte)cueByte);
         if (cue == null)
         {
-            Console.WriteLine($"Cue {cueByte} not found in dictionary.");
+            AppLog.Write(LogLevel.Warning, "StageKit", $"Cue {cueByte} not found in dictionary.");
             return;
         }
 

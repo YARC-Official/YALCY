@@ -1,5 +1,7 @@
 // implementation based on https://lan.developer.lifx.com
 using System;
+using YALCY.Diagnostics;
+using System.Diagnostics;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,14 +20,11 @@ using YALCY.Views.Components;
 
 namespace YALCY.Integrations.Lifx;
 
-public sealed class LifxTalker : IDisposable
+public sealed partial class LifxTalker : IDisposable
 {
     private const int LifxLanPort = 56700;
     private const int HeaderSize = 36;
-    private const int DiscoveryWindowMs = 1200;
-    private const int DetailsWindowMs = 1200;
-    private const int ZoneWindowMs = 1200;
-    private const uint DefaultTransitionMs = 150;
+    private uint DefaultTransitionMs => (uint)Options.TransitionMs;
     private const ushort FullPower = ushort.MaxValue;
     private const ushort DefaultKelvin = 3500; //It looks like different devices have different ranges of supported kelvin values, so I just picked a default middle value. Could hardcode a full list later.
     private const ushort FullColorValue = ushort.MaxValue;
@@ -50,9 +49,17 @@ public sealed class LifxTalker : IDisposable
     private bool _isEnabled;
     private bool _isSubscribedToStageKit;
     private bool _discoveryCompleted;
-    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"LIFX manual strobe error: {ex.Message}"));
+    private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "LIFX", $"LIFX manual strobe error: {ex.Message}"));
 
     public async Task EnableLifxLan(bool isEnabled, MainWindowViewModel? viewModel = null)
+    {
+        if (!isEnabled) _discoveryCancellation?.Cancel();
+        await _lifecycleGate.WaitAsync();
+        try { await EnableLifxCoreAsync(isEnabled, viewModel); }
+        finally { _lifecycleGate.Release(); }
+    }
+
+    private async Task EnableLifxCoreAsync(bool isEnabled, MainWindowViewModel? viewModel)
     {
         if (viewModel != null)
         {
@@ -61,18 +68,32 @@ public sealed class LifxTalker : IDisposable
 
         if (isEnabled)
         {
+            if (_isEnabled) return;
             _isEnabled = true;
+            _originalStates.Clear();
+            // Complete any manual discovery/test before subscribing to live output.
+            await _discoveryGate.WaitAsync();
+            _discoveryGate.Release();
             EnsureCommandClient();
-            SubscribeToStageKit();
             UpdateViewModelStatus("LIFX status: Discovering devices...", string.Empty);
             StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Connecting);
             await DiscoverDevicesAsync(_mainViewModel);
-            _discoveryCompleted = true;
-            SaveColors(_devices);
+            if (!_isEnabled) return;
+            SubscribeToStageKit();
+            if (_mainViewModel != null) _mainViewModel.UdpIntake.PacketProcessed += OnSongPacket;
+            _rediscoveryCancellation = new CancellationTokenSource();
+            _ = RediscoverLoopAsync(_rediscoveryCancellation.Token);
             return;
         }
 
         _isEnabled = false;
+        _rediscoveryCancellation?.Cancel();
+        _discoveryCancellation?.Cancel();
+        if (_mainViewModel != null) _mainViewModel.UdpIntake.PacketProcessed -= OnSongPacket;
+        _songFlasher.Stop();
+        _lastSongState = null;
+        await _discoveryGate.WaitAsync();
+        _discoveryGate.Release();
         _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
 
         if (_discoveryCompleted)
@@ -94,6 +115,9 @@ public sealed class LifxTalker : IDisposable
 
     public async Task DiscoverDevicesAsync(MainWindowViewModel? viewModel = null)
     {
+        if (!await _discoveryGate.WaitAsync(0)) return;
+        using var cancellation = new CancellationTokenSource();
+        _discoveryCancellation = cancellation;
         if (viewModel != null)
         {
             _mainViewModel = viewModel;
@@ -110,7 +134,21 @@ public sealed class LifxTalker : IDisposable
 
         try
         {
-            var devices = await DiscoverDevicesCoreAsync();
+            var discoveryTimer = Stopwatch.StartNew();
+            var devices = await DiscoverDevicesCoreAsync(cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            PreserveOriginalStates(devices);
+            _discoveryCompleted = true;
+            _lastSongState = null;
+            AppLog.Write(LogLevel.Information, "LIFX", $"Discovery finished in {discoveryTimer.ElapsedMilliseconds} ms; {devices.Count} device(s).");
+            foreach (var device in devices)
+            {
+                AppLog.Write(LogLevel.Information, "LIFX", $"Found {device.Label} ({device.Serial}) at {device.Address}:{device.Port}; {device.Zones.Count} zone(s).");
+                if (!device.HasState)
+                    AppLog.Write(LogLevel.Warning, "LIFX", $"Skipping '{device.Label}': no color/power response was received. Try a longer discovery window or rediscover.");
+                foreach (var zone in device.Zones)
+                    AppLog.Write(LogLevel.Information, "LIFX", $"{device.Label}, zone {zone.ZoneIndex + 1}: {zone.AssignedStageLight}.");
+            }
 
             lock (_deviceLock)
             {
@@ -134,15 +172,24 @@ public sealed class LifxTalker : IDisposable
             }
 
             var zoneCount = devices.Sum(device => device.Zones.Count);
+            var includedCount = devices.Count(IsIncluded);
+            if (includedCount == 0)
+            {
+                UpdateViewModelStatus("LIFX status: No included lights are ready for output.",
+                    "Check the included-lights filter and discovery warnings in the log. Devices must answer the color/power query before they can be controlled.");
+                if (shouldUpdateFooter) StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Error);
+                return;
+            }
             UpdateViewModelStatus(
-                $"LIFX status: Discovered {devices.Count} device(s) with {zoneCount} controllable zone(s).",
-                "Each zone can be mapped to one Stage Kit light below.");
+                $"LIFX status: Discovered {devices.Count} device(s), {zoneCount} zone(s); {includedCount} device(s) included and ready.",
+                Options.WholeLightMode ? "Included lights follow whole-light song colors." : "Each zone can be mapped to one Stage Kit light below.");
 
             if (shouldUpdateFooter)
             {
                 StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Connected);
             }
         }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         catch (Exception ex)
         {
             UpdateViewModelStatus("LIFX status: Discovery failed.", $"Error: {ex.Message}");
@@ -152,9 +199,10 @@ public sealed class LifxTalker : IDisposable
                 StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Error);
             }
         }
+        finally { _discoveryCancellation = null; _discoveryGate.Release(); }
     }
 
-    private async Task<List<LifxLanDeviceModel>> DiscoverDevicesCoreAsync()
+    private async Task<List<LifxLanDeviceModel>> DiscoverDevicesCoreAsync(CancellationToken cancellationToken)
     {
         using var discoveryClient = CreateUdpClient();
         var discoveredDevices = new Dictionary<string, LifxLanDeviceModel>(StringComparer.OrdinalIgnoreCase);
@@ -162,11 +210,16 @@ public sealed class LifxTalker : IDisposable
         var getServicePacket = BuildPacket(2, null, ReadOnlySpan<byte>.Empty, tagged: true, ackRequired: false, resRequired: false);
         foreach (var endpoint in GetBroadcastEndpoints())
         {
-            await discoveryClient.SendAsync(getServicePacket, getServicePacket.Length, endpoint);
+            try { await discoveryClient.SendAsync(getServicePacket, getServicePacket.Length, endpoint); }
+            catch (SocketException ex)
+            {
+                AppLog.Write(LogLevel.Warning, "LIFX", $"Discovery broadcast to {endpoint} failed: {ex.Message}. Trying the remaining network interfaces.");
+            }
         }
 
-        using (var discoveryTimeout = new CancellationTokenSource(DiscoveryWindowMs))
+        using (var discoveryTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
+            discoveryTimeout.CancelAfter(Options.DiscoverySeconds * 1000);
             while (true)
             {
                 try
@@ -176,6 +229,7 @@ public sealed class LifxTalker : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     break;
                 }
             }
@@ -193,8 +247,9 @@ public sealed class LifxTalker : IDisposable
             await discoveryClient.SendAsync(getColorPacket, getColorPacket.Length, endpoint);
         }
 
-        using (var detailsTimeout = new CancellationTokenSource(DetailsWindowMs))
+        using (var detailsTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
+            detailsTimeout.CancelAfter(Options.DiscoverySeconds * 1000);
             while (true)
             {
                 try
@@ -204,6 +259,7 @@ public sealed class LifxTalker : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     break;
                 }
             }
@@ -216,8 +272,9 @@ public sealed class LifxTalker : IDisposable
             await discoveryClient.SendAsync(getZonesPacket, getZonesPacket.Length, endpoint);
         }
 
-        using (var zoneTimeout = new CancellationTokenSource(ZoneWindowMs))
+        using (var zoneTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
+            zoneTimeout.CancelAfter(Options.DiscoverySeconds * 1000);
             while (true)
             {
                 try
@@ -227,6 +284,7 @@ public sealed class LifxTalker : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     break;
                 }
             }
@@ -265,6 +323,17 @@ public sealed class LifxTalker : IDisposable
 
     private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
     {
+        if (!_isEnabled) return;
+        if (Options.WholeLightMode)
+        {
+            if (commandId == StageKitTalker.CommandId.DisableAll)
+            {
+                _songFlasher.Stop();
+                _lastSongState = null;
+                SendWholeColor(LifxPalette.Color("White", 0), 0);
+            }
+            return;
+        }
         try
         {
             switch (commandId)
@@ -369,6 +438,7 @@ public sealed class LifxTalker : IDisposable
 
     private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
     {
+        if (cancellationToken.IsCancellationRequested) return Task.CompletedTask;
         if (UsbDeviceMonitor.IsOutputSuppressed)
         {
             isOn = false;
@@ -395,8 +465,8 @@ public sealed class LifxTalker : IDisposable
                         continue;
                     }
 
-                    var nextColor = isOn ? StrobeWhite : zone.CurrentColor.WithBrightness(0);
-                    if (zone.CurrentColor == nextColor)
+                    var nextColor = isOn ? StrobeWhite.WithBrightness((ushort)(65535 * Options.Brightness / 100)) : zone.CurrentColor.WithBrightness(0);
+                    if (zone.CurrentColor == nextColor && (!isOn || device.IsPowered))
                     {
                         continue;
                     }
@@ -407,7 +477,7 @@ public sealed class LifxTalker : IDisposable
 
                 if (changedZones.Count > 0)
                 {
-                    SendDeviceState(device, changedZones);
+                    SendDeviceState(device, changedZones, 0);
                 }
             }
         }
@@ -417,6 +487,7 @@ public sealed class LifxTalker : IDisposable
 
     private void ApplyColorState(StageKitTalker.CommandId commandId, byte activeSlotsMask, LifxHsbk activeColor)
     {
+        activeColor = activeColor.WithBrightness((ushort)(65535 * Options.Brightness / 100));
         var devices = SnapshotDevices();
         if (devices.Count == 0)
         {
@@ -444,7 +515,7 @@ public sealed class LifxTalker : IDisposable
                         // Keep hue/saturation when dimming to black so the transition doesn't wash through Kelvin white.
                         : zone.CurrentColor.WithBrightness(0);
 
-                    if (zone.CurrentColor == nextColor)
+                    if (zone.CurrentColor == nextColor && (!shouldEnable || device.IsPowered))
                     {
                         continue;
                     }
@@ -502,18 +573,18 @@ public sealed class LifxTalker : IDisposable
         }
     }
 
-    private void SendDeviceState(LifxLanDeviceModel device, IReadOnlyList<int> changedZoneIndices)
+    private void SendDeviceState(LifxLanDeviceModel device, IReadOnlyList<int> changedZoneIndices, uint? durationMs = null)
     {
         if (device.Zones.Count <= 1)
         {
-            SendSingleZoneState(device);
+            SendSingleZoneState(device, durationMs);
             return;
         }
 
         var shouldBePowered = device.Zones.Any(zone => zone.CurrentColor.IsOn);
         if (shouldBePowered)
         {
-            SendLightPower(device, true, DefaultTransitionMs);
+            SendLightPower(device, true, durationMs ?? DefaultTransitionMs);
         }
 
         var changedSegments = BuildChangedSegments(device, changedZoneIndices);
@@ -524,18 +595,18 @@ public sealed class LifxTalker : IDisposable
                 : MultiZoneApply.NoApply;
 
             var segment = changedSegments[i];
-            SendColorZones(device, segment.StartIndex, segment.EndIndex, segment.Color, DefaultTransitionMs, apply);
+            SendColorZones(device, segment.StartIndex, segment.EndIndex, segment.Color, durationMs ?? DefaultTransitionMs, apply);
         }
 
         if (!shouldBePowered)
         {
-            SendLightPower(device, false, DefaultTransitionMs);
+            SendLightPower(device, false, durationMs ?? DefaultTransitionMs);
         }
 
         device.IsPowered = shouldBePowered;
     }
 
-    private void SendSingleZoneState(LifxLanDeviceModel device)
+    private void SendSingleZoneState(LifxLanDeviceModel device, uint? durationMs)
     {
         var zone = device.Zones.FirstOrDefault();
         if (zone == null)
@@ -547,14 +618,14 @@ public sealed class LifxTalker : IDisposable
 
         if (shouldBePowered)
         {
-            SendLightPower(device, true, DefaultTransitionMs);
+            SendLightPower(device, true, durationMs ?? DefaultTransitionMs);
         }
 
-        SendColor(device, zone.CurrentColor, DefaultTransitionMs);
+        SendColor(device, zone.CurrentColor, durationMs ?? DefaultTransitionMs);
 
         if (!shouldBePowered)
         {
-            SendLightPower(device, false, DefaultTransitionMs);
+            SendLightPower(device, false, durationMs ?? DefaultTransitionMs);
         }
 
         device.IsPowered = shouldBePowered;
@@ -563,7 +634,8 @@ public sealed class LifxTalker : IDisposable
 
     private void SendStrobe(LifxLanDeviceModel device, uint periodMs, bool cancel)
     {
-        var activeColor = cancel ? StrobeOffish : StrobeWhite;
+        var activeColor = cancel ? StrobeOffish : StrobeWhite.WithBrightness((ushort)(65535 * Options.Brightness / 100));
+        if (!cancel) SendLightPower(device, true, 0);
         SendStrobeWaveform(device, activeColor, periodMs, cancel);
         if (cancel)
         {
@@ -644,7 +716,17 @@ public sealed class LifxTalker : IDisposable
         }
 
         var packet = BuildPacket(messageType, device.Target, payload, tagged: false, ackRequired: false, resRequired: false);
-        _commandClient.Send(packet, packet.Length, new IPEndPoint(device.Address, device.Port));
+        try
+        {
+            _commandClient.Send(packet, packet.Length, new IPEndPoint(device.Address, device.Port));
+        }
+        catch (SocketException ex)
+        {
+            throw new InvalidOperationException(
+                $"Could not send LIFX command {messageType} to '{device.Label}' at {device.Address}:{device.Port}: {ex.SocketErrorCode}: {ex.Message} Check device connectivity and rediscover devices if its address changed.", ex);
+        }
+        if (AppLog.DebugEnabled)
+            AppLog.Write(LogLevel.Debug, "LIFX", $"Sent UDP command {messageType} to {device.Address}:{device.Port} ({packet.Length} bytes); no device acknowledgement requested.");
     }
 
     private void EnsureCommandClient()
@@ -752,6 +834,7 @@ public sealed class LifxTalker : IDisposable
         var payload = buffer.AsSpan(HeaderSize);
         device.BaseColor = LifxHsbk.FromPayload(payload[0..8]);
         device.IsPowered = BinaryPrimitives.ReadUInt16LittleEndian(payload[10..12]) > 0;
+        device.HasState = true;
         device.Label = DecodeString(payload[12..44], serial);
     }
 
@@ -863,34 +946,9 @@ public sealed class LifxTalker : IDisposable
         }
     }
     
-    private void SaveColors(IEnumerable<LifxLanDeviceModel> devices)
-    {
-        foreach (var device in devices)
-        {
-            foreach (var zone in device.Zones)
-            {
-                zone.OriginalColor = zone.CurrentColor;
-            }
-        }
-    }
-
     private void RestoreColors(IEnumerable<LifxLanDeviceModel> devices)
     {
-        var zoneList = new List<int>();
-        foreach (var device in devices)
-        {
-            zoneList.Clear();
-            foreach (var zone in device.Zones)
-            {
-                if (zone.AssignedStageLight != LifxStageAssignments.Unassigned)
-                {
-                    zone.CurrentColor = zone.OriginalColor;
-                    zoneList.Add(zone.ZoneIndex);
-                }
-            }
-
-            SendDeviceState(device, zoneList);
-        }
+        RestoreOriginalDevices(devices, Options.WholeLightMode);
     }
 
     private Dictionary<string, Dictionary<int, string>> GetSavedZoneAssignments()
@@ -936,7 +994,7 @@ public sealed class LifxTalker : IDisposable
     {
         lock (_deviceLock)
         {
-            return _devices.ToList();
+            return _devices.Where(IsIncluded).ToList();
         }
     }
 
@@ -956,6 +1014,9 @@ public sealed class LifxTalker : IDisposable
 
     private void UpdateViewModelStatus(string status, string message)
     {
+        var level = status.Contains("failed", StringComparison.OrdinalIgnoreCase) || status.Contains("Error", StringComparison.OrdinalIgnoreCase)
+            ? LogLevel.Error : status.Contains("No LIFX", StringComparison.OrdinalIgnoreCase) ? LogLevel.Warning : LogLevel.Information;
+        AppLog.Write(level, "LIFX", string.IsNullOrEmpty(message) ? status : $"{status} {message}");
         if (_mainViewModel == null)
         {
             return;
@@ -1092,6 +1153,11 @@ public sealed class LifxTalker : IDisposable
 
     public void Dispose()
     {
+        _isEnabled = false;
+        _rediscoveryCancellation?.Cancel();
+        _discoveryCancellation?.Cancel();
+        _songFlasher.Stop();
+        if (_mainViewModel != null) _mainViewModel.UdpIntake.PacketProcessed -= OnSongPacket;
         UnsubscribeFromStageKit();
         _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
         RestoreColors(_devices);

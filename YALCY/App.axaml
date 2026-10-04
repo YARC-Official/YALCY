@@ -110,6 +110,8 @@
                     <SolidColorBrush x:Key="AppTextPrimary" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="AppTextSecondary" Color="#AAAAAA" />
                     <SolidColorBrush x:Key="AppTextMuted" Color="#888888" />
+                    <SolidColorBrush x:Key="RepeatButtonForegroundDisabled" Color="#888888" />
+                    <SolidColorBrush x:Key="ButtonSpinnerButtonForegroundDisabled" Color="#888888" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="AppWindowBackground" Color="#F5F5F7" />
@@ -121,6 +123,8 @@
                     <SolidColorBrush x:Key="AppTextPrimary" Color="#18181B" />
                     <SolidColorBrush x:Key="AppTextSecondary" Color="#52525B" />
                     <SolidColorBrush x:Key="AppTextMuted" Color="#71717A" />
+                    <SolidColorBrush x:Key="RepeatButtonForegroundDisabled" Color="#71717A" />
+                    <SolidColorBrush x:Key="ButtonSpinnerButtonForegroundDisabled" Color="#71717A" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <ResourceDictionary.MergedDictionaries>
@@ -145,8 +149,6 @@
             <!-- Disabled ButtonSpinner Brushes -->
             <SolidColorBrush x:Key="RepeatButtonBackgroundDisabled" Color="Transparent" />
             <SolidColorBrush x:Key="ButtonSpinnerButtonBackgroundDisabled" Color="Transparent" />
-            <SolidColorBrush x:Key="RepeatButtonForegroundDisabled" Color="{DynamicResource AppTextMuted}" />
-            <SolidColorBrush x:Key="ButtonSpinnerButtonForegroundDisabled" Color="{DynamicResource AppTextMuted}" />
         </ResourceDictionary>
     </Application.Resources>
 

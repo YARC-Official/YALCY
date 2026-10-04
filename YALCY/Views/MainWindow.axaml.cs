@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using Avalonia.Controls;
 using YALCY.Views.Tabs;
 using YALCY.ViewModels;
@@ -74,7 +75,7 @@ public partial class MainWindow : Window
         }
         catch (System.Exception ex)
         {
-            System.Console.WriteLine($"Error saving settings: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error saving settings: {ex.Message}");
         }
     }
 }

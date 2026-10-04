@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Controls.Shapes;
@@ -17,6 +18,7 @@ public enum IntegrationStatus
 
 public partial class StatusFooter : UserControl
 {
+    private static readonly Dictionary<string, IntegrationStatus> LoggedStatuses = new();
     // Static events that integrations can raise to update status colors
     public static event Action<string, string>? StatusColorChanged;
     
@@ -124,8 +126,22 @@ public partial class StatusFooter : UserControl
     }
 
     // Static methods that integrations can call directly
-    public static void UpdateStatus(string integrationName, IntegrationStatus status)
+    public static void UpdateStatus(string integrationName, IntegrationStatus status, string? detail = null)
     {
+        // Errors must carry the failure context, or already have been logged by the caller.
+        // A generic status transition only duplicates (and obscures) that useful entry.
+        if (!string.IsNullOrWhiteSpace(detail))
+            AppLog.Write(status == IntegrationStatus.Error ? LogLevel.Error : LogLevel.Information,
+                integrationName, detail);
+        lock (LoggedStatuses)
+        {
+            if (!LoggedStatuses.TryGetValue(integrationName, out var previous) || previous != status)
+            {
+                LoggedStatuses[integrationName] = status;
+                if (status != IntegrationStatus.Error && string.IsNullOrWhiteSpace(detail))
+                    AppLog.Write(LogLevel.Information, integrationName, $"Status: {status}.");
+            }
+        }
         string color = GetStatusColor(status);
         
         // Avoid unnecessary updates when the color has not changed.

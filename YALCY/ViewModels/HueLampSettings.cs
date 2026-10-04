@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -170,7 +171,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving settings: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Hue", $"Error saving settings: {ex.Message}");
         }
     }
 

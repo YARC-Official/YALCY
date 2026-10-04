@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Threading.Tasks;
 using YALCY.ViewModels;
@@ -26,112 +27,112 @@ public class HeadlessHost : IDisposable
     /// </summary>
     public async Task InitializeAsync()
     {
-        Console.WriteLine("Initializing YALCY integrations...");
+        AppLog.Write(LogLevel.Information, "Application", "Initializing YALCY integrations...");
 
         // Start USB device monitor
         ViewModel.UsbDeviceMonitor.StartUsbDeviceMonitor(ViewModel);
-        Console.WriteLine("  USB device monitor: Started");
+        AppLog.Write(LogLevel.Information, "Application", "  USB device monitor: Started");
 
         // Initialize UDP intake first (needed by other integrations)
         if (ViewModel.UdpEnableSetting.IsEnabled)
         {
             await ViewModel.UdpIntake.EnableUdpIntake(true, ViewModel);
-            Console.WriteLine("  UDP intake: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  UDP intake: Enabled");
         }
         else
         {
-            Console.WriteLine("  UDP intake: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  UDP intake: Disabled");
         }
 
         // Initialize DMX/sACN
         if (ViewModel.DmxEnabledSetting.IsEnabled)
         {
             ViewModel.DmxTalker.EnableDmxTalker(true, ViewModel);
-            Console.WriteLine("  DMX/sACN: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  DMX/sACN: Enabled");
         }
         else
         {
-            Console.WriteLine("  DMX/sACN: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  DMX/sACN: Disabled");
         }
 
         // Initialize Hue
         if (ViewModel.HueEnabledSetting.IsEnabled)
         {
             await ViewModel.HueTalker.EnableHue(true, ViewModel.HueBridgeIp, ViewModel);
-            Console.WriteLine("  Hue: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  Hue: Enabled");
         }
         else
         {
-            Console.WriteLine("  Hue: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  Hue: Disabled");
         }
 
         // Initialize LIFX LAN
         if (ViewModel.LifxEnabledSetting.IsEnabled)
         {
             await ViewModel.LifxTalker.EnableLifxLan(true, ViewModel);
-            Console.WriteLine("  LIFX: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  LIFX: Enabled");
         }
         else
         {
-            Console.WriteLine("  LIFX: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  LIFX: Disabled");
         }
 
         // Initialize Home Assistant
         if (ViewModel.HomeAssistantEnabledSetting.IsEnabled)
         {
             await ViewModel.HomeAssistantTalker.EnableHomeAssistant(true, ViewModel);
-            Console.WriteLine("  Home Assistant: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  Home Assistant: Enabled");
         }
         else
         {
-            Console.WriteLine("  Home Assistant: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  Home Assistant: Disabled");
         }
 
         // Initialize Serial
         if (ViewModel.SerialEnabledSetting.IsEnabled)
         {
             ViewModel.SerialTalker.EnableSerialTalker(true, ViewModel);
-            Console.WriteLine("  Serial: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  Serial: Enabled");
         }
         else
         {
-            Console.WriteLine("  Serial: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  Serial: Disabled");
         }
 
         // Initialize StageKit
         if (ViewModel.StageKitEnabledSetting.IsEnabled)
         {
             ViewModel.StageKitTalker.EnableStageKitTalker(true);
-            Console.WriteLine("  StageKit: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  StageKit: Enabled");
         }
         else
         {
-            Console.WriteLine("  StageKit: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  StageKit: Disabled");
         }
 
         // Initialize RB3E
         if (ViewModel.Rb3eEnabledSetting.IsEnabled)
         {
             ViewModel.Rb3ETalker.EnableRb3eTalker(true, ViewModel);
-            Console.WriteLine("  RB3E: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  RB3E: Enabled");
         }
         else
         {
-            Console.WriteLine("  RB3E: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  RB3E: Disabled");
         }
 
         // Initialize OpenRGB
         if (ViewModel.OpenRgbEnabledSetting.IsEnabled)
         {
             await ViewModel.OpenRgbTalker.EnableOpenRgbTalker(true, ViewModel.OpenRgbServerIp ?? string.Empty, ViewModel.OpenRgbServerPort, ViewModel);
-            Console.WriteLine("  OpenRGB: Enabled");
+            AppLog.Write(LogLevel.Information, "Application", "  OpenRGB: Enabled");
         }
         else
         {
-            Console.WriteLine("  OpenRGB: Disabled");
+            AppLog.Write(LogLevel.Information, "Application", "  OpenRGB: Disabled");
         }
 
-        Console.WriteLine("Initialization complete.");
+        AppLog.Write(LogLevel.Information, "Application", "Initialization complete.");
     }
 
     /// <summary>
@@ -139,9 +140,9 @@ public class HeadlessHost : IDisposable
     /// </summary>
     public async Task ShutdownAsync()
     {
-        Console.WriteLine("Shutting down YALCY integrations...");
+        AppLog.Write(LogLevel.Information, "Application", "Shutting down YALCY integrations...");
         await ViewModel.ShutdownAsync();
-        Console.WriteLine("Shutdown complete.");
+        AppLog.Write(LogLevel.Information, "Application", "Shutdown complete.");
     }
 
     public void Dispose()

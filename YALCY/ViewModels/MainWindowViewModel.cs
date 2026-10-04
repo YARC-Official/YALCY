@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -414,6 +415,8 @@ public class EnableSetting : ReactiveObject
         get => _isEnabled;
         set
         {
+            if (_isEnabled == value) return;
+            AppLog.Write(LogLevel.Information, "Settings", $"{Label}: {(value ? "enabled" : "disabled")}.");
             this.RaiseAndSetIfChanged(ref _isEnabled, value);
             this.RaisePropertyChanged(nameof(ToggleButtonContent));
             _onSettingChanged?.Invoke(value);
@@ -436,7 +439,9 @@ public class EnableSetting : ReactiveObject
     {
         Label = label;
         _label = label;
-        IsEnabled = isEnabled;
+        // Loading saved settings and constructing the live view model are not toggle events.
+        // Both create EnableSetting instances, so using the setter here logged startup twice.
+        _isEnabled = isEnabled;
         _onString = onString;
         _offString = offString;
         _onSettingChanged = onSettingChanged;

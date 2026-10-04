@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -17,7 +18,7 @@ namespace YALCY.Integrations.RB3E;
         private static IPAddress IPAddress = IPAddress.Parse("255.255.255.255"); // "this" network's broadcast address
         private const int Port = 21070; // That is what RB3E uses
         private static UdpClient? _sendClient;
-        private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => Console.WriteLine($"RB3E manual strobe error: {ex.Message}"));
+        private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "RB3E", $"RB3E manual strobe error: {ex.Message}"));
         private MainWindowViewModel? _mainViewModel;
 
         public void EnableRb3eTalker(bool isEnabled, MainWindowViewModel? viewModel = null)

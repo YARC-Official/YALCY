@@ -1,3 +1,4 @@
+using YALCY.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using System;
@@ -269,7 +270,7 @@ public partial class OpenRgbTabView : UserControl
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[OpenRgbTabView] Layout update error: {ex}");
+            AppLog.Write(LogLevel.Error, "OpenRGB", $"[OpenRgbTabView] Layout update error: {ex}");
         }
     }
 }

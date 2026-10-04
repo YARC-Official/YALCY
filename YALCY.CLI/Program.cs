@@ -13,6 +13,8 @@ class Program
 
     static async Task<int> Main(string[] args)
     {
+        YALCY.Diagnostics.AppLog.EchoToConsole = true;
+        YALCY.Diagnostics.AppLog.Initialize();
         Console.WriteLine($"YALCY CLI v{GetVersion()}");
         Console.WriteLine("Headless lighting integration for YARG");
         Console.WriteLine();
@@ -37,6 +39,7 @@ class Program
         }
         catch (Exception ex)
         {
+            YALCY.Diagnostics.AppLog.Write(YALCY.Diagnostics.LogLevel.Error, "Application", ex.ToString());
             Console.Error.WriteLine($"Error: {ex.Message}");
             return 1;
         }
@@ -53,6 +56,7 @@ class Program
     private static void OnProcessExit(object? sender, EventArgs e)
     {
         TriggerShutdown();
+        YALCY.Diagnostics.AppLog.Shutdown();
     }
 
     private static void TriggerShutdown()
