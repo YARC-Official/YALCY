@@ -8,86 +8,150 @@
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
 
-    <Border Background="{DynamicResource AppPanelBackground}" Padding="20,10,20,10" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,1,0,0">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+    <UserControl.Styles>
+        <Style Selector="Button.BlackoutButton">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinWidth" Value="126" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- Normal State: BLACKOUT (Red background, white text) -->
+        <Style Selector="Button.BlackoutButton.Active">
+            <Setter Property="Background" Value="#B00020" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.BlackoutButton.Active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#CF1B38" />
+            <Setter Property="TextBlock.Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.BlackoutButton.Active:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#8A0019" />
+            <Setter Property="TextBlock.Foreground" Value="#FFFFFF" />
+        </Style>
+
+        <!-- Blackout Triggered State: RESUME OUTPUT (White background, black text) -->
+        <Style Selector="Button.BlackoutButton.Resume">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="#000000" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.BlackoutButton.Resume /template/ ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="#000000" />
+        </Style>
+        <Style Selector="Button.BlackoutButton.Resume:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#F0F0F0" />
+            <Setter Property="TextBlock.Foreground" Value="#000000" />
+        </Style>
+        <Style Selector="Button.BlackoutButton.Resume:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#DEDEDE" />
+            <Setter Property="TextBlock.Foreground" Value="#000000" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource AppPanelBackground}" 
+            MinHeight="44"
+            Padding="16,6,16,6" 
+            BorderBrush="{DynamicResource AppBorder}" 
+            BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
             
-            <!-- Left side - Status indicators -->
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20" HorizontalAlignment="Left">
+            <!-- Left side - Status indicators: WrapPanel allows fluid flow across screen widths without collision -->
+            <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                 
                 <!-- YARG UDP -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="UdpStatusEllipse" />
-                    <TextBlock Text="YARG UDP" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="UdpStatusEllipse" />
+                    <TextBlock Text="YARG UDP" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- Stage Kit -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="StageKitStatusEllipse" />
-                    <TextBlock Text="Stage Kit" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="StageKitStatusEllipse" />
+                    <TextBlock Text="Stage Kit" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- DMX/sACN -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="DmxStatusEllipse" />
-                    <TextBlock Text="DMX/sACN" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="DmxStatusEllipse" />
+                    <TextBlock Text="DMX/sACN" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- RB3E -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="Rb3eStatusEllipse" />
-                    <TextBlock Text="RB3E" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="Rb3eStatusEllipse" />
+                    <TextBlock Text="RB3E" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- Serial -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="SerialStatusEllipse" />
-                    <TextBlock Text="Serial" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="SerialStatusEllipse" />
+                    <TextBlock Text="Serial" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- Hue -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="HueStatusEllipse" />
-                    <TextBlock Text="Hue" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="HueStatusEllipse" />
+                    <TextBlock Text="Hue" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <!-- LIFX -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="LifxStatusEllipse" />
-                    <TextBlock Text="LIFX" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="LifxStatusEllipse" />
+                    <TextBlock Text="LIFX" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <!-- Home Assistant -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="HomeAssistantStatusEllipse" />
-                    <TextBlock Text="Home Assistant" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="HomeAssistantStatusEllipse" />
+                    <TextBlock Text="Home Assistant" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
                 
                 <!-- OpenRGB -->
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="10" Height="10" Fill="#808080" x:Name="OpenRgbStatusEllipse" />
-                    <TextBlock Text="OpenRGB" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="OpenRgbStatusEllipse" />
+                    <TextBlock Text="OpenRGB" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- WLED -->
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="WledStatusEllipse" />
+                    <TextBlock Text="WLED" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
                 
-            </StackPanel>
+            </WrapPanel>
             
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="16,0"
-                        HorizontalAlignment="Right" VerticalAlignment="Center">
-                <TextBlock Text="{Binding YargStreamStatus}" Foreground="{DynamicResource AppTextSecondary}" FontSize="12"
+            <!-- Right side: Stream Status + Blackout button + App version -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" Margin="14,0,0,0">
+                <TextBlock Text="{Binding YargStreamStatus}" 
+                           Foreground="{DynamicResource AppTextSecondary}" 
+                           FontSize="11"
+                           FontWeight="Medium"
+                           MinWidth="105"
+                           TextAlignment="Right"
                            VerticalAlignment="Center" />
-                <Button Content="{Binding BlackoutButtonText}" Command="{Binding ToggleBlackoutCommand}"
-                        Background="#B00020" Foreground="White" FontWeight="Bold"
-                        Padding="14,5" />
-            </StackPanel>
+                           
+                <Button Classes="BlackoutButton"
+                        Classes.Resume="{Binding IsManualBlackout}"
+                        Classes.Active="{Binding !IsManualBlackout}"
+                        Content="{Binding BlackoutButtonText}" 
+                        Command="{Binding ToggleBlackoutCommand}"
+                        VerticalAlignment="Center" />
 
-            <!-- Right side - App name and version -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
-                <TextBlock Text="YALCY" Foreground="{DynamicResource AppTextPrimary}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding Source={x:Static app:App.Version}, StringFormat=' v{0}'}" Foreground="{DynamicResource AppTextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <!-- App name and version -->
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="YALCY" Foreground="{DynamicResource AppTextPrimary}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Source={x:Static app:App.Version}, StringFormat=' v{0}'}" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
+                </StackPanel>
             </StackPanel>
             
         </Grid>

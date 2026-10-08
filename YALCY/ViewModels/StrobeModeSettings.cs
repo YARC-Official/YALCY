@@ -22,6 +22,7 @@ public partial class MainWindowViewModel
     private int _lifxStrobeMode;
     private int _openRgbStrobeMode;
     private int _homeAssistantStrobeMode;
+    private int _wledStrobeMode;
 
     public int DmxStrobeMode
     {
@@ -65,6 +66,12 @@ public partial class MainWindowViewModel
         set => this.RaiseAndSetIfChanged(ref _homeAssistantStrobeMode, StrobeOutputModes.Normalize(value));
     }
 
+    public int WledStrobeMode
+    {
+        get => _wledStrobeMode;
+        set => this.RaiseAndSetIfChanged(ref _wledStrobeMode, StrobeOutputModes.Normalize(value));
+    }
+
     private void FeedInStrobeModeSettings()
     {
         DmxStrobeMode = SettingsManager.DmxStrobeMode;
@@ -74,5 +81,6 @@ public partial class MainWindowViewModel
         LifxStrobeMode = SettingsManager.LifxStrobeMode;
         OpenRgbStrobeMode = SettingsManager.OpenRgbStrobeMode;
         HomeAssistantStrobeMode = SettingsManager.HomeAssistantStrobeMode;
+        WledStrobeMode = SettingsManager.WledSettings.StrobeMode;
     }
 }

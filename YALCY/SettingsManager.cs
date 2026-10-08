@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using YALCY.Integrations.HomeAssistant;
 using YALCY.Integrations.Hue;
 using YALCY.Integrations.Lifx;
+using YALCY.Integrations.WLED;
 using YALCY.ViewModels;
 
 namespace YALCY;
@@ -125,6 +126,8 @@ internal static class SettingsManager
     public static bool OpenRgbEnabledSettingIsEnabled { get; set; }
     public static bool LifxEnabledSettingIsEnabled { get; set; }
     public static bool HomeAssistantEnabledSettingIsEnabled { get; set; }
+    public static bool WledEnabledSettingIsEnabled { get; set; }
+    public static WledSetting WledSettings => WledSettingsManager.Current;
     public static int BpmChannelSettingValue { get; private set; }
     public static int CueChangeChannelSettingValue { get; private set; }
     public static int PostProcessingChannelSettingValue { get; private set; }
@@ -237,6 +240,7 @@ internal static class SettingsManager
         settings.CurrentEnableSettings.Add(mainViewModel.SerialEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.LifxEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.HomeAssistantEnabledSetting);
+        settings.CurrentEnableSettings.Add(mainViewModel.WledEnabledSetting);
 
         settings.CurrentSingleSettings.Add(mainViewModel.BpmChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.CueChangeChannelSetting);
@@ -298,6 +302,7 @@ internal static class SettingsManager
         settings.LifxOptions = mainViewModel.LifxOptions;
         settings.OpenRgbStrobeMode = mainViewModel.OpenRgbStrobeMode;
         settings.HomeAssistantStrobeMode = mainViewModel.HomeAssistantStrobeMode;
+        WledSettingsManager.Save(mainViewModel);
         settings.CloseToTrayOnClose = mainViewModel.CloseToTrayOnClose;
         settings.ThemeVariant = NormalizeThemeVariant(ThemeVariant);
 
@@ -373,6 +378,10 @@ internal static class SettingsManager
 
                     case "Home Assistant Enabled":
                         HomeAssistantEnabledSettingIsEnabled = enable.IsEnabled;
+                        break;
+
+                    case "WLED Enabled":
+                        WledEnabledSettingIsEnabled = enable.IsEnabled;
                         break;
                 }
             }
@@ -556,6 +565,7 @@ internal static class SettingsManager
             OpenRgbStrobeMode = StrobeOutputModes.Normalize(container.OpenRgbStrobeMode ?? StrobeOutputModes.ManualFlash);
             HomeAssistantStrobeMode =
                 StrobeOutputModes.Normalize(container.HomeAssistantStrobeMode ?? StrobeOutputModes.StrobeCommand);
+            WledSettingsManager.Load();
             CloseToTrayOnClose = container.CloseToTrayOnClose;
             ThemeVariant = NormalizeThemeVariant(container.ThemeVariant);
         }
@@ -606,6 +616,8 @@ internal static class SettingsManager
             LifxOptions = new();
             OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
             HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
+            WledEnabledSettingIsEnabled = false;
+            WledSettingsManager.Load();
             CloseToTrayOnClose = false;
             ThemeVariant = SystemThemeVariant;
         }

@@ -132,6 +132,17 @@ public class HeadlessHost : IDisposable
             AppLog.Write(LogLevel.Information, "Application", "  OpenRGB: Disabled");
         }
 
+        // Initialize WLED
+        if (ViewModel.WledEnabledSetting.IsEnabled)
+        {
+            await ViewModel.WledTalker.EnableWled(true, ViewModel);
+            AppLog.Write(LogLevel.Information, "Application", "  WLED: Enabled");
+        }
+        else
+        {
+            AppLog.Write(LogLevel.Information, "Application", "  WLED: Disabled");
+        }
+
         AppLog.Write(LogLevel.Information, "Application", "Initialization complete.");
     }
 

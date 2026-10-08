@@ -212,10 +212,19 @@ public class App : Application
             AppLog.Write(LogLevel.Error, "Application", $"Error initializing OpenRGB: {ex.Message}");
         }
 
+        try
+        {
+            await mainViewModel.WledTalker.EnableWled(mainViewModel.WledEnabledSetting.IsEnabled, mainViewModel);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(LogLevel.Error, "Application", $"Error initializing WLED: {ex.Message}");
+        }
     }
 
     private static async Task StartUdpIntakeAsync(MainWindowViewModel mainViewModel)
     {
+
         try
         {
             await mainViewModel.UdpIntake.EnableUdpIntake(mainViewModel.UdpEnableSetting.IsEnabled, mainViewModel);
