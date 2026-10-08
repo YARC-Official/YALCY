@@ -506,6 +506,55 @@
                                                   Margin="0"/>
                                 </Grid>
                             </Border>
+
+                            <!-- WLED -->
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconWled}" 
+                                                  Width="18" 
+                                                  Height="18" 
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}" 
+                                                  HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="WLED" 
+                                                   FontSize="13" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="{DynamicResource AppTextPrimary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Direct DDP &amp; Realtime UDP" 
+                                                   FontSize="10" 
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding WledEnabledSetting.ToggleButtonContent}" 
+                                                   FontSize="10" 
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" 
+                                                  ToolTip.Tip="{Binding WledEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding WledEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
                         </UniformGrid>
                     </StackPanel>
                 </Border>

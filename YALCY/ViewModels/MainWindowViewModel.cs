@@ -23,6 +23,7 @@ using YALCY.Integrations.OpenRGB;
 using YALCY.Integrations.RB3E;
 using YALCY.Integrations.Serial;
 using YALCY.Integrations.StageKit;
+using YALCY.Integrations.WLED;
 using YALCY.Usb;
 using YALCY.ViewModels.OpenRGB;
 using Device = OpenRGB.NET.Device;
@@ -75,10 +76,12 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     public EnableSetting SerialEnabledSetting { get; set; }
     public EnableSetting LifxEnabledSetting { get; set; }
     public EnableSetting HomeAssistantEnabledSetting { get; set; }
+    public EnableSetting WledEnabledSetting { get; set; }
     public readonly UsbDeviceMonitor UsbDeviceMonitor;
     public readonly HueTalker HueTalker;
     public readonly LifxTalker LifxTalker;
     public readonly HomeAssistantTalker HomeAssistantTalker;
+    public readonly WledTalker WledTalker;
     public readonly DmxTalker DmxTalker;
     public readonly StageKitTalker StageKitTalker;
     public readonly Rb3eTalker Rb3ETalker;
@@ -194,6 +197,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         HueTalker = new HueTalker();
         LifxTalker = new LifxTalker();
         HomeAssistantTalker = new HomeAssistantTalker();
+        WledTalker = new WledTalker();
         DmxTalker = new DmxTalker();
         StageKitTalker = new StageKitTalker();
         Rb3ETalker = new Rb3eTalker();
@@ -216,6 +220,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         FeedInLifxSettings();
         FeedInHomeAssistantSettings();
         FeedInOpenRgbSettings();
+        FeedInWledSettings();
         FeedInStrobeModeSettings();
         FeedInAppSettings();
 
@@ -323,6 +328,15 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             async (isEnabled) => await OpenRgbTalker.EnableOpenRgbTalker(isEnabled, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort),
             "Enable or disable output to a OpenRGB client"
         );
+
+        WledEnabledSetting = new EnableSetting(
+            "WLED Enabled",
+            SettingsManager.WledEnabledSettingIsEnabled,
+            "YALCY is talking WLED!",
+            "YALCY is NOT talking WLED!",
+            async (isEnabled) => await WledTalker.EnableWled(isEnabled, this),
+            "Enable or disable ultra low-latency direct UDP output to WLED controllers"
+        );
     }
 
     private void FeedInAppSettings()
@@ -374,6 +388,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
         // Turn off the Home Assistant Talker
         await HomeAssistantTalker.EnableHomeAssistant(false, this);
+
+        // Turn off the WLED Talker
+        await WledTalker.EnableWled(false, this);
 
         // Turn off the USB device monitor
         UsbDeviceMonitor.StopUsbDeviceMonitor();

@@ -173,6 +173,12 @@
             </TabItem>
             <TabItem>
                 <TabItem.Header>
+                    <components:TabHeader Text="WLED" />
+                </TabItem.Header>
+                <tabs:WledTabView />
+            </TabItem>
+            <TabItem>
+                <TabItem.Header>
                     <components:TabHeader Text="Settings" />
                 </TabItem.Header>
                 <tabs:SettingsTabView />

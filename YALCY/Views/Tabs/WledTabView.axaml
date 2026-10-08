@@ -1,0 +1,1121 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
+             x:Class="YALCY.Views.Tabs.WledTabView"
+             x:DataType="vm:MainWindowViewModel"
+             mc:Ignorable="d">
+
+    <UserControl.Styles>
+        <!-- Connect button base -->
+        <Style Selector="Button.wled-connect-btn">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentContrastBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.wled-connect-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+
+        <!-- Connect button connecting state -->
+        <Style Selector="Button.wled-connect-btn.connecting /template/ ContentPresenter">
+            <Setter Property="Background" Value="#D97706" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+
+        <!-- Connect button connected state -->
+        <Style Selector="Button.wled-connect-btn.connected /template/ ContentPresenter">
+            <Setter Property="Background" Value="#15803D" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#22C55E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+
+        <!-- Disconnect button base (disabled) -->
+        <Style Selector="Button.wled-disconnect-btn">
+            <Setter Property="Background" Value="{DynamicResource AppCardBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+        <Style Selector="Button.wled-disconnect-btn:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AppCardBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+
+        <!-- Disconnect button connected state (active & clickable) -->
+        <Style Selector="Button.wled-disconnect-btn.connected">
+            <Setter Property="Background" Value="#DC2626" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#EF4444" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.wled-disconnect-btn.connected /template/ ContentPresenter">
+            <Setter Property="Background" Value="#DC2626" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#EF4444" />
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+        <Style Selector="Button.wled-disconnect-btn.connected:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#B91C1C" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#F87171" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="20,16,20,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Hero Header -->
+        <components:TabHeroHeader Grid.Row="0"
+                                  Margin="0,0,0,14"
+                                  HeaderTitle="WLED Direct Integration"
+                                  Subtitle="Ultra low-latency (sub-2ms) StageKit &amp; YARG rhythm sync with native 4-channel RGBW diode control"
+                                  IconData="{StaticResource IconWled}">
+            <components:TabHeroHeader.BadgeContent>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <ToggleSwitch ToolTip.Tip="{Binding WledEnabledSetting.ToolTip}"
+                                  IsChecked="{Binding WledEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                  OnContent=""
+                                  OffContent=""
+                                  HorizontalAlignment="Right"
+                                  Margin="0" />
+                    <TextBlock Text="{Binding WledEnabledSetting.ToggleButtonContent}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppTextSecondary}"
+                               HorizontalAlignment="Right"
+                               Margin="0,4,0,0" />
+                </StackPanel>
+            </components:TabHeroHeader.BadgeContent>
+        </components:TabHeroHeader>
+
+        <!-- Live Physical LED Strip Visualizer (Full Width) -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource AppPanelBackground}"
+                BorderBrush="{DynamicResource AppBorder}"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="16,14"
+                Margin="0,0,0,16">
+            <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="⚡ Real-Time LED Strip Preview"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}" />
+                            <Border Background="#1A4CAF50"
+                                    BorderBrush="#334CAF50"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="6,1"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="LIVE OUTPUT"
+                                           FontSize="9"
+                                           FontWeight="Bold"
+                                           Foreground="#4CAF50" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Physical RGBW diode emulation with dedicated White core channel &amp; geometry transforms"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource AppTextSecondary}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="8,3">
+                            <TextBlock Text="{Binding WledFps, StringFormat='{}{0:F1} FPS'}"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppAccentText}" />
+                        </Border>
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="8,3">
+                            <TextBlock Text="&lt; 2 ms Direct UDP"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="#4CAF50" />
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <!-- High-performance GPU Canvas Component -->
+                <components:WledStripVisualizer Height="56" />
+            </StackPanel>
+        </Border>
+
+        <!-- Main Modular Content Area: Adaptive 2-Column or Compact 1-Column -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <Grid x:Name="ContentGrid" ColumnDefinitions="*,*" Margin="0,0,0,10">
+
+                <!-- Left Column: Connectivity, Geometry, Calibration -->
+                <StackPanel x:Name="LeftColumnPanel" Grid.Column="0" Spacing="16" Margin="0,0,8,0">
+
+                    <!-- 1. Network & Connection Card -->
+                    <Border Background="{DynamicResource AppPanelBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0"
+                                           Text="📡 WLED Controller Connection"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}" />
+                                <!-- Live Connection Status Badge -->
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="8,3"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Ellipse Width="8" Height="8" Fill="{Binding WledConnectionBadgeColor}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding WledConnectionBadgeText}"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{Binding WledConnectionBadgeColor}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- IP Address & Action Buttons -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Controller IP Address or Hostname"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding WledServerIp, Mode=TwoWay}"
+                                             Watermark="192.168.1.100 (e.g. wled.local)"
+                                             IsEnabled="{Binding !IsWledConnected}"
+                                             VerticalContentAlignment="Center"
+                                             Height="36" />
+                                    <!-- Connect button (visible when disconnected or connecting) -->
+                                    <Button Grid.Column="1"
+                                            Classes="wled-connect-btn"
+                                            Classes.connecting="{Binding IsWledConnecting}"
+                                            Content="{Binding WledConnectButtonText}"
+                                            Command="{Binding ConnectWledCommand}"
+                                            IsEnabled="{Binding CanConnectWled}"
+                                            IsVisible="{Binding !IsWledConnected}"
+                                            Height="36"
+                                            Padding="14,0"
+                                            VerticalContentAlignment="Center"
+                                            FontWeight="SemiBold"
+                                            CornerRadius="7" />
+                                    <!-- Disconnect button (visible when connected) -->
+                                    <Button Grid.Column="1"
+                                            Classes="wled-disconnect-btn"
+                                            Classes.connected="{Binding IsWledConnected}"
+                                            Content="⏹ Disconnect"
+                                            Command="{Binding DisconnectWledCommand}"
+                                            IsEnabled="{Binding CanDisconnectWled}"
+                                            IsVisible="{Binding IsWledConnected}"
+                                            Height="36"
+                                            Padding="14,0"
+                                            VerticalContentAlignment="Center"
+                                            FontWeight="SemiBold"
+                                            CornerRadius="7" />
+                                </Grid>
+                                <!-- Connection Wait / Activity Progress Bar -->
+                                <ProgressBar IsIndeterminate="True"
+                                             Height="3"
+                                             CornerRadius="2"
+                                             Background="Transparent"
+                                             Foreground="#FFA726"
+                                             IsVisible="{Binding IsWledConnecting}"
+                                             Margin="0,2,0,0" />
+                            </StackPanel>
+
+                            <!-- Protocol & UDP Port -->
+                            <Grid ColumnDefinitions="*,95" ColumnSpacing="10">
+                                <StackPanel Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="Streaming Protocol"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                    <ComboBox SelectedIndex="{Binding WledProtocol, Mode=TwoWay}"
+                                              IsEnabled="{Binding !IsWledConnected}"
+                                              HorizontalAlignment="Stretch">
+                                        <ComboBoxItem Content="DDP RGB (Port 4048 • WS2812B • Recommended)"
+                                                      ToolTip.Tip="Distributed Display Protocol for standard 3-channel RGB strips (WS2812B/WS2811). UDP 4048. Recommended." />
+                                        <ComboBoxItem Content="DDP RGBW (Port 4048 • SK6812 • Recommended for RGBW)"
+                                                      ToolTip.Tip="Distributed Display Protocol for 4-channel RGBW strips (SK6812/WS2814). UDP 4048. Dedicated White diode." />
+                                        <ComboBoxItem Content="Realtime DRGB (Port 21324 • WS2812B • Legacy)"
+                                                      ToolTip.Tip="Classic WLED Realtime UDP for 3-channel RGB strips. Port 21324. Fast legacy format." />
+                                        <ComboBoxItem Content="Realtime DRGBW (Port 21324 • SK6812 • Legacy)"
+                                                      ToolTip.Tip="Classic WLED Realtime UDP for 4-channel RGBW strips. Port 21324. Dedicated White diode." />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="UDP Port"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                    <NumericUpDown Value="{Binding WledServerPort, Mode=TwoWay}"
+                                                   IsEnabled="{Binding !IsWledConnected}"
+                                                   Minimum="1"
+                                                   Maximum="65535"
+                                                   FormatString="0" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Active Protocol Description Card -->
+                            <Border Background="{DynamicResource AppInputBackground}"
+                                    BorderBrush="{DynamicResource AppBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="7"
+                                    Padding="10,7"
+                                    Margin="0,0,0,0">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="{Binding WledProtocolTitle}"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource AppTextPrimary}" />
+                                    <TextBlock Text="{Binding WledProtocolDescription}"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Timeout Setting -->
+                            <Grid ColumnDefinitions="*,95" ColumnSpacing="10">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Socket Keepalive Timeout"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextPrimary}" />
+                                    <TextBlock Text="Resets strip to ambient when packets cease"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding WledTimeoutSeconds, Mode=TwoWay}"
+                                               IsEnabled="{Binding !IsWledConnected}"
+                                               Minimum="1"
+                                               Maximum="30"
+                                               FormatString="0 sec" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2. Physical Strip Geometry & Alignment Card -->
+                    <Border Background="{DynamicResource AppPanelBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="📐 Strip Geometry &amp; Physical Alignment"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}" />
+
+                            <!-- Strip Length & Start Offset -->
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="Physical LED Count"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                    <NumericUpDown Value="{Binding WledLedCount, Mode=TwoWay}"
+                                                   Minimum="1"
+                                                   Maximum="1200"
+                                                   FormatString="0 LEDs" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="Start LED Offset"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                    <NumericUpDown Value="{Binding WledStartOffset, Mode=TwoWay}"
+                                                   Minimum="0"
+                                                   Maximum="1199"
+                                                   FormatString="+0" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Reverse Direction Toggle -->
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,10">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Reverse Strip Direction (Invert Order)"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextPrimary}" />
+                                        <TextBlock Text="Inverts LED index sequence for strips wired from right-to-left"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  IsChecked="{Binding WledReverseDirection, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent="" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Strip Layout Mapping -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="StageKit Strip Layout Mapping"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                <ComboBox SelectedIndex="{Binding WledLayoutMode, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="🔁 Tiled Repeat (1..32 repeated in loop across strip)" />
+                                    <ComboBoxItem Content="🎯 Proportional Stretch (32 StageKit LEDs scaled across strip)" />
+                                    <ComboBoxItem Content="🚥 4 Distinct Stage Pods (Blue, Red, Green, Yellow)" />
+                                    <ComboBoxItem Content="🪞 Symmetrical Center Split (Concert truss / drum riser)" />
+                                    <ComboBoxItem Content="📍 Direct 1-to-1 Mapping (Indices 0..31)" />
+                                    <ComboBoxItem Content="🌈 Full Stage Color Wash (Uniform blended wash)" />
+                                    <ComboBoxItem Content="〰️ Smooth Gradient (Interpolated wave flow across Pods 1..8)" />
+                                </ComboBox>
+
+                                <!-- Active Layout Mode Description Card -->
+                                <Border Background="{DynamicResource AppInputBackground}"
+                                        BorderBrush="{DynamicResource AppBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="12,10"
+                                        Margin="0,2,0,0">
+                                    <StackPanel Spacing="3">
+                                        <TextBlock Text="{Binding WledLayoutTitle}"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AppTextPrimary}" />
+                                        <TextBlock Text="{Binding WledLayoutDescription}"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Contextual Layout Tuning Settings Card -->
+                                <Border Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="12,10"
+                                        Margin="0,4,0,0">
+                                    <StackPanel Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <TextBlock Text="⚙"
+                                                           FontSize="11" />
+                                                <TextBlock Text="Layout Tuning Options"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AppTextPrimary}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding WledLayoutTitle}"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource SystemAccentColor}"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <!-- 0. Settings for Tiled Repeat -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsTiledRepeatActive}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="Repeat Style"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                                <ComboBox SelectedIndex="{Binding WledRepeatStyle, Mode=TwoWay}"
+                                                          HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="🔁 Sequential by Color (B1..B8, R1..R8, G1..G8, Y1..Y8)" />
+                                                    <ComboBoxItem Content="🪞 Sequential Ping-Pong (0→31, 31→0, 0→31...)" />
+                                                    <ComboBoxItem Content="🚥 Interleaved Pod-by-Pod (B1, R1, G1, Y1, B2, R2, G2, Y2...)" />
+                                                    <ComboBoxItem Content="🔀 Interleaved Ping-Pong (Pod 1→8, Pod 8→1)" />
+                                                    <ComboBoxItem Content="👥 Interleaved Pairs (B1,B2, R1,R2, G1,G2, Y1,Y2...)" />
+                                                    <ComboBoxItem Content="❄️🔥 Alternating Cool/Warm (B1, G1, R1, Y1, B2, G2...)" />
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="Tile Block Size"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding WledRepeatTileSize, StringFormat='{}{0} LEDs'}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                </Grid>
+                                                <Slider Value="{Binding WledRepeatTileSize, Mode=TwoWay}"
+                                                        Minimum="8"
+                                                        Maximum="64"
+                                                        TickFrequency="8"
+                                                        IsSnapToTickEnabled="True" />
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="Block Gap Spacing (Unlit LEDs)"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding WledLayoutGapLeds, StringFormat='{}{0} LEDs'}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                </Grid>
+                                                <Slider Value="{Binding WledLayoutGapLeds, Mode=TwoWay}"
+                                                        Minimum="0"
+                                                        Maximum="15" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- 1. Settings for Proportional Stretch -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsProportionalStretchActive}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="Rendering / Interpolation Mode"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                                <ComboBox SelectedIndex="{Binding WledStretchInterpolation, Mode=TwoWay}"
+                                                          HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="🟩 Sharp Blocks (Pixel Sharp)" />
+                                                    <ComboBoxItem Content="🌈 Smooth Gradient (Continuous Linear)" />
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="Strip Edge Margin / Padding"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding WledStretchPadding, StringFormat='{}{0} LEDs'}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                </Grid>
+                                                <Slider Value="{Binding WledStretchPadding, Mode=TwoWay}"
+                                                        Minimum="0"
+                                                        Maximum="30" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- 2. Settings for 4 Distinct Stage Pods -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsFourQuadrantPodsActive}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="4 Pods Color Order"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                                <ComboBox SelectedIndex="{Binding WledPodColorOrder, Mode=TwoWay}"
+                                                          HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="🔵 🔴 🟢 🟡 Blue • Red • Green • Yellow (Default)" />
+                                                    <ComboBoxItem Content="🔵 🟢 🔴 🟡 Blue • Green • Red • Yellow" />
+                                                    <ComboBoxItem Content="🔴 🔵 🟡 🟢 Red • Blue • Yellow • Green" />
+                                                    <ComboBoxItem Content="🔵 🔴 🔴 🔵 Blue • Red • Red • Blue (Symmetric)" />
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="Pod Gap Spacing (Physical Separator)"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding WledPodGapLeds, StringFormat='{}{0} LEDs'}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                </Grid>
+                                                <Slider Value="{Binding WledPodGapLeds, Mode=TwoWay}"
+                                                        Minimum="0"
+                                                        Maximum="20" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- 3. Settings for Center Split -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsCenterSplitActive}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="Mirror Direction"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                                <ComboBox SelectedIndex="{Binding WledCenterSplitDirection, Mode=TwoWay}"
+                                                          HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="⇦ ⇨ Inside-Out (Center to Edges)" />
+                                                    <ComboBoxItem Content="⇨ ⇦ Outside-In (Edges to Center)" />
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="Center Point Offset"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding WledCenterSplitOffset, StringFormat='{}{0} LEDs'}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                </Grid>
+                                                <Slider Value="{Binding WledCenterSplitOffset, Mode=TwoWay}"
+                                                        Minimum="-20"
+                                                        Maximum="20" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- 4. Settings for Direct 1-to-1 -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsDirect1to1Active}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="Excess LEDs Behavior (&gt; LED 31)"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                                <ComboBox SelectedIndex="{Binding WledDirectExcessMode, Mode=TwoWay}"
+                                                          HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="⬛ Blackout (Turn Off)" />
+                                                    <ComboBoxItem Content="🔁 Repeat 32-LED Pattern" />
+                                                    <ComboBoxItem Content="✨ Subtle Ambient Wash (Low)" />
+                                                </ComboBox>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- 5. Settings for Full Wash -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsFullWashActive}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="Wash Color Blend Mode"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                                <ComboBox SelectedIndex="{Binding WledWashBlendMode, Mode=TwoWay}"
+                                                          HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="🎨 Harmonic Average of All Active Lights" />
+                                                    <ComboBoxItem Content="⭐ Dominant Color with Most Active LEDs" />
+                                                </ComboBox>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- 6. Settings for Smooth Gradient -->
+                                        <StackPanel Spacing="8" IsVisible="{Binding IsSmoothGradientActive}">
+                                            <StackPanel Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="Wave Cycles Across Strip"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding WledGradientCycles, StringFormat='{}{0}x'}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                                </Grid>
+                                                <Slider Value="{Binding WledGradientCycles, Mode=TwoWay}"
+                                                        Minimum="1"
+                                                        Maximum="3"
+                                                        TickFrequency="1"
+                                                        IsSnapToTickEnabled="True" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 3. Diode Calibration & Brightness Safety Card -->
+                    <Border Background="{DynamicResource AppPanelBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="💡 Diode Calibration &amp; Brightness Control"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}" />
+
+                            <!-- Master RGB Brightness -->
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0"
+                                               Text="Master RGB Brightness"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding WledBrightness, StringFormat='{}{0} / 255'}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                </Grid>
+                                <Slider Value="{Binding WledBrightness, Mode=TwoWay}"
+                                        Minimum="0"
+                                        Maximum="255" />
+                            </StackPanel>
+
+                            <!-- 4th White Channel Brightness -->
+                            <StackPanel Spacing="6" IsEnabled="{Binding IsRgbwProtocol}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0"
+                                               Text="Dedicated 4th Channel (White) Brightness"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding WledWhiteChannelBrightness, StringFormat='{}{0} / 255'}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                </Grid>
+                                <Slider Value="{Binding WledWhiteChannelBrightness, Mode=TwoWay}"
+                                        Minimum="0"
+                                        Maximum="255" />
+                            </StackPanel>
+
+                            <!-- Hardware Power & Safety Ceiling -->
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Hardware Safety Power Limit"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                        <TextBlock Text="Caps peak output to protect 5V/12V PSUs from overcurrent"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextMuted}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding WledMaxBrightnessLimit, StringFormat='{}Max {0}'}"
+                                               FontSize="11"
+                                               Foreground="#FFA726"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                                <Slider Value="{Binding WledMaxBrightnessLimit, Mode=TwoWay}"
+                                        Minimum="10"
+                                        Maximum="255" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right Column: Rhythm Dynamics, Strobes, Diagnostics, Tests -->
+                <StackPanel x:Name="RightColumnPanel" Grid.Column="1" Spacing="16" Margin="8,0,0,0">
+
+                    <!-- 4. Dynamic Rhythm & Musical Accents Card -->
+                    <Border Background="{DynamicResource AppPanelBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="⚡ Dynamic Rhythm &amp; Stage Sync (YARG)"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}" />
+
+                            <!-- Master Rhythm Switch -->
+                            <CheckBox IsChecked="{Binding WledRhythmicWhiteAccent, Mode=TwoWay}"
+                                      IsEnabled="{Binding IsRhythmicWhiteAllowed}"
+                                      ToolTip.Tip="Active in 'Rhythm + Strobe' mode. In 'Strobe Only' or 'Disabled' mode, white channel is not modulated by rhythm.">
+                                <StackPanel>
+                                    <TextBlock Text="Enable Rhythmic White Layer Modulation"
+                                               FontWeight="SemiBold"
+                                               FontSize="12" />
+                                    <TextBlock Text="Modulates dedicated White diodes on live musical impulses over ambient colors"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                </StackPanel>
+                            </CheckBox>
+
+                            <Separator Background="{DynamicResource AppBorder}" Margin="0,2" />
+
+                            <!-- Snare Hit Flash Accent & Intensity Slider -->
+                            <StackPanel Spacing="6" IsEnabled="{Binding IsRhythmicWhiteActive}">
+                                <CheckBox IsChecked="{Binding WledSnareFlashEnabled, Mode=TwoWay}">
+                                    <StackPanel>
+                                        <TextBlock Text="Instant Snare &amp; Drum Flash Accents"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12" />
+                                        <TextBlock Text="Fires millisecond neutral white flashes on drum hits"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                    </StackPanel>
+                                </CheckBox>
+                                <Grid ColumnDefinitions="*,Auto" Margin="26,0,0,0">
+                                    <TextBlock Grid.Column="0"
+                                               Text="Snare Flash Intensity"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding WledSnareFlashIntensity, StringFormat='{}{0}'}"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                </Grid>
+                                <Slider Value="{Binding WledSnareFlashIntensity, Mode=TwoWay}"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        Margin="26,0,0,0"
+                                        IsEnabled="{Binding WledSnareFlashEnabled}" />
+                            </StackPanel>
+
+                            <!-- Beat Line Pulse Intensity -->
+                            <StackPanel Spacing="6" IsEnabled="{Binding IsRhythmicWhiteActive}">
+                                <Grid ColumnDefinitions="*,Auto" Margin="26,0,0,0">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Beat Line Rhythm Pulse Intensity"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextPrimary}" />
+                                        <TextBlock Text="Subtle rhythmic pump synchronized to tempo beat bars"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding WledBeatPulseIntensity, StringFormat='{}{0}'}"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                                <Slider Value="{Binding WledBeatPulseIntensity, Mode=TwoWay}"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        Margin="26,0,0,0" />
+                            </StackPanel>
+
+                            <!-- Star Power Surge -->
+                            <CheckBox IsChecked="{Binding WledStarPowerPulseEnabled, Mode=TwoWay}">
+                                <StackPanel>
+                                    <TextBlock Text="Star Power / Overdrive Energy Surge"
+                                               FontWeight="SemiBold"
+                                               FontSize="12" />
+                                    <TextBlock Text="Pulses high-intensity white &amp; gold energy while Star Power is deployed"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                </StackPanel>
+                            </CheckBox>
+
+                            <!-- Ambient Fog Machine Haze Boost -->
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Ambient Fog Machine Haze Boost"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextPrimary}" />
+                                        <TextBlock Text="Atmospheric background haze level when fog is deployed"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding WledFogHazeBoost, StringFormat='{}{0}'}"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                                <Slider Value="{Binding WledFogHazeBoost, Mode=TwoWay}"
+                                        Minimum="0"
+                                        Maximum="255" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 5. Strobe & Blinder Diode Control Card -->
+                    <Border Background="{DynamicResource AppPanelBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="🚨 Strobe &amp; Blinder Diode Control"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}" />
+
+                            <!-- White (W) Diode Channel Mode (3-Way Segmented Toggle) -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="White (W) Channel Diode Mode"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                <Grid ColumnDefinitions="*,*,*" Margin="0,2,0,0">
+                                    <RadioButton Grid.Column="0"
+                                                 Content="Rhythm + Strobe"
+                                                 GroupName="WledWhiteChannelModeGroup"
+                                                 IsEnabled="{Binding IsRgbwProtocol}"
+                                                 IsChecked="{Binding WledWhiteStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
+                                                 Classes="SegmentedToggle"
+                                                 HorizontalAlignment="Stretch"
+                                                 Margin="0,0,3,0"
+                                                 ToolTip.Tip="Full mode: White channel fires on snare hits, beat pulse, and strobe blinders" />
+                                    <RadioButton Grid.Column="1"
+                                                 Content="Strobe Only"
+                                                 GroupName="WledWhiteChannelModeGroup"
+                                                 IsEnabled="{Binding IsRgbwProtocol}"
+                                                 IsChecked="{Binding WledWhiteStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                                                 Classes="SegmentedToggle"
+                                                 HorizontalAlignment="Stretch"
+                                                 Margin="3,0,3,0"
+                                                 ToolTip.Tip="White channel is reserved exclusively for strobe blinders. Rhythm and drums use RGB only" />
+                                    <RadioButton Grid.Column="2"
+                                                 Content="Disabled (Off)"
+                                                 GroupName="WledWhiteChannelModeGroup"
+                                                 IsChecked="{Binding WledWhiteStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=2}"
+                                                 Classes="SegmentedToggle"
+                                                 HorizontalAlignment="Stretch"
+                                                 Margin="3,0,0,0"
+                                                 ToolTip.Tip="White channel never illuminates (W=0). All effects and strobes use RGB only" />
+                                </Grid>
+                                <!-- Mode description card -->
+                                <Border Background="{DynamicResource AppInputBackground}"
+                                        BorderBrush="{DynamicResource AppBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="7"
+                                        Padding="10,7"
+                                        Margin="0,2,0,0">
+                                    <TextBlock Text="{Binding WledWhiteModeDescription}"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}"
+                                               TextWrapping="Wrap" />
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Strobe Trigger Mode -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Strobe Trigger Mode"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                <StackPanel Orientation="Horizontal" Spacing="20">
+                                    <RadioButton Content="Strobe command"
+                                                 GroupName="WledStrobeRadioGroup"
+                                                 IsChecked="{Binding WledStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+                                    <RadioButton Content="Manual flash strobe"
+                                                 GroupName="WledStrobeRadioGroup"
+                                                 IsChecked="{Binding WledStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 6. Hardware Diagnostics & Color Tests Card -->
+                    <Border Background="{DynamicResource AppPanelBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="🧪 Hardware Diagnostics &amp; Instant Tests"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}" />
+
+                            <!-- Single Color Quick Firing Buttons -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Instant Single-Color Hardware Verification:"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}" />
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button Content="🔴 Red"
+                                            Command="{Binding TestWledRedCommand}"
+                                            Margin="0,0,6,6"
+                                            Padding="10,6"
+                                            FontSize="11"
+                                            FontWeight="SemiBold" />
+                                    <Button Content="🟢 Green"
+                                            Command="{Binding TestWledGreenCommand}"
+                                            Margin="0,0,6,6"
+                                            Padding="10,6"
+                                            FontSize="11"
+                                            FontWeight="SemiBold" />
+                                    <Button Content="🔵 Blue"
+                                            Command="{Binding TestWledBlueCommand}"
+                                            Margin="0,0,6,6"
+                                            Padding="10,6"
+                                            FontSize="11"
+                                            FontWeight="SemiBold" />
+                                    <Button Content="🟡 Yellow"
+                                            Command="{Binding TestWledYellowCommand}"
+                                            Margin="0,0,6,6"
+                                            Padding="10,6"
+                                            FontSize="11"
+                                            FontWeight="SemiBold" />
+                                    <Button Content="⚪ White (W)"
+                                            Command="{Binding TestWledPureWhiteCommand}"
+                                            IsEnabled="{Binding IsRgbwProtocol}"
+                                            Margin="0,0,6,6"
+                                            Padding="10,6"
+                                            FontSize="11"
+                                            FontWeight="SemiBold" />
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <!-- Stage Effect Test Buttons -->
+                            <WrapPanel Orientation="Horizontal">
+                                <Button Content="⚡ Pure White Blinder (W=255)"
+                                        Command="{Binding TestWledWhiteBlinderCommand}"
+                                        IsEnabled="{Binding IsRgbwProtocol}"
+                                        Margin="0,0,8,8"
+                                        Padding="12,7"
+                                        Background="{DynamicResource SystemAccentColor}"
+                                        Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                        FontWeight="SemiBold" />
+
+                                <Button Content="🚥 4 Stage Pods (B, R, G, Y)"
+                                        Command="{Binding TestWledStagePodsCommand}"
+                                        Margin="0,0,8,8"
+                                        Padding="12,7"
+                                        FontWeight="SemiBold" />
+
+                                <Button Content="🌈 RGBW Chase"
+                                        Command="{Binding TestWledColorChaseCommand}"
+                                        Margin="0,0,8,8"
+                                        Padding="12,7"
+                                        FontWeight="SemiBold" />
+
+                                <Button Content="⬛ Blackout Strip"
+                                        Command="{Binding WledBlackoutCommand}"
+                                        Margin="0,0,8,8"
+                                        Padding="12,7"
+                                        Background="#801010"
+                                        Foreground="White"
+                                        FontWeight="SemiBold" />
+
+                                <Button Content="🔄 Reset Defaults"
+                                        Command="{Binding ResetWledDefaultsCommand}"
+                                        Margin="0,0,8,8"
+                                        Padding="12,7"
+                                        FontWeight="SemiBold" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 7. Live Telemetry & Transmission Diagnostics Card -->
+                    <Border Background="{DynamicResource AppPanelBackground}"
+                            BorderBrush="{DynamicResource AppBorder}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="📊 Live Telemetry &amp; Diagnostics"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}" />
+
+                            <!-- Status text -->
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,10">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding WledStatus}"
+                                               FontWeight="SemiBold"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource AppTextPrimary}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding WledMessage}"
+                                               FontSize="11"
+                                               Foreground="#E53935"
+                                               IsVisible="{Binding WledMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Stat metrics -->
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                                <Border Grid.Column="0"
+                                        Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="Packets Sent"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                        <TextBlock Text="{Binding WledPacketsSent, StringFormat='{}{0:N0}'}"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AppAccentText}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="Transfer Rate"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                        <TextBlock Text="{Binding WledFps, StringFormat='{}{0:F1} FPS'}"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AppAccentText}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="2"
+                                        Background="{DynamicResource AppCardBackground}"
+                                        BorderBrush="{DynamicResource AppBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="Packet Latency"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}" />
+                                        <TextBlock Text="&lt; 2 ms (UDP)"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   Foreground="#4CAF50" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -33,7 +33,8 @@ public partial class StatusFooter : UserControl
         { "Hue", "#808080" },
         { "LIFX", "#808080" },
         { "HomeAssistant", "#808080" },
-        { "OpenRGB", "#808080" }
+        { "OpenRGB", "#808080" },
+        { "WLED", "#808080" }
     };
 
     // References to the status ellipses
@@ -46,6 +47,7 @@ public partial class StatusFooter : UserControl
     private Ellipse? _lifxStatusEllipse;
     private Ellipse? _homeAssistantStatusEllipse;
     private Ellipse? _openRgbStatusEllipse;
+    private Ellipse? _wledStatusEllipse;
 
     public StatusFooter()
     {
@@ -61,6 +63,7 @@ public partial class StatusFooter : UserControl
         _lifxStatusEllipse = this.FindControl<Ellipse>("LifxStatusEllipse");
         _homeAssistantStatusEllipse = this.FindControl<Ellipse>("HomeAssistantStatusEllipse");
         _openRgbStatusEllipse = this.FindControl<Ellipse>("OpenRgbStatusEllipse");
+        _wledStatusEllipse = this.FindControl<Ellipse>("WledStatusEllipse");
         
         // Subscribe to status change events
         StatusColorChanged += OnStatusColorChanged;
@@ -112,6 +115,7 @@ public partial class StatusFooter : UserControl
             "LIFX" => _lifxStatusEllipse,
             "HOMEASSISTANT" => _homeAssistantStatusEllipse,
             "OPENRGB" => _openRgbStatusEllipse,
+            "WLED" => _wledStatusEllipse,
             _ => null
         };
     }

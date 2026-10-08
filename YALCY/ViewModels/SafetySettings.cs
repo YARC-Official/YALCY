@@ -35,6 +35,9 @@ public partial class MainWindowViewModel
         private set => this.RaiseAndSetIfChanged(ref _blackoutButtonText, value);
     }
 
+    public string BlackoutButtonBackground => IsManualBlackout ? "#FFFFFF" : "#B00020";
+    public string BlackoutButtonForeground => IsManualBlackout ? "#000000" : "#FFFFFF";
+
     public ICommand ToggleBlackoutCommand { get; private set; } = null!;
 
     private void InitializeSafety()
@@ -64,6 +67,8 @@ public partial class MainWindowViewModel
             };
             IsManualBlackout = state == LightingSafetyState.ManualBlackout;
             BlackoutButtonText = IsManualBlackout ? "RESUME OUTPUT" : "BLACKOUT";
+            this.RaisePropertyChanged(nameof(BlackoutButtonBackground));
+            this.RaisePropertyChanged(nameof(BlackoutButtonForeground));
             StatusFooter.UpdateStatus("UDP", state switch
             {
                 LightingSafetyState.WaitingForYarg => IntegrationStatus.Connecting,

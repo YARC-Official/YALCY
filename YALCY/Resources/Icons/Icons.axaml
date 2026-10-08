@@ -11,6 +11,7 @@
         <ResourceInclude Source="avares://YALCY/Resources/Icons/HueIcon.axaml" />
         <ResourceInclude Source="avares://YALCY/Resources/Icons/LifxIcon.axaml" />
         <ResourceInclude Source="avares://YALCY/Resources/Icons/HomeAssistantIcon.axaml" />
+        <ResourceInclude Source="avares://YALCY/Resources/Icons/WledIcon.axaml" />
         <ResourceInclude Source="avares://YALCY/Resources/Icons/PinIcon.axaml" />
         <ResourceInclude Source="avares://YALCY/Resources/Icons/RefreshIcon.axaml" />
         <ResourceInclude Source="avares://YALCY/Resources/Icons/WarningIcon.axaml" />
