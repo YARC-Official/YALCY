@@ -10,7 +10,7 @@ Help test YALCY!
 ## Summary
 YALCY currently supports:
 | Protocol / Hardware | Connection | Status |
-| :--- | :--- | :---: |
+| :--- | :--- | :--- |
 | **Stage Kit** (PDP, FatsCo) | USB HID | ![Working][working] |
 | **DMX512** | Ethernet (sACN / E1.31) | ![Working][working] |
 | **Philips Hue** | Entertainment API (UDP) | ![Working][working] |
@@ -59,5 +59,5 @@ Some libraries/assets are **packaged** with the source code have licenses that m
 Once you go lights, you never go back!
 
 <!--- IMAGES SOURCES -->
-[working]: https://img.shields.io/badge/Working!!--1a7f37?style=flat-square
-[testing]: https://img.shields.io/badge/In%20Testing--d29922?style=flat-square
+[working]: https://shieldcn.dev/badge/Working%20!.svg?size=xs&theme=emerald&logo=ri%3AFaCheck
+[testing]: https://shieldcn.dev/badge/In%20Testing.svg?size=xs&theme=amber&logo=ri%3ATbTestPipe
