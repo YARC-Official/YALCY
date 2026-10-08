@@ -5,18 +5,22 @@ YARG outputs a UDP of various stuff it is doing, such as venue lighting, at any 
 YALCY IS IN ALPHA! EXPECT BUGS, SETTING CHANGES, INCOMPLETE FEATURES, CRASHES, LOOKING BAD, AND MORE!
 Help test YALCY!
 
+## Supported Protocols & Hardware
+
 ## Summary
 YALCY currently supports:
-|Protocol|Status|
-| --- | --- |
-|Stage Kit and compatible hardware such as FatsCo devices| Working!|
-|DMX output over ethernet via sACN| Working!|
-|Phillips hue entertainment api| Working!|
-|LIFX LAN protocol| In testing|
-|RB3E datastream, partial, just the lighting data|Working!|
-|OpenRGB| Working!|
-|Serial| Working!|
-|LIFX| Working!|
+| Protocol / Hardware | Connection | Status |
+| :--- | :--- | :--- |
+| **Stage Kit** (PDP, FatsCo) | USB HID | ![Working][working] |
+| **DMX512** | Ethernet (sACN / E1.31) | ![Working][working] |
+| **Philips Hue** | Entertainment API (UDP) | ![Working][working] |
+| **LIFX** | HTTP API | ![Working][working] |
+| **LIFX** | LAN Protocol | ![In Testing][testing] |
+| **WLED** | DDP & Realtime UDP | ![In Testing][testing] |
+| **OpenRGB** | Network Client (SDK) | ![Working][working] |
+| **RB3E** (Lighting DATA) | UDP Stream (Partial) | ![Working][working] |
+| **Serial** | USB-UART / COM | ![Working][working] |
+
 
 ## 📥 Downloading and Playing
 
@@ -53,3 +57,7 @@ Some libraries/assets are **packaged** with the source code have licenses that m
 
 ⚠️ Warning:
 Once you go lights, you never go back!
+
+<!--- IMAGES SOURCES -->
+[working]: https://shieldcn.dev/badge/Working%20!.svg?size=xs&theme=emerald&logo=ri%3AFaCheck
+[testing]: https://shieldcn.dev/badge/In%20Testing.svg?size=xs&theme=amber&logo=ri%3ATbTestPipe
