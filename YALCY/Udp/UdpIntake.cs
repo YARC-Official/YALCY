@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Buffers.Binary;
 using System.ComponentModel;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -190,7 +191,22 @@ public partial class UdpIntake : ReactiveObject
             try
             {
                 AppLog.Write(LogLevel.Information, "UDP", $"Starting UDP client on port {_mainViewModel.UdpListenPort}");
-                _udpClient = new UdpClient(_mainViewModel.UdpListenPort);
+                // Share the port: YARG broadcasts, and other listeners (e.g. YASS) may already have it bound.
+                // Without ReuseAddress the bind fails whenever such a listener started first.
+                var client = new UdpClient(AddressFamily.InterNetwork);
+                try
+                {
+                    client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    client.Client.Bind(new IPEndPoint(IPAddress.Any, _mainViewModel.UdpListenPort));
+                }
+                catch
+                {
+                    // Leave _udpClient null so a later start tries again.
+                    client.Dispose();
+                    throw;
+                }
+
+                _udpClient = client;
                 _udpClient.Client.ReceiveBufferSize = 8192; // Increase buffer size
 
                 _healthCheckTimer = new Timer(HealthCheckCallback, this, HEALTH_CHECK_INTERVAL_MS, HEALTH_CHECK_INTERVAL_MS);
