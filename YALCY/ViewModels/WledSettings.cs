@@ -131,8 +131,15 @@ public partial class MainWindowViewModel
     }
 
     public double WledVisualizerHeight => _wledVisualizerStacked && WledSegments.Count > 1
-        ? Math.Min(180, Math.Max(56, WledSegments.Count * 44.0))
-        : 56.0;
+        ? Math.Min(150, Math.Max(42, WledSegments.Count * 36.0))
+        : 42.0;
+
+    private int _wledSelectedSubTab = 0;
+    public int WledSelectedSubTab
+    {
+        get => _wledSelectedSubTab;
+        set => this.RaiseAndSetIfChanged(ref _wledSelectedSubTab, value);
+    }
 
     private string _wledStatus = "WLED status: Idle.";
     private string _wledMessage = string.Empty;

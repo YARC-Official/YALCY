@@ -25,18 +25,18 @@ public sealed class WledStripVisualizer : Control
     private MainWindowViewModel? _viewModel;
 
     // Preallocated pens and brushes to prevent GC thrashing
-    private static readonly IBrush BackgroundBrush = new SolidColorBrush(Color.FromRgb(20, 22, 28));
-    private static readonly IBrush ChassisBorderBrush = new SolidColorBrush(Color.FromRgb(45, 50, 62));
+    private static readonly IBrush BackgroundBrush = new SolidColorBrush(Color.FromRgb(16, 18, 24));
+    private static readonly IBrush ChassisBorderBrush = new SolidColorBrush(Color.FromRgb(38, 44, 56));
     private static readonly IPen ChassisBorderPen = new Pen(ChassisBorderBrush, 1);
-    private static readonly IBrush OffDiodeBrush = new SolidColorBrush(Color.FromRgb(32, 36, 44));
-    private static readonly IPen OffDiodePen = new Pen(new SolidColorBrush(Color.FromRgb(48, 54, 66)), 1);
+    private static readonly IBrush OffDiodeBrush = new SolidColorBrush(Color.FromRgb(25, 29, 38));
+    private static readonly IPen OffDiodePen = new Pen(new SolidColorBrush(Color.FromRgb(42, 48, 62)), 1);
     private static readonly IBrush WhiteCoreBrush = new SolidColorBrush(Color.FromArgb(220, 255, 255, 255));
     private static readonly Typeface LabelTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
     private static readonly Typeface MiniTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
 
     // Segment & Stacked Lane styling
     private static readonly IPen SegmentDividerPen = new Pen(new SolidColorBrush(Color.FromArgb(200, 70, 160, 255)), 1.5, DashStyle.Dash);
-    private static readonly IBrush LaneBackgroundBrush = new SolidColorBrush(Color.FromArgb(160, 26, 29, 38));
+    private static readonly IBrush LaneBackgroundBrush = new SolidColorBrush(Color.FromArgb(160, 24, 27, 36));
     private static readonly IPen LaneBorderPen = new Pen(new SolidColorBrush(Color.FromArgb(100, 58, 66, 82)), 1);
     private static readonly IBrush SegmentTagBrush = new SolidColorBrush(Color.FromRgb(100, 185, 255));
 
@@ -196,8 +196,8 @@ public sealed class WledStripVisualizer : Control
         int displayLeds = Math.Min(ledCount, 64); // Display up to 64 diode cells horizontally
 
         double paddingX = 14;
-        double paddingTop = 12;
-        double diodeHeight = Math.Max(8, height - 32);
+        double paddingTop = 7;
+        double diodeHeight = Math.Max(8, height - 23);
         double availableWidth = width - (paddingX * 2);
         double slotWidth = availableWidth / displayLeds;
         double diodeWidth = Math.Max(3, Math.Min(slotWidth - 2, 14));
@@ -223,17 +223,17 @@ public sealed class WledStripVisualizer : Control
                 if (seg.Start > 0 && seg.Start < ledCount)
                 {
                     double divX = paddingX + ((double)seg.Start / ledCount) * availableWidth;
-                    context.DrawLine(SegmentDividerPen, new Point(divX, paddingTop - 3), new Point(divX, paddingTop + diodeHeight + 3));
+                    context.DrawLine(SegmentDividerPen, new Point(divX, paddingTop - 2), new Point(divX, paddingTop + diodeHeight + 2));
                 }
             }
         }
 
         // 3. Render telemetry badges & rulers below the strip
-        double labelY = height - 16;
+        double labelY = height - 13;
         var labelBrush = new SolidColorBrush(Color.FromRgb(140, 145, 160));
 
         // Start & End markers
-        var textLeft = new FormattedText("LED 1", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, LabelTypeface, 9, labelBrush);
+        var textLeft = new FormattedText("LED 1", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, LabelTypeface, 8.5, labelBrush);
         context.DrawText(textLeft, new Point(paddingX, labelY));
 
         var textRight = new FormattedText($"LED {ledCount}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, LabelTypeface, 9, labelBrush);
