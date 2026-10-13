@@ -3,95 +3,392 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
              x:Class="YALCY.Views.Tabs.HueTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="5">
-        <!-- Toggle Button -->
-        <ToggleButton ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
-                      Content="{Binding HueEnabledSetting.ToggleButtonContent}"
-                      IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-        <!-- Text Box -->
-        <TextBlock Text="Setup needed:" Margin="5" />
-        <TextBlock Text="1) Verify that your Phillips Hue Hub Bridge has software version 1948086000 or higher"
-                   Margin="5" />
-        <TextBlock Text="2) Find and enter the IP address of your hub into the box." Margin="5" />
-        <TextBlock Text="3) Create an &quot;entertainment area&quot; in your phillips hue app and name it YARG"
-                   Margin="5" />
-        <TextBlock Text="4) Add your lights to the area, then use 'Discover lamps' below to assign them."
-                   Margin="5" />
-        <TextBlock
-            Text="5) Link this program to your hub. Push the button on the hub FIRST, then click the register button"
-            Margin="5" />
-        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
-        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
-            <RadioButton Content="Strobe command"
-                         GroupName="HueStrobeMode"
-                         IsChecked="{Binding HueStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
-            <RadioButton Content="Manual flash strobe"
-                         GroupName="HueStrobeMode"
-                         IsChecked="{Binding HueStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
-        </StackPanel>
-        <TextBlock Text="Lamps assigned as 'Strobe' always flash on strobe cues and ignore the colour patterns. Without strobe lamps, 'Manual flash strobe' flashes all lamps."
-                   Margin="5,0,5,8"
-                   TextWrapping="Wrap" />
+        <Grid Margin="20,16,20,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <!-- Lamp assignment -->
-        <TextBlock Text="Lamps in the YARG entertainment area" Margin="5,8,5,0" FontWeight="Bold" />
-        <TextBlock Text="Auto = share the 8 Stage Kit positions with the other Auto lamps. Light N / Lights N+M = fixed positions. Strobe = dedicated strobe lamp. Off = not used."
-                   Margin="5,0,5,4"
-                   TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Margin="5,0,5,4" Spacing="8">
-            <Button Content="Discover lamps" Command="{Binding DiscoverHueLampsCommand}" />
-            <TextBlock Text="{Binding HueLampStatus}" VerticalAlignment="Center" TextWrapping="Wrap" />
-        </StackPanel>
-        <ScrollViewer Margin="5,0,5,8" MaxHeight="360" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding HueLamps}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:HueLampViewModel">
-                        <Border Background="{Binding RowBackground}" CornerRadius="3" Padding="8,6" Margin="0,0,0,3">
-                            <Grid ColumnDefinitions="*,150,180">
-                                <TextBlock Grid.Column="0" Text="{Binding DisplayName}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                                <TextBlock Grid.Column="1" Text="{Binding Position}" VerticalAlignment="Center" Margin="8,0,8,0" />
-                                <ComboBox Grid.Column="2"
-                                          ItemsSource="{Binding AvailableRoles}"
-                                          SelectedItem="{Binding SelectedRole, Mode=TwoWay}" />
-                            </Grid>
+            <!-- Row 0: Hero Header -->
+            <components:TabHeroHeader Grid.Row="0"
+                                      Margin="0,0,0,16"
+                                      HeaderTitle="Philips Hue Integration"
+                                      Subtitle="Real-time entertainment area streaming with low-latency Hue entertainment sync"
+                                      IconData="{StaticResource IconHue}">
+                <components:TabHeroHeader.BadgeContent>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <ToggleSwitch ToolTip.Tip="{Binding HueEnabledSetting.ToolTip}"
+                                      IsChecked="{Binding HueEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                      OnContent=""
+                                      OffContent=""
+                                      HorizontalAlignment="Right"
+                                      Margin="0" />
+                        <TextBlock Text="{Binding HueEnabledSetting.ToggleButtonContent}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AppTextSecondary}"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                </components:TabHeroHeader.BadgeContent>
+            </components:TabHeroHeader>
+
+            <!-- Row 1: Two Column Layout -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="430" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: Bridge Connection & Strobe Configuration Card -->
+                <Border Grid.Column="0"
+                        Background="{DynamicResource AppPanelBackground}"
+                        BorderBrush="{DynamicResource AppBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="20"
+                        Margin="0,0,16,0">
+                    <StackPanel Spacing="16">
+                        <!-- Card Header -->
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Bridge Connection"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <TextBlock Text="Configure Hue Hub and streaming settings"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Setup & Requirements Panel -->
+                        <Border Background="{DynamicResource AppInputBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="⚙️" FontSize="14" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Setup &amp; Requirements"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
+                                </StackPanel>
+                                <TextBlock Text="• Verify Hub Bridge software is v1948086000 or higher"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"/>
+                                <TextBlock Text="• Create an Entertainment Area named &quot;YARG&quot; in Hue app"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"/>
+                                <TextBlock Text="• Press the physical button on the Hub, then click Register"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"/>
+                            </StackPanel>
                         </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
 
-        <!-- Strobe lamp idle state -->
-        <TextBlock Text="Strobe lamps when not strobing" Margin="5,0,5,0" FontWeight="Bold" />
-        <Grid ColumnDefinitions="150,120,40" RowDefinitions="Auto,Auto" Margin="5,4,5,8">
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="Colour (hex)" VerticalAlignment="Center" />
-            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding HueStrobeIdleColor, Mode=TwoWay}" Watermark="FFFFFF" />
-            <Border Grid.Row="0" Grid.Column="2" Background="{Binding HueStrobeIdlePreview}"
-                    Width="24" Height="24" CornerRadius="3" Margin="8,0,0,0" BorderBrush="Gray" BorderThickness="1" />
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Brightness" VerticalAlignment="Center" Margin="0,6,0,0" />
-            <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding HueStrobeIdleBrightness, Mode=TwoWay}" Margin="0,6,0,0" />
-            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding HueStrobeIdleBrightness, StringFormat='{}{0:0} %'}" VerticalAlignment="Center" Margin="8,6,0,0" />
+                        <!-- Hub IP & Register -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Hue Bridge IP Address"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding HueBridgeIp, Mode=TwoWay}"
+                                         Watermark="192.168.1.xxx"
+                                         CornerRadius="7"
+                                         Height="36"
+                                         VerticalContentAlignment="Center"
+                                         Margin="0,0,10,0"/>
+                                <Button Grid.Column="1"
+                                        Content="🔘 Register"
+                                        Command="{Binding RegisterHueBridgeCommand}"
+                                        CornerRadius="7"
+                                        Height="36"
+                                        Padding="14,0"
+                                        FontWeight="SemiBold"
+                                        VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Strobe Behavior Segmented Toggle -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Strobe behavior"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                            <Grid ColumnDefinitions="*,*">
+                                <RadioButton Grid.Column="0"
+                                             Content="Strobe command"
+                                             GroupName="HueStrobeMode"
+                                             IsChecked="{Binding HueStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
+                                             Classes="SegmentedToggle"
+                                             HorizontalAlignment="Stretch"
+                                             Margin="0,0,3,0"/>
+                                <RadioButton Grid.Column="1"
+                                             Content="Manual flash"
+                                             GroupName="HueStrobeMode"
+                                             IsChecked="{Binding HueStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                                             Classes="SegmentedToggle"
+                                             HorizontalAlignment="Stretch"
+                                             Margin="3,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Strobe Lamp Idle State Box -->
+                        <Border Background="{DynamicResource AppInputBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Strobe Lamp Idle Appearance"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,10,8">
+                                        <TextBlock Text="Colour (hex)"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource AppTextSecondary}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBox Grid.Column="0"
+                                                     Text="{Binding HueStrobeIdleColor, Mode=TwoWay}"
+                                                     Watermark="FFFFFF"
+                                                     CornerRadius="7"
+                                                     Height="32"
+                                                     VerticalContentAlignment="Center"/>
+                                            <Border Grid.Column="1"
+                                                    Background="{Binding HueStrobeIdlePreview}"
+                                                    Width="28"
+                                                    Height="28"
+                                                    CornerRadius="6"
+                                                    Margin="8,0,0,0"
+                                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                                    BorderThickness="1"
+                                                    VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="Brightness"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding HueStrobeIdleBrightness, StringFormat='{}{0:0} %'}"
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource AppTextPrimary}"/>
+                                        </Grid>
+                                        <Slider Minimum="0"
+                                                Maximum="100"
+                                                Value="{Binding HueStrobeIdleBrightness, Mode=TwoWay}"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                            Content="⚡ Test Strobe (3s)"
+                                            Command="{Binding TestHueStrobeCommand}"
+                                            CornerRadius="7"
+                                            Height="68"
+                                            Padding="12,0"
+                                            FontWeight="SemiBold"
+                                            VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Diagnostics & Status Panel -->
+                        <Border Background="{DynamicResource AppInputBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="ℹ️" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Bridge Status &amp; Diagnostics"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding HueIpStatus}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding HueIpStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="{Binding HueRegisterStatus}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding HueRegisterStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="{Binding HueStreamingClientStatus}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding HueStreamingClientStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="{Binding HueEntertainmentGroupStatus}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding HueEntertainmentGroupStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="{Binding HueStreamingActiveStatus}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding HueStreamingActiveStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Error Message Badge (if any) -->
+                        <Border Background="#2A1515"
+                                BorderBrush="#DC2626"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12"
+                                IsVisible="{Binding HueMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="⚠️" FontSize="14" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding HueMessage}"
+                                           FontSize="11"
+                                           Foreground="#EF4444"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Column: Entertainment Lamps Card -->
+                <Border Grid.Column="1"
+                        Background="{DynamicResource AppPanelBackground}"
+                        BorderBrush="{DynamicResource AppBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="20">
+                    <Grid RowDefinitions="Auto,Auto,*">
+                        <!-- Header -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Entertainment Area Lamps"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <TextBlock Text="Physical lamps configured in the &quot;YARG&quot; area"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"/>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Content="🔍 Discover Lamps"
+                                    Command="{Binding DiscoverHueLampsCommand}"
+                                    CornerRadius="7"
+                                    Height="36"
+                                    Padding="14,0"
+                                    FontWeight="SemiBold"
+                                    VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Status & Role Guide Panel -->
+                        <Border Grid.Row="1"
+                                Background="{DynamicResource AppInputBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12"
+                                Margin="0,0,0,16">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding HueLampStatus}"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="• Auto: dynamic sharing across 8 Stage Kit cues  • Light N: fixed cue  • Strobe: dedicated strobe"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Lamps List -->
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="520">
+                            <ItemsControl ItemsSource="{Binding HueLamps}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:HueLampViewModel">
+                                        <Border Background="{DynamicResource AppCardBackground}"
+                                                BorderBrush="{DynamicResource AppBorderStrong}"
+                                                BorderThickness="1"
+                                                CornerRadius="10"
+                                                Padding="14,10"
+                                                Margin="0,0,0,8">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
+                                                <Border Grid.Column="0"
+                                                        Background="{DynamicResource SystemAccentColor}"
+                                                        Width="36"
+                                                        Height="36"
+                                                        CornerRadius="8"
+                                                        Margin="0,0,12,0"
+                                                        VerticalAlignment="Center">
+                                                    <PathIcon Data="{StaticResource IconHue}"
+                                                              Width="18"
+                                                              Height="18"
+                                                              Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                    <TextBlock Text="{Binding DisplayName}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="13"
+                                                               Foreground="{DynamicResource AppTextPrimary}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Name}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource AppTextMuted}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="2"
+                                                        Background="{DynamicResource AppInputBackground}"
+                                                        BorderBrush="{DynamicResource AppBorder}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="6"
+                                                        Padding="8,4"
+                                                        Margin="0,0,16,0"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Position}"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AppTextSecondary}"/>
+                                                </Border>
+
+                                                <ComboBox Grid.Column="3"
+                                                          ItemsSource="{Binding AvailableRoles}"
+                                                          SelectedItem="{Binding SelectedRole, Mode=TwoWay}"
+                                                          CornerRadius="7"
+                                                          Width="180"
+                                                          Height="34"
+                                                          VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
-        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="8">
-            <Button Content="Test strobe (3 s)" Command="{Binding TestHueStrobeCommand}" />
-            <TextBlock Text="Needs Hue streaming to be on. Status appears next to 'Discover lamps'."
-                       VerticalAlignment="Center" TextWrapping="Wrap" />
-        </StackPanel>
-        <!-- IP Address Input -->
-        <TextBlock Text="Enter Hue Bridge IP" />
-        <TextBox Text="{Binding HueBridgeIp}" />
-        <!-- Register Button -->
-        <Button Content="Register with Hue Bridge" Command="{Binding RegisterHueBridgeCommand}" Margin="5" />
-        <TextBlock Text="{Binding HueIpStatus}" />
-        <TextBlock Text="{Binding HueRegisterStatus}" />
-        <TextBlock Text="{Binding HueStreamingClientStatus}" />
-        <TextBlock Text="{Binding HueEntertainmentGroupStatus} " />
-        <TextBlock Text="{Binding HueStreamingActiveStatus}" />
-        <!-- Error Output -->
-        <TextBlock Text="{Binding HueMessage}" Margin="5" Foreground="Red" />
-    </StackPanel>
     </ScrollViewer>
 </UserControl>
