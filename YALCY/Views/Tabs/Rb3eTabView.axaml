@@ -3,22 +3,301 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
              x:Class="YALCY.Views.Tabs.Rb3eTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
-    <StackPanel Margin="5">
-        <!-- Toggle Button -->
-        <ToggleButton ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
-                      Content="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
-                      IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
-        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
-            <RadioButton Content="Strobe command"
-                         GroupName="Rb3eStrobeMode"
-                         IsChecked="{Binding Rb3eStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
-            <RadioButton Content="Manual flash strobe"
-                         GroupName="Rb3eStrobeMode"
-                         IsChecked="{Binding Rb3eStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
-        </StackPanel>
-    </StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="20,16,20,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Row 0: Hero Header -->
+            <components:TabHeroHeader Grid.Row="0"
+                                      Margin="0,0,0,16"
+                                      HeaderTitle="RB3E Network Integration"
+                                      Subtitle="Broadcast real-time StageKit lighting cues over UDP for Rock Band 3 Enhanced and network visualizers"
+                                      IconData="{StaticResource IconRb3e}">
+                <components:TabHeroHeader.BadgeContent>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <ToggleSwitch ToolTip.Tip="{Binding Rb3eEnabledSetting.ToolTip}"
+                                      IsChecked="{Binding Rb3eEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                      OnContent=""
+                                      OffContent=""
+                                      HorizontalAlignment="Right"
+                                      Margin="0" />
+                        <TextBlock Text="{Binding Rb3eEnabledSetting.ToggleButtonContent}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AppTextSecondary}"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                </components:TabHeroHeader.BadgeContent>
+            </components:TabHeroHeader>
+
+            <!-- Row 1: Two Column Layout -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="420" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: RB3E Protocol Setup & Strobe Configuration -->
+                <Border Grid.Column="0"
+                        Background="{DynamicResource AppPanelBackground}"
+                        BorderBrush="{DynamicResource AppBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="20"
+                        Margin="0,0,16,0">
+                    <StackPanel Spacing="16">
+                        <!-- Card Header -->
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="RB3E Protocol Setup"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <TextBlock Text="Configure network broadcast and strobe signaling"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Protocol Specifications Panel -->
+                        <Border Background="{DynamicResource AppInputBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🌐" FontSize="14" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Network Broadcast Details"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
+                                </StackPanel>
+                                <TextBlock Text="• Target Address: 255.255.255.255 (Subnet Broadcast)"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="• Destination Port: 21070 UDP (Standard RB3E StageKit Port)"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="• Packet Type: RB3E_EVENT_STAGEKIT (Type 0x06)"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="• Broadcasts synchronous LED states, strobe speeds, and fog commands"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Strobe Behavior Section -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Strobe Behavior"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AppTextPrimary}"/>
+                            <TextBlock Text="Select the output command method during active strobe cues"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource AppTextMuted}"/>
+                            <Border Background="{DynamicResource AppInputBackground}"
+                                    BorderBrush="{DynamicResource AppBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="4"
+                                    Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="*,*">
+                                    <RadioButton Grid.Column="0"
+                                                 Classes="SegmentedToggle"
+                                                 Content="Strobe Command"
+                                                 GroupName="Rb3eStrobeMode"
+                                                 IsChecked="{Binding Rb3eStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
+                                    <RadioButton Grid.Column="1"
+                                                 Classes="SegmentedToggle"
+                                                 Content="Manual Flash"
+                                                 GroupName="Rb3eStrobeMode"
+                                                 IsChecked="{Binding Rb3eStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Column: Network Transmission & Compatibility Guide -->
+                <Border Grid.Column="1"
+                        Background="{DynamicResource AppPanelBackground}"
+                        BorderBrush="{DynamicResource AppBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="20">
+                    <StackPanel Spacing="16">
+                        <!-- Header -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Network Receiver &amp; Ecosystem Guide"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <TextBlock Text="How Rock Band 3 Enhanced receives StageKit cues from YALCY"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"/>
+                            </StackPanel>
+                            <Border Grid.Column="1"
+                                    Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10,4"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="📡 UDP 21070 Broadcast"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Protocol Packet Anatomy Card -->
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="16">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="RB3E Datagram Structure"
+                                           FontSize="13"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" VerticalAlignment="Center">
+                                    <!-- Magic -->
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource AppInputBackground}"
+                                            BorderBrush="{DynamicResource AppBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="10,8">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="Magic (4B)" FontSize="10" Foreground="{DynamicResource AppTextMuted}"/>
+                                            <TextBlock Text="'RB3E'" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AppAccentText}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="→" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AppTextMuted}"/>
+                                    <!-- Version & Type -->
+                                    <Border Grid.Column="2"
+                                            Background="{DynamicResource AppInputBackground}"
+                                            BorderBrush="{DynamicResource AppBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="10,8">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="Header (2B)" FontSize="10" Foreground="{DynamicResource AppTextMuted}"/>
+                                            <TextBlock Text="v0.0 / Type 0x06" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Grid.Column="3" Text="→" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AppTextMuted}"/>
+                                    <!-- Command & Param -->
+                                    <Border Grid.Column="4"
+                                            Background="{DynamicResource AppInputBackground}"
+                                            BorderBrush="{DynamicResource AppBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="10,8">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="Payload (2B)" FontSize="10" Foreground="{DynamicResource AppTextMuted}"/>
+                                            <TextBlock Text="Command + Param" FontSize="12" FontWeight="Bold" Foreground="#10B981"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Supported Platforms Card -->
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorderStrong}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="16">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Supported Receivers &amp; Targets"
+                                           FontSize="13"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <Grid ColumnDefinitions="*,*,*">
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource AppInputBackground}"
+                                            BorderBrush="{DynamicResource AppBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="10,8"
+                                            Margin="0,0,6,0">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="🎮 Consoles" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}"/>
+                                            <TextBlock Text="Xbox 360 with RB3Enhanced mod" FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource AppInputBackground}"
+                                            BorderBrush="{DynamicResource AppBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="10,8"
+                                            Margin="3,0,3,0">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="🖥️ Emulators" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}"/>
+                                            <TextBlock Text="RPCS3 with network sockets enabled" FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="2"
+                                            Background="{DynamicResource AppInputBackground}"
+                                            BorderBrush="{DynamicResource AppBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="10,8"
+                                            Margin="6,0,0,0">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="🌈 Lighting Hubs" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}"/>
+                                            <TextBlock Text="Third-party RB3E visualizers &amp; bridges" FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Live Integration Status Note -->
+                        <Border Background="{DynamicResource AppInputBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="⚡" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Full Ecosystem Synchronization"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
+                                </StackPanel>
+                                <TextBlock Text="When enabled, RB3E translates all live game cues into the standard StageKit event stream, keeping OpenRGB, WLED, Philips Hue, Home Assistant, and DMX fixtures in perfect synchrony with your gameplay."
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
 </UserControl>
