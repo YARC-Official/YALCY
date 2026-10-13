@@ -112,33 +112,28 @@
                         </Border>
 
                         <!-- Strobe Behavior Section -->
+                        <!-- Strobe Behavior Segmented Toggle -->
                         <StackPanel Spacing="6">
-                            <TextBlock Text="Strobe Behavior"
-                                       FontSize="12"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource AppTextPrimary}"/>
-                            <TextBlock Text="Select the output command method during active strobe cues"
+                            <TextBlock Text="Strobe behavior"
                                        FontSize="11"
-                                       Foreground="{DynamicResource AppTextMuted}"/>
-                            <Border Background="{DynamicResource AppInputBackground}"
-                                    BorderBrush="{DynamicResource AppBorder}"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="4"
-                                    Margin="0,4,0,0">
-                                <Grid ColumnDefinitions="*,*">
-                                    <RadioButton Grid.Column="0"
-                                                 Classes="SegmentedToggle"
-                                                 Content="Strobe Command"
-                                                 GroupName="SerialStrobeMode"
-                                                 IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
-                                    <RadioButton Grid.Column="1"
-                                                 Classes="SegmentedToggle"
-                                                 Content="Manual Flash"
-                                                 GroupName="SerialStrobeMode"
-                                                 IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
-                                </Grid>
-                            </Border>
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                            <Grid ColumnDefinitions="*,*">
+                                <RadioButton Grid.Column="0"
+                                             Content="Strobe command"
+                                             GroupName="SerialStrobeMode"
+                                             IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
+                                             Classes="SegmentedToggle"
+                                             HorizontalAlignment="Stretch"
+                                             Margin="0,0,3,0"/>
+                                <RadioButton Grid.Column="1"
+                                             Content="Manual flash"
+                                             GroupName="SerialStrobeMode"
+                                             IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                                             Classes="SegmentedToggle"
+                                             HorizontalAlignment="Stretch"
+                                             Margin="3,0,0,0"/>
+                            </Grid>
                         </StackPanel>
 
                         <!-- Status / Alert Message (when message present) -->
