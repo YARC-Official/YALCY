@@ -73,7 +73,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid Margin="20,10,20,16">
+    <Grid Margin="20,16,20,20">
         <Grid.RowDefinitions>
             <!-- Row 0: Hero Header -->
             <RowDefinition Height="Auto" />
@@ -87,7 +87,7 @@
 
         <!-- Row 0: Tab Hero Header -->
         <components:TabHeroHeader Grid.Row="0"
-                                  Margin="0,0,0,10"
+                                  Margin="0,0,0,16"
                                   HeaderTitle="WLED Direct Integration"
                                   Subtitle="Ultra low-latency (sub-2ms) StageKit &amp; YARG rhythm sync with native 4-channel RGBW diode control"
                                   IconData="{StaticResource IconWled}">

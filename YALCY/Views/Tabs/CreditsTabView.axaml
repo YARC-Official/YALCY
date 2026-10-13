@@ -6,33 +6,13 @@
              x:Class="YALCY.Views.Tabs.CreditsTabView"
              mc:Ignorable="d">
     
-    <ScrollViewer>
-        <StackPanel Margin="25" Spacing="30">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20,16,20,20" Spacing="16">
             
-            <!-- Header with subtle gradient -->
-            <Border CornerRadius="16" 
-                    Padding="35" 
-                    Margin="0,0,0,10"
-                    Background="{DynamicResource AppPanelBackground}"
-                    BorderBrush="{DynamicResource AppBorder}"
-                    BorderThickness="1">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="🎉" 
-                               FontSize="42" 
-                               HorizontalAlignment="Center" 
-                               Margin="0,0,0,15"/>
-                    <TextBlock Text="YALCY Credits" 
-                               FontSize="26" 
-                               FontWeight="Bold" 
-                               Foreground="{DynamicResource AppTextPrimary}" 
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Text="Made with ❤️ by the community" 
-                               FontSize="15" 
-                               Foreground="{DynamicResource AppTextSecondary}" 
-                               HorizontalAlignment="Center" 
-                               Margin="0,8,0,0"/>
-                </StackPanel>
-            </Border>
+            <!-- Hero Header -->
+            <components:TabHeroHeader HeaderTitle="YALCY Credits"
+                                      Subtitle="Made with ❤️ by the community and contributors"
+                                      IconData="{StaticResource IconInfo}" />
 
             <!-- Core Contributors Section -->
             <Border Background="{DynamicResource AppPanelBackground}" 
