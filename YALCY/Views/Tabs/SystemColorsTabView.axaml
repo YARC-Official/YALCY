@@ -9,7 +9,7 @@
              mc:Ignorable="d">
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="20,16" Spacing="16">
+        <StackPanel Margin="20,16,20,20" Spacing="16">
             
             <components:TabHeroHeader HeaderTitle="Windows System Colors &amp; Accent Palette"
                                       Subtitle="Live inspection of OS accent shades, brushes, surfaces, and Microsoft SystemColors"

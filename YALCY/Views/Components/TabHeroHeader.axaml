@@ -7,7 +7,8 @@
 			BorderBrush="{DynamicResource AppBorder}"
 			BorderThickness="2"
 			CornerRadius="12"
-			Padding="24,18">
+			Padding="24,18"
+			MinHeight="105">
 		<Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
 			<Border Grid.Column="0"
 					Background="{DynamicResource SystemAccentColor}"
@@ -30,12 +31,14 @@
 				<TextBlock Text="{Binding HeaderTitle, ElementName=Root}"
 						   FontSize="18"
 						   FontWeight="Black"
-							  Foreground="{DynamicResource AppTextPrimary}"
+						   Foreground="{DynamicResource AppTextPrimary}"
+						   TextTrimming="CharacterEllipsis"
 						   Margin="0,0,0,2" />
 				<TextBlock Text="{Binding Subtitle, ElementName=Root}"
 						   FontSize="12"
-							  Foreground="{DynamicResource AppTextSecondary}"
-						   FontWeight="Medium" />
+						   Foreground="{DynamicResource AppTextSecondary}"
+						   FontWeight="Medium"
+						   TextTrimming="CharacterEllipsis" />
 			</StackPanel>
 
 			<Border Grid.Column="2"
@@ -44,7 +47,8 @@
 					BorderThickness="1"
 					CornerRadius="8"
 					Padding="12,6"
-					VerticalAlignment="Center">
+					VerticalAlignment="Center"
+					IsVisible="{Binding BadgeContent, ElementName=Root, Converter={x:Static ObjectConverters.IsNotNull}}">
 				<ContentPresenter Content="{Binding BadgeContent, ElementName=Root}"
 								  VerticalContentAlignment="Center" />
 			</Border>

@@ -9,6 +9,7 @@ public partial class LedVisualizerWindow : Window
     public LedVisualizerWindow()
     {
         InitializeComponent();
+        this.Opened += (_, _) => SingleInstanceManager.SetWindowAppId(this, "YALCY.StageKitLEDVisualizer");
         this.Closed += (_, _) =>
         {
             if (_statusWindow != null)

@@ -1,4 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using ReactiveUI;
@@ -6,6 +12,38 @@ using YALCY.Integrations.WLED;
 using YALCY.Views.Components;
 
 namespace YALCY.ViewModels;
+
+/// <summary>
+/// Observable view model representing a single WLED controller destination.
+/// </summary>
+public sealed class WledControllerViewModel : ReactiveObject
+{
+    private string _name;
+    private string _ipAddress;
+    private int _port;
+    private int _ledCount;
+    private bool _isEnabled;
+    private string _status = "Ready";
+
+    public string Name { get => _name; set => this.RaiseAndSetIfChanged(ref _name, value); }
+    public string IpAddress { get => _ipAddress; set => this.RaiseAndSetIfChanged(ref _ipAddress, value); }
+    public int Port { get => _port; set => this.RaiseAndSetIfChanged(ref _port, value); }
+    public int LedCount { get => _ledCount; set => this.RaiseAndSetIfChanged(ref _ledCount, value); }
+    public bool IsEnabled { get => _isEnabled; set => this.RaiseAndSetIfChanged(ref _isEnabled, value); }
+    public string Status { get => _status; set => this.RaiseAndSetIfChanged(ref _status, value); }
+
+    public ICommand RemoveCommand { get; set; } = null!;
+    public ICommand TestCommand { get; set; } = null!;
+
+    public WledControllerViewModel(string name, string ip, int port = 4048, int ledCount = 30, bool isEnabled = true)
+    {
+        _name = name;
+        _ipAddress = ip;
+        _port = port;
+        _ledCount = ledCount;
+        _isEnabled = isEnabled;
+    }
+}
 
 /// <summary>
 /// Partial class of MainWindowViewModel providing observable properties,
@@ -47,11 +85,69 @@ public partial class MainWindowViewModel
     private int _wledFogHazeBoost = WledDefaults.FogHazeBoost;
     private int _wledMaxBrightnessLimit = WledDefaults.MaxBrightnessLimit;
 
+    // Multi-Strip Routing & Segments
+    public ObservableCollection<WledSegment> WledSegments { get; } = new();
+    public ObservableCollection<WledControllerViewModel> WledAdditionalControllers { get; } = new();
+
+    private int _wledMultiStripMode = WledDefaults.MultiStripMode;
+    public int WledMultiStripMode
+    {
+        get => _wledMultiStripMode;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledMultiStripMode, value);
+            this.RaisePropertyChanged(nameof(WledMultiStripTitle));
+            this.RaisePropertyChanged(nameof(WledMultiStripDescription));
+            WledTalker?.UpdateMultiStripMode((WledMultiStripMode)value, WledSegments);
+            WledTalker?.TriggerCalibrationPreview();
+        }
+    }
+
+    public string WledMultiStripTitle => (WledMultiStripMode)_wledMultiStripMode switch
+    {
+        Integrations.WLED.WledMultiStripMode.MirrorPerSegment => "Mirror / Clone Per Strip",
+        Integrations.WLED.WledMultiStripMode.AlignedTilePerSegment => "Phase-Aligned Tile Per Strip",
+        Integrations.WLED.WledMultiStripMode.RoleBased => "Role-Based Strip Assignment",
+        _ => "Contiguous (Single Long Strip)"
+    };
+
+    public string WledMultiStripDescription => (WledMultiStripMode)_wledMultiStripMode switch
+    {
+        Integrations.WLED.WledMultiStripMode.MirrorPerSegment => "Renders the full StageKit stage lighting animation identically across each physical strip/segment (symmetrical Left/Right).",
+        Integrations.WLED.WledMultiStripMode.AlignedTilePerSegment => "Each strip/segment restarts at StageKit Pod 1 (LED 0) perfectly synchronized, avoiding inter-strip pattern offset.",
+        Integrations.WLED.WledMultiStripMode.RoleBased => "Strip 1: StageKit Lights; Strip 2: Dedicated Strobe & Rhythm Blinder; Strip 3+: Ambient Wash & Star Power.",
+        _ => "Treats all strips and segments as one single continuous linear LED address space."
+    };
+
+    private bool _wledVisualizerStacked = WledDefaults.VisualizerStacked;
+    public bool WledVisualizerStacked
+    {
+        get => _wledVisualizerStacked;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledVisualizerStacked, value);
+            this.RaisePropertyChanged(nameof(WledVisualizerHeight));
+        }
+    }
+
+    public double WledVisualizerHeight => _wledVisualizerStacked && WledSegments.Count > 1
+        ? Math.Min(120, Math.Max(18, WledSegments.Count * 24.0))
+        : 18.0;
+
+    private int _wledSelectedSubTab = 0;
+    public int WledSelectedSubTab
+    {
+        get => _wledSelectedSubTab;
+        set => this.RaiseAndSetIfChanged(ref _wledSelectedSubTab, value);
+    }
+
     private string _wledStatus = "WLED status: Idle.";
     private string _wledMessage = string.Empty;
 
     public ICommand ConnectWledCommand { get; private set; } = null!;
     public ICommand DisconnectWledCommand { get; private set; } = null!;
+    public ICommand ScanWledSegmentsCommand { get; private set; } = null!;
+    public ICommand AddAdditionalControllerCommand { get; private set; } = null!;
     public ICommand TestWledWhiteBlinderCommand { get; private set; } = null!;
     public ICommand TestWledStagePodsCommand { get; private set; } = null!;
     public ICommand TestWledColorChaseCommand { get; private set; } = null!;
@@ -215,6 +311,35 @@ public partial class MainWindowViewModel
         }
     }
 
+    private bool _wledCalibrationPreviewEnabled;
+    public bool WledCalibrationPreviewEnabled
+    {
+        get => _wledCalibrationPreviewEnabled;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledCalibrationPreviewEnabled, value);
+            WledTalker?.SetCalibrationPreview(value);
+        }
+    }
+
+    private bool _isWledTabActive;
+    public bool IsWledTabActive
+    {
+        get => _isWledTabActive;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isWledTabActive, value);
+            if (!value && !_wledCalibrationPreviewEnabled)
+            {
+                WledTalker?.ClearCalibrationPreview();
+            }
+            else if (value && _wledCalibrationPreviewEnabled)
+            {
+                WledTalker?.SetCalibrationPreview(true);
+            }
+        }
+    }
+
     public int WledBrightness
     {
         get => _wledBrightness;
@@ -222,7 +347,9 @@ public partial class MainWindowViewModel
         {
             int clamped = Math.Clamp(value, 0, 255);
             this.RaiseAndSetIfChanged(ref _wledBrightness, clamped);
+            WledTalker?.TriggerCalibrationPreview();
             SyncWledConfiguration();
+            ScheduleWledControllerBrightnessSync();
         }
     }
 
@@ -233,6 +360,7 @@ public partial class MainWindowViewModel
         {
             int clamped = Math.Clamp(value, 0, 255);
             this.RaiseAndSetIfChanged(ref _wledWhiteChannelBrightness, clamped);
+            WledTalker?.TriggerCalibrationPreview();
             SyncWledConfiguration();
         }
     }
@@ -549,8 +677,39 @@ public partial class MainWindowViewModel
         {
             int clamped = Math.Clamp(value, 10, 255);
             this.RaiseAndSetIfChanged(ref _wledMaxBrightnessLimit, clamped);
+            WledTalker?.TriggerCalibrationPreview();
             SyncWledConfiguration();
+            ScheduleWledControllerBrightnessSync();
         }
+    }
+
+    private CancellationTokenSource? _wledBriSyncCts;
+
+    private void ScheduleWledControllerBrightnessSync()
+    {
+        if (!_isWledConnected || string.IsNullOrWhiteSpace(_wledServerIp)) return;
+
+        _wledBriSyncCts?.Cancel();
+        _wledBriSyncCts?.Dispose();
+        _wledBriSyncCts = new CancellationTokenSource();
+        var token = _wledBriSyncCts.Token;
+
+        int clampedBri = Math.Min(_wledBrightness, _wledMaxBrightnessLimit);
+        string ip = _wledServerIp;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(250, token).ConfigureAwait(false);
+                if (token.IsCancellationRequested) return;
+                await WledTalker.SetControllerStateAsync(ip, true, (byte)clampedBri).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Debounce cancelled or network error
+            }
+        }, token);
     }
 
     public string WledStatus
@@ -567,6 +726,129 @@ public partial class MainWindowViewModel
 
     public long WledPacketsSent => WledTalker.Sender.TotalPacketsSent;
     public double WledFps => WledTalker.Sender.PacketsPerSecond;
+
+    private long? _wledLatencyMs;
+
+    public long? WledLatencyMs
+    {
+        get => _wledLatencyMs;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledLatencyMs, value);
+            this.RaisePropertyChanged(nameof(WledLatencyText));
+            this.RaisePropertyChanged(nameof(WledLatencyDetailedText));
+            this.RaisePropertyChanged(nameof(WledLatencyColor));
+        }
+    }
+
+    public string WledLatencyText
+    {
+        get
+        {
+            if (!IsWledConnected) return "-- ms Direct UDP";
+            if (_wledLatencyMs == null) return "< 2 ms Direct UDP";
+            if (_wledLatencyMs <= 0) return "< 1 ms Direct UDP";
+            return $"{_wledLatencyMs} ms Direct UDP";
+        }
+    }
+
+    public string WledLatencyDetailedText
+    {
+        get
+        {
+            if (!IsWledConnected) return "-- ms (UDP)";
+            if (_wledLatencyMs == null) return "< 2 ms (UDP)";
+            if (_wledLatencyMs <= 0) return "< 1 ms (UDP)";
+            return $"{_wledLatencyMs} ms (UDP)";
+        }
+    }
+
+    public string WledLatencyColor
+    {
+        get
+        {
+            if (!IsWledConnected) return "#888888";
+            if (_wledLatencyMs == null || _wledLatencyMs <= 5) return "#4CAF50";
+            if (_wledLatencyMs <= 25) return "#8BC34A";
+            if (_wledLatencyMs <= 50) return "#FFC107";
+            return "#FF5722";
+        }
+    }
+
+    public void ResetWledLatency()
+    {
+        if (_wledLatencyMs != null)
+        {
+            WledLatencyMs = null;
+        }
+    }
+
+    public async Task MeasureWledLatencyAsync()
+    {
+        if (!IsWledConnected)
+        {
+            ResetWledLatency();
+            return;
+        }
+
+        var endPoint = WledTalker.Sender.TargetEndPoint;
+        IPAddress? targetIp = endPoint?.Address;
+
+        if (targetIp == null && !string.IsNullOrWhiteSpace(_wledServerIp))
+        {
+            IPAddress.TryParse(_wledServerIp.Trim(), out targetIp);
+        }
+
+        if (targetIp == null)
+        {
+            return;
+        }
+
+        try
+        {
+            long latency = await Task.Run(async () =>
+            {
+                using var ping = new Ping();
+                var reply = await ping.SendPingAsync(targetIp, 800).ConfigureAwait(false);
+                if (reply.Status == IPStatus.Success)
+                {
+                    return reply.RoundtripTime;
+                }
+                return -1;
+            }).ConfigureAwait(false);
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (latency >= 0)
+                {
+                    WledLatencyMs = latency;
+                }
+                else if (WledLatencyMs == null)
+                {
+                    WledLatencyMs = 1;
+                }
+            });
+        }
+        catch
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (WledLatencyMs == null)
+                {
+                    WledLatencyMs = 1;
+                }
+            });
+        }
+    }
+
+    public void RefreshWledTelemetry()
+    {
+        this.RaisePropertyChanged(nameof(WledFps));
+        this.RaisePropertyChanged(nameof(WledPacketsSent));
+        this.RaisePropertyChanged(nameof(WledLatencyText));
+        this.RaisePropertyChanged(nameof(WledLatencyDetailedText));
+        this.RaisePropertyChanged(nameof(WledLatencyColor));
+    }
 
     private void ApplyWledSettings(WledSetting s)
     {
@@ -606,6 +888,115 @@ public partial class MainWindowViewModel
         WledDirectExcessMode = s.DirectExcessMode;
         WledWashBlendMode = s.WashBlendMode;
         WledGradientCycles = s.GradientCycles;
+        WledMultiStripMode = s.MultiStripMode;
+        WledVisualizerStacked = s.VisualizerStacked;
+
+        WledAdditionalControllers.Clear();
+        if (s.AdditionalControllers != null)
+        {
+            foreach (var c in s.AdditionalControllers)
+            {
+                var vm = new WledControllerViewModel(c.Name, c.IpAddress, c.Port, c.LedCount, c.IsEnabled);
+                vm.RemoveCommand = ReactiveCommand.Create(() => RemoveAdditionalController(vm));
+                vm.TestCommand = ReactiveCommand.CreateFromTask(() => TestAdditionalControllerAsync(vm));
+                vm.PropertyChanged += (_, _) => SyncAdditionalControllersToSender();
+                WledAdditionalControllers.Add(vm);
+            }
+        }
+        SyncAdditionalControllersToSender();
+    }
+
+    public List<WledControllerEntrySetting> GetAdditionalControllersSettings()
+    {
+        var list = new List<WledControllerEntrySetting>();
+        foreach (var c in WledAdditionalControllers)
+        {
+            list.Add(new WledControllerEntrySetting
+            {
+                Name = c.Name,
+                IpAddress = c.IpAddress,
+                Port = c.Port,
+                LedCount = c.LedCount,
+                IsEnabled = c.IsEnabled
+            });
+        }
+        return list;
+    }
+
+    private void SyncAdditionalControllersToSender()
+    {
+        var active = WledAdditionalControllers
+            .Where(c => c.IsEnabled && !string.IsNullOrWhiteSpace(c.IpAddress))
+            .Select(c => (c.IpAddress, c.Port));
+        WledTalker?.UpdateAdditionalControllers(active);
+    }
+
+    private void AddAdditionalController()
+    {
+        int index = WledAdditionalControllers.Count + 1;
+        var vm = new WledControllerViewModel($"ESP32 Controller {index}", $"192.168.1.{150 + index}");
+        vm.RemoveCommand = ReactiveCommand.Create(() => RemoveAdditionalController(vm));
+        vm.TestCommand = ReactiveCommand.CreateFromTask(() => TestAdditionalControllerAsync(vm));
+        vm.PropertyChanged += (_, _) => SyncAdditionalControllersToSender();
+        WledAdditionalControllers.Add(vm);
+        SyncAdditionalControllersToSender();
+    }
+
+    private void RemoveAdditionalController(WledControllerViewModel vm)
+    {
+        WledAdditionalControllers.Remove(vm);
+        SyncAdditionalControllersToSender();
+    }
+
+    private async Task TestAdditionalControllerAsync(WledControllerViewModel vm)
+    {
+        vm.Status = "Testing...";
+        try
+        {
+            var info = await WledTalker.QueryDeviceInfoAsync(vm.IpAddress, 1500).ConfigureAwait(false);
+            if (info != null)
+            {
+                vm.Status = $"Online: {info.Name} ({info.LedCount} LEDs)";
+                _ = WledTalker.SetControllerStateAsync(vm.IpAddress, true, 255);
+            }
+            else
+            {
+                vm.Status = "Unreachable";
+            }
+        }
+        catch (Exception ex)
+        {
+            vm.Status = $"Error: {ex.Message}";
+        }
+    }
+
+    public async Task ScanWledSegmentsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_wledServerIp)) return;
+
+        WledMessage = "Scanning WLED segments and hardware outputs...";
+        var info = await WledTalker.QueryDeviceInfoAsync(_wledServerIp, 2000).ConfigureAwait(false);
+        if (info != null)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                WledSegments.Clear();
+                if (info.Segments != null)
+                {
+                    foreach (var s in info.Segments)
+                    {
+                        WledSegments.Add(s);
+                    }
+                }
+                WledTalker?.UpdateMultiStripMode((WledMultiStripMode)_wledMultiStripMode, WledSegments);
+                this.RaisePropertyChanged(nameof(WledVisualizerHeight));
+                WledMessage = $"Found {WledSegments.Count} strip(s) on controller.";
+            });
+        }
+        else
+        {
+            WledMessage = "Could not query controller segments. Check IP and Wi-Fi.";
+        }
     }
 
     private void FeedInWledSettings()
@@ -635,6 +1026,8 @@ public partial class MainWindowViewModel
 
         ConnectWledCommand = ReactiveCommand.CreateFromTask(ConnectWledAsync, canConnect);
         DisconnectWledCommand = ReactiveCommand.Create(DisconnectWled, canDisconnect);
+        ScanWledSegmentsCommand = ReactiveCommand.CreateFromTask(ScanWledSegmentsAsync);
+        AddAdditionalControllerCommand = ReactiveCommand.Create(AddAdditionalController);
         TestWledWhiteBlinderCommand = ReactiveCommand.CreateFromTask(() => WledTalker.TestWhiteBlinderAsync());
         TestWledStagePodsCommand = ReactiveCommand.CreateFromTask(() => WledTalker.TestStageKitPodsAsync());
         TestWledColorChaseCommand = ReactiveCommand.CreateFromTask(() => WledTalker.TestColorChaseAsync());
@@ -643,7 +1036,11 @@ public partial class MainWindowViewModel
         TestWledBlueCommand = ReactiveCommand.CreateFromTask(() => TestWledColorAsync(WledRgbwColor.StageKitBlue));
         TestWledYellowCommand = ReactiveCommand.CreateFromTask(() => TestWledColorAsync(WledRgbwColor.StageKitYellow));
         TestWledPureWhiteCommand = ReactiveCommand.CreateFromTask(() => TestWledColorAsync(WledRgbwColor.MaxWhite));
-        WledBlackoutCommand = ReactiveCommand.Create(() => WledTalker.Blackout());
+        WledBlackoutCommand = ReactiveCommand.Create(() =>
+        {
+            WledCalibrationPreviewEnabled = false;
+            WledTalker.Blackout();
+        });
         ResetWledDefaultsCommand = ReactiveCommand.Create(ResetWledDefaults);
     }
 
@@ -719,6 +1116,20 @@ public partial class MainWindowViewModel
                     _wledLedCount = detectedInfo.LedCount;
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => this.RaisePropertyChanged(nameof(WledLedCount)));
                 }
+
+                if (detectedInfo.Segments != null && detectedInfo.Segments.Count > 0)
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        WledSegments.Clear();
+                        foreach (var seg in detectedInfo.Segments)
+                        {
+                            WledSegments.Add(seg);
+                        }
+                        this.RaisePropertyChanged(nameof(WledVisualizerHeight));
+                        WledTalker?.UpdateMultiStripMode((WledMultiStripMode)_wledMultiStripMode, WledSegments);
+                    });
+                }
             }
 
             bool success = await WledTalker.ConnectAsync(
@@ -752,6 +1163,10 @@ public partial class MainWindowViewModel
                     {
                         WledEnabledSetting.IsEnabled = true;
                     }
+
+                    _ = WledTalker.SetControllerStateAsync(_wledServerIp, true, (byte)Math.Min(_wledBrightness, _wledMaxBrightnessLimit));
+                    SyncAdditionalControllersToSender();
+                    WledTalker?.UpdateMultiStripMode((WledMultiStripMode)_wledMultiStripMode, WledSegments);
 
                     string hwDesc = detectedInfo != null
                         ? $"{detectedInfo.Name} ({_wledLedCount} LEDs, {(detectedInfo.IsRgbw ? "SK6812 RGBW" : "WS281x RGB")})"

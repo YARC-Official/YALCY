@@ -8,7 +8,7 @@
         Width="700" Height="500"
         MinWidth="200" MinHeight="100"
         CanResize="True"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ExtendClientAreaToDecorationsHint="True"
         Background="{DynamicResource AppPanelBackground}">
 

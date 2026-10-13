@@ -3,31 +3,288 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:YALCY.ViewModels"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
              x:Class="YALCY.Views.Tabs.SerialTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
-    <StackPanel Margin="5">
-        <ToggleButton ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
-                      Content="{Binding SerialEnabledSetting.ToggleButtonContent}"
-                      IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}" Margin="5" />
-        <TextBlock Text="The channel numbers set and used from the sAcn/dmx tab" Margin="5" />
-        <TextBlock Text="Strobe behavior" Margin="5,8,5,0" />
-        <StackPanel Orientation="Horizontal" Margin="5,0,5,8" Spacing="16">
-            <RadioButton Content="Strobe command"
-                         GroupName="SerialStrobeMode"
-                         IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}" />
-            <RadioButton Content="Manual flash strobe"
-                         GroupName="SerialStrobeMode"
-                         IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" />
-        </StackPanel>
-        <TextBlock Text="{Binding SerialMessage}" Margin="5" Foreground="Red" />
-        <!-- DataGrid -->
-        <DataGrid Grid.Row="1" Grid.Column="0" CanUserSortColumns="False" ItemsSource="{Binding SerialConnectedDevices}" AutoGenerateColumns="False" IsReadOnly="True">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Name" Binding="{Binding FriendlyName}" />
-                <DataGridTextColumn Header="Device Path" Binding="{Binding DevicePath}" />
-                <DataGridTextColumn Header="File System Name" Binding="{Binding FileSystemName}" />
-            </DataGrid.Columns>
-        </DataGrid>
-    </StackPanel>
+    <UserControl.Styles>
+        <Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander:down /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander /template/ ToggleButton#ExpanderHeader /template/ Path#ExpandCollapseChevron">
+            <Setter Property="Data" Value="M 0 7 L 7 0 L 14 7" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="20,16,20,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Row 0: Hero Header -->
+            <components:TabHeroHeader Grid.Row="0"
+                                      Margin="0,0,0,16"
+                                      HeaderTitle="Serial Device Integration"
+                                      Subtitle="Direct hardware USB and serial interface for DMX / sACN and custom lighting controllers"
+                                      IconData="{StaticResource IconSerial}">
+                <components:TabHeroHeader.BadgeContent>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <ToggleSwitch ToolTip.Tip="{Binding SerialEnabledSetting.ToolTip}"
+                                      IsChecked="{Binding SerialEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                      OnContent=""
+                                      OffContent=""
+                                      HorizontalAlignment="Right"
+                                      Margin="0" />
+                        <TextBlock Text="{Binding SerialEnabledSetting.ToggleButtonContent}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AppTextSecondary}"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                </components:TabHeroHeader.BadgeContent>
+            </components:TabHeroHeader>
+
+            <!-- Row 1: Two Column Layout -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="420" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: Serial Controller Setup & Strobe Configuration -->
+                <Border Grid.Column="0"
+                        Background="{DynamicResource AppPanelBackground}"
+                        BorderBrush="{DynamicResource AppBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="20"
+                        Margin="0,0,16,0">
+                    <StackPanel Spacing="16">
+                        <!-- Card Header -->
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Serial Controller Setup"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <TextBlock Text="Configure serial output and strobe behavior"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Setup & Requirements Panel -->
+                        <Border Background="{DynamicResource AppInputBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="⚙️" FontSize="14" VerticalAlignment="Center"/>
+                                    <TextBlock Text="DMX &amp; sACN Routing"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
+                                </StackPanel>
+                                <TextBlock Text="• Channel numbers configured in the sACN / DMX tab are used for serial transmission"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="• USB serial devices (Arduinos, FTDI chips, USB-DMX adapters) are detected automatically"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="• Connect or disconnect hardware anytime — the device monitor handles plug-and-play"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           Margin="22,0,0,0"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Strobe Behavior Section -->
+                        <!-- Strobe Behavior Segmented Toggle -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Strobe behavior"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextSecondary}"/>
+                            <Grid ColumnDefinitions="*,*">
+                                <RadioButton Grid.Column="0"
+                                             Content="Strobe command"
+                                             GroupName="SerialStrobeMode"
+                                             IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}"
+                                             Classes="SegmentedToggle"
+                                             HorizontalAlignment="Stretch"
+                                             Margin="0,0,3,0"/>
+                                <RadioButton Grid.Column="1"
+                                             Content="Manual flash"
+                                             GroupName="SerialStrobeMode"
+                                             IsChecked="{Binding SerialStrobeMode, Mode=TwoWay, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                                             Classes="SegmentedToggle"
+                                             HorizontalAlignment="Stretch"
+                                             Margin="3,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Status / Alert Message (when message present) -->
+                        <Border Background="{DynamicResource AppCardBackground}"
+                                BorderBrush="{DynamicResource AppBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12"
+                                IsVisible="{Binding SerialMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="⚠️" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Serial Status"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AppTextPrimary}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SerialMessage}"
+                                           FontSize="11"
+                                           Foreground="#E53935"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Column: Connected Devices Card -->
+                <Border Grid.Column="1"
+                        Background="{DynamicResource AppPanelBackground}"
+                        BorderBrush="{DynamicResource AppBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="20">
+                    <Grid RowDefinitions="Auto,*,Auto">
+                        <!-- Devices Header -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Connected Serial Devices"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AppTextPrimary}"/>
+                                <TextBlock Text="Active USB hardware and COM ports monitored by YALCY"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppTextMuted}"/>
+                            </StackPanel>
+                            <Border Grid.Column="1"
+                                    Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10,4"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="🔌 Plug &amp; Play Monitor Active"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextSecondary}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Device Cards List -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="440">
+                            <StackPanel Spacing="10">
+                                <ItemsControl ItemsSource="{Binding SerialConnectedDevices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SerialDeviceViewModel">
+                                            <Border Background="{DynamicResource AppCardBackground}"
+                                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="10"
+                                                    Padding="16,12"
+                                                    Margin="0,0,0,8">
+                                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                                    <!-- USB Icon in Accent Circle/Square -->
+                                                    <Border Grid.Column="0"
+                                                            Background="{DynamicResource SystemAccentColor}"
+                                                            Width="40"
+                                                            Height="40"
+                                                            CornerRadius="8"
+                                                            Margin="0,0,14,0"
+                                                            VerticalAlignment="Center">
+                                                        <PathIcon Data="{StaticResource IconUsb}"
+                                                                  Width="20"
+                                                                  Height="20"
+                                                                  Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                                    </Border>
+
+                                                    <!-- Friendly Name & Device Path -->
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0" Spacing="2">
+                                                        <TextBlock Text="{Binding FriendlyName}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="13"
+                                                                   Foreground="{DynamicResource AppTextPrimary}"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding DevicePath}"
+                                                                   FontSize="11"
+                                                                   FontFamily="Consolas, Cascadia Code, Courier New"
+                                                                   Foreground="{DynamicResource AppTextMuted}"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+
+                                                    <!-- Port Pill -->
+                                                    <Border Grid.Column="2"
+                                                            Background="{DynamicResource AppInputBackground}"
+                                                            BorderBrush="{DynamicResource AppBorder}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6"
+                                                            Padding="12,5"
+                                                            VerticalAlignment="Center">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="⚡" FontSize="11" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding FileSystemName}"
+                                                                       FontSize="12"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{DynamicResource AppTextPrimary}"
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Bottom Expander for Raw DataGrid -->
+                        <Expander Grid.Row="2"
+                                  Header="Detailed Device Table"
+                                  Margin="0,12,0,0"
+                                  Background="{DynamicResource AppInputBackground}"
+                                  BorderBrush="{DynamicResource AppBorder}"
+                                  BorderThickness="1"
+                                  CornerRadius="8">
+                            <DataGrid CanUserSortColumns="False"
+                                      ItemsSource="{Binding SerialConnectedDevices}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      Height="140"
+                                      Margin="4">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Name" Binding="{Binding FriendlyName}" Width="*" />
+                                    <DataGridTextColumn Header="Device Path" Binding="{Binding DevicePath}" Width="2*" />
+                                    <DataGridTextColumn Header="File System Name" Binding="{Binding FileSystemName}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Expander>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

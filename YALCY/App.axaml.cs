@@ -66,8 +66,24 @@ public class App : Application
             {
                 DataContext = MainViewModel
             };
+
+            bool startHidden = CommandLineHandler.ShouldStartHidden(Program.StartupArgs);
+            if (startHidden)
+            {
+                desktop.MainWindow.WindowState = WindowState.Minimized;
+                desktop.MainWindow.Opened += (s, e) =>
+                {
+                    desktop.MainWindow?.Hide();
+                };
+            }
+
             //Don't move this. With how Avalonia works, this must be here or else there will be duplicate errors for things like the udp ports
             InitializeComponents();
+
+            if (Program.StartupArgs != null && Program.StartupArgs.Length > 0)
+            {
+                CommandLineHandler.ExecuteArguments(Program.StartupArgs);
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -83,62 +99,87 @@ public class App : Application
         };
     }
 
+    public static void ShowMainWindow()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                return;
+            }
+
+            if (desktop.MainWindow is not Window window)
+            {
+                return;
+            }
+
+            if (!window.IsVisible)
+            {
+                window.Show();
+            }
+
+            if (window.WindowState == WindowState.Minimized)
+            {
+                window.WindowState = WindowState.Normal;
+            }
+
+            window.Activate();
+            SingleInstanceManager.BringWindowToForeground(window);
+        });
+    }
+
+    public static void HideMainWindowToTray()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                return;
+            }
+
+            if (desktop.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.HideToTray();
+            }
+            else
+            {
+                desktop.MainWindow?.Hide();
+            }
+        });
+    }
+
+    public static void RequestExit()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                return;
+            }
+
+            if (desktop.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.RequestExit();
+                return;
+            }
+
+            desktop.Shutdown();
+        });
+    }
+
     private void OnTrayShowClick(object? sender, EventArgs e)
     {
-        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            return;
-        }
-
-        if (desktop.MainWindow is not Window window)
-        {
-            return;
-        }
-
-        if (!window.IsVisible)
-        {
-            window.Show();
-        }
-
-        if (window.WindowState == WindowState.Minimized)
-        {
-            window.WindowState = WindowState.Normal;
-        }
-
-        window.Activate();
+        ShowMainWindow();
     }
 
     private void OnTrayHideClick(object? sender, EventArgs e)
     {
-        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            return;
-        }
-
-        if (desktop.MainWindow is MainWindow mainWindow)
-        {
-            mainWindow.HideToTray();
-        }
-        else
-        {
-            desktop.MainWindow?.Hide();
-        }
+        HideMainWindowToTray();
     }
 
     private void OnTrayExitClick(object? sender, EventArgs e)
     {
-        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            return;
-        }
-
-        if (desktop.MainWindow is MainWindow mainWindow)
-        {
-            mainWindow.RequestExit();
-            return;
-        }
-
-        desktop.Shutdown();
+        RequestExit();
     }
 
     private void InitializeComponents()

@@ -45,7 +45,7 @@
                                   Subtitle="Real-time telemetry packet listener and LED stage lighting visualizer"
                                   IconData="{StaticResource IconUdp}">
             <components:TabHeroHeader.BadgeContent>
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="180">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
                     <ToggleSwitch ToolTip.Tip="{Binding UdpEnableSetting.ToolTip}"
                                   IsChecked="{Binding UdpEnableSetting.IsEnabled, Mode=TwoWay}"
                                   OnContent=""
@@ -56,9 +56,8 @@
                                FontSize="11"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource AppTextSecondary}"
-                               TextTrimming="CharacterEllipsis"
                                HorizontalAlignment="Right"
-                               Margin="0,2,0,0" />
+                               Margin="0,4,0,0" />
                 </StackPanel>
             </components:TabHeroHeader.BadgeContent>
         </components:TabHeroHeader>

@@ -24,6 +24,8 @@ public partial class MainWindow : Window
                 viewModel.WindowWidth = e.NewSize.Width;
             }
         };
+
+        this.Opened += (_, _) => SingleInstanceManager.SetWindowAppId(this, "YALCY.MainWindow");
     }
 
     public void RequestExit()

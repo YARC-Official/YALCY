@@ -32,12 +32,24 @@
         <Style Selector="Button, ComboBox, NumericUpDown"><Setter Property="CornerRadius" Value="7" /></Style>
     </UserControl.Styles>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="20,16,20,20" Spacing="12">
-            <components:TabHeroHeader HeaderTitle="LIFX Lighting" Subtitle="Song colors and individually mapped zones over your local network" IconData="{StaticResource IconLifx}">
+        <StackPanel Margin="20,16,20,20" Spacing="16">
+            <components:TabHeroHeader HeaderTitle="LIFX Lighting"
+                                      Subtitle="Song colors and individually mapped zones over your local network"
+                                      IconData="{StaticResource IconLifx}">
                 <components:TabHeroHeader.BadgeContent>
-                    <StackPanel>
-                        <ToggleSwitch IsChecked="{Binding LifxEnabledSetting.IsEnabled, Mode=TwoWay}" OnContent="" OffContent="" HorizontalAlignment="Right" />
-                        <TextBlock Text="{Binding LifxEnabledSetting.ToggleButtonContent}" Classes="hint" />
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <ToggleSwitch ToolTip.Tip="{Binding LifxEnabledSetting.ToolTip}"
+                                      IsChecked="{Binding LifxEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                      OnContent=""
+                                      OffContent=""
+                                      HorizontalAlignment="Right"
+                                      Margin="0" />
+                        <TextBlock Text="{Binding LifxEnabledSetting.ToggleButtonContent}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AppTextSecondary}"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,4,0,0" />
                     </StackPanel>
                 </components:TabHeroHeader.BadgeContent>
             </components:TabHeroHeader>
