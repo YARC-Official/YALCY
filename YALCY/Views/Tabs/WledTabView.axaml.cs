@@ -21,12 +21,20 @@ public partial class WledTabView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.IsWledTabActive = true;
+        }
         StartTelemetryTimer();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.IsWledTabActive = false;
+        }
         StopTelemetryTimer();
     }
 

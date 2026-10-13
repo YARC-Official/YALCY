@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using ReactiveUI;
@@ -217,6 +218,35 @@ public partial class MainWindowViewModel
         }
     }
 
+    private bool _wledCalibrationPreviewEnabled;
+    public bool WledCalibrationPreviewEnabled
+    {
+        get => _wledCalibrationPreviewEnabled;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledCalibrationPreviewEnabled, value);
+            WledTalker?.SetCalibrationPreview(value);
+        }
+    }
+
+    private bool _isWledTabActive;
+    public bool IsWledTabActive
+    {
+        get => _isWledTabActive;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isWledTabActive, value);
+            if (!value && !_wledCalibrationPreviewEnabled)
+            {
+                WledTalker?.ClearCalibrationPreview();
+            }
+            else if (value && _wledCalibrationPreviewEnabled)
+            {
+                WledTalker?.SetCalibrationPreview(true);
+            }
+        }
+    }
+
     public int WledBrightness
     {
         get => _wledBrightness;
@@ -224,7 +254,9 @@ public partial class MainWindowViewModel
         {
             int clamped = Math.Clamp(value, 0, 255);
             this.RaiseAndSetIfChanged(ref _wledBrightness, clamped);
+            WledTalker?.TriggerCalibrationPreview();
             SyncWledConfiguration();
+            ScheduleWledControllerBrightnessSync();
         }
     }
 
@@ -235,6 +267,7 @@ public partial class MainWindowViewModel
         {
             int clamped = Math.Clamp(value, 0, 255);
             this.RaiseAndSetIfChanged(ref _wledWhiteChannelBrightness, clamped);
+            WledTalker?.TriggerCalibrationPreview();
             SyncWledConfiguration();
         }
     }
@@ -551,8 +584,39 @@ public partial class MainWindowViewModel
         {
             int clamped = Math.Clamp(value, 10, 255);
             this.RaiseAndSetIfChanged(ref _wledMaxBrightnessLimit, clamped);
+            WledTalker?.TriggerCalibrationPreview();
             SyncWledConfiguration();
+            ScheduleWledControllerBrightnessSync();
         }
+    }
+
+    private CancellationTokenSource? _wledBriSyncCts;
+
+    private void ScheduleWledControllerBrightnessSync()
+    {
+        if (!_isWledConnected || string.IsNullOrWhiteSpace(_wledServerIp)) return;
+
+        _wledBriSyncCts?.Cancel();
+        _wledBriSyncCts?.Dispose();
+        _wledBriSyncCts = new CancellationTokenSource();
+        var token = _wledBriSyncCts.Token;
+
+        int clampedBri = Math.Min(_wledBrightness, _wledMaxBrightnessLimit);
+        string ip = _wledServerIp;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(250, token).ConfigureAwait(false);
+                if (token.IsCancellationRequested) return;
+                await WledTalker.SetControllerStateAsync(ip, true, (byte)clampedBri).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Debounce cancelled or network error
+            }
+        }, token);
     }
 
     public string WledStatus
@@ -768,7 +832,11 @@ public partial class MainWindowViewModel
         TestWledBlueCommand = ReactiveCommand.CreateFromTask(() => TestWledColorAsync(WledRgbwColor.StageKitBlue));
         TestWledYellowCommand = ReactiveCommand.CreateFromTask(() => TestWledColorAsync(WledRgbwColor.StageKitYellow));
         TestWledPureWhiteCommand = ReactiveCommand.CreateFromTask(() => TestWledColorAsync(WledRgbwColor.MaxWhite));
-        WledBlackoutCommand = ReactiveCommand.Create(() => WledTalker.Blackout());
+        WledBlackoutCommand = ReactiveCommand.Create(() =>
+        {
+            WledCalibrationPreviewEnabled = false;
+            WledTalker.Blackout();
+        });
         ResetWledDefaultsCommand = ReactiveCommand.Create(ResetWledDefaults);
     }
 
@@ -877,6 +945,8 @@ public partial class MainWindowViewModel
                     {
                         WledEnabledSetting.IsEnabled = true;
                     }
+
+                    _ = WledTalker.SetControllerStateAsync(_wledServerIp, true, (byte)Math.Min(_wledBrightness, _wledMaxBrightnessLimit));
 
                     string hwDesc = detectedInfo != null
                         ? $"{detectedInfo.Name} ({_wledLedCount} LEDs, {(detectedInfo.IsRgbw ? "SK6812 RGBW" : "WS281x RGB")})"

@@ -35,6 +35,9 @@ public sealed class WledTalker : IDisposable
     // Synchronization lock for strip framebuffers and configuration
     public readonly object Lock = new();
 
+    // Shared HTTP client for lightweight controller probing and hardware brightness state synchronization
+    private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromMilliseconds(2000) };
+
     // UDP transmission engine
     private readonly WledSender _sender = new();
 
@@ -44,6 +47,13 @@ public sealed class WledTalker : IDisposable
 
     // Virtual StageKit 32-LED state buffer (8 Blue [0..7], 8 Red [8..15], 8 Green [16..23], 8 Yellow [24..31])
     private readonly WledRgbwColor[] _stageKitVirtualLeds = new WledRgbwColor[StageKitLedCount];
+
+    // Reference calibration virtual LEDs buffer (4 pods: Blue, Red, Green, Yellow + dedicated White test diodes)
+    private readonly WledRgbwColor[] _calibrationVirtualLeds = new WledRgbwColor[StageKitLedCount];
+    private volatile bool _isCalibrationPreviewEnabled;
+    private volatile bool _isAutoPreviewActive;
+    private Timer? _autoPreviewTimer;
+    private const int AutoPreviewDurationMs = 4000;
 
     // Master output frame buffer sent to the physical WLED strip
     private WledRgbwColor[] _outputBuffer = new WledRgbwColor[32];
@@ -123,8 +133,129 @@ public sealed class WledTalker : IDisposable
         // Initialize decay timer (runs every ~16ms for ~60 FPS decay interpolation)
         _decayTimer = new Timer(OnDecayTimerTick, null, Timeout.Infinite, Timeout.Infinite);
         _heartbeatTimer = new Timer(OnHeartbeatTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+        _autoPreviewTimer = new Timer(OnAutoPreviewTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+        RefreshCalibrationVirtualLeds();
         ApplyConfiguration(WledSettingsManager.Current);
     }
+
+    #region Real-Time Diode Calibration & Live Preview Engine
+
+    /// <summary>
+    /// Checks whether any virtual StageKit lights are actively illuminated by incoming cues.
+    /// </summary>
+    public bool HasActiveStageKitCues()
+    {
+        lock (Lock)
+        {
+            for (int i = 0; i < StageKitLedCount; i++)
+            {
+                if (_stageKitVirtualLeds[i] != WledRgbwColor.Black)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Temporarily activates calibration preview mode for 4 seconds during slider manipulation,
+    /// rendering live reference pods (Blue, Red, Green, Yellow) and dedicated White diodes
+    /// so brightness and white balance adjustments are visible in real time.
+    /// </summary>
+    public void TriggerCalibrationPreview()
+    {
+        _isAutoPreviewActive = true;
+        _autoPreviewTimer?.Change(AutoPreviewDurationMs, Timeout.Infinite);
+        RefreshCalibrationVirtualLeds();
+        RenderAndFlushFrame(forceVisualizerOnly: true);
+    }
+
+    /// <summary>
+    /// Toggles persistent calibration preview mode on/off from the UI.
+    /// </summary>
+    public void SetCalibrationPreview(bool enabled)
+    {
+        _isCalibrationPreviewEnabled = enabled;
+        RefreshCalibrationVirtualLeds();
+        RenderAndFlushFrame(forceVisualizerOnly: true);
+    }
+
+    /// <summary>
+    /// Cancels active calibration preview and restores stage/blackout output.
+    /// </summary>
+    public void ClearCalibrationPreview()
+    {
+        _autoPreviewTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        _isAutoPreviewActive = false;
+        _isCalibrationPreviewEnabled = false;
+        if (!HasActiveStageKitCues())
+        {
+            RenderAndFlushFrame(forceVisualizerOnly: true);
+        }
+    }
+
+    private void OnAutoPreviewTimerTick(object? state)
+    {
+        _isAutoPreviewActive = false;
+        if (!_isCalibrationPreviewEnabled && !HasActiveStageKitCues())
+        {
+            RenderAndFlushFrame(forceVisualizerOnly: true);
+        }
+    }
+
+    /// <summary>
+    /// Populates calibration reference buffer with 4 distinct StageKit pods and dedicated White diodes.
+    /// </summary>
+    private void RefreshCalibrationVirtualLeds()
+    {
+        lock (Lock)
+        {
+            bool isRgbw = _protocol is WledProtocol.DdpRgbw or WledProtocol.RealtimeDrgbw;
+
+            for (int pod = 0; pod < 4; pod++)
+            {
+                int baseIndex = pod * 8;
+                WledRgbwColor podColor = pod switch
+                {
+                    0 => WledRgbwColor.StageKitBlue,
+                    1 => WledRgbwColor.StageKitRed,
+                    2 => WledRgbwColor.StageKitGreen,
+                    _ => WledRgbwColor.StageKitYellow
+                };
+
+                for (int i = 0; i < 6; i++)
+                {
+                    _calibrationVirtualLeds[baseIndex + i] = podColor;
+                }
+
+                // 2 Dedicated White test diodes per pod for independent white channel calibration
+                WledRgbwColor whiteColor = isRgbw ? WledRgbwColor.PureWhite : WledRgbwColor.RgbWhite;
+                _calibrationVirtualLeds[baseIndex + 6] = whiteColor;
+                _calibrationVirtualLeds[baseIndex + 7] = whiteColor;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Determines which virtual LED buffer to render: active gameplay cues, calibration pattern, or idle black.
+    /// </summary>
+    private WledRgbwColor[] GetActiveSourceLeds()
+    {
+        if (HasActiveStageKitCues())
+        {
+            return _stageKitVirtualLeds;
+        }
+
+        if (_isCalibrationPreviewEnabled || _isAutoPreviewActive)
+        {
+            return _calibrationVirtualLeds;
+        }
+
+        return _stageKitVirtualLeds;
+    }
+
+    #endregion
 
     /// <summary>
     /// Applies configuration directly from a WledSetting object.
@@ -268,7 +399,7 @@ public sealed class WledTalker : IDisposable
             float rawMaster = brightness / 255.0f;
             float maxMaster = maxBrightnessLimit / 255.0f;
             _masterBrightness = Math.Min(rawMaster, maxMaster);
-            _whiteBrightness = whiteBrightness / 255.0f;
+            _whiteBrightness = Math.Min(whiteBrightness / 255.0f, maxMaster);
             _layoutMode = layoutMode;
             _whiteStrobeMode = whiteStrobeMode;
             _strobeMode = strobeMode;
@@ -292,9 +423,9 @@ public sealed class WledTalker : IDisposable
             }
         }
 
-        if (_isEnabled)
+        if (_isEnabled || _isCalibrationPreviewEnabled || _isAutoPreviewActive)
         {
-            RenderAndFlushFrame();
+            RenderAndFlushFrame(forceVisualizerOnly: true);
         }
     }
 
@@ -331,9 +462,9 @@ public sealed class WledTalker : IDisposable
             _gradientCycles = Math.Clamp(gradientCycles, 1, 4);
         }
 
-        if (_isEnabled)
+        if (_isEnabled || _isCalibrationPreviewEnabled || _isAutoPreviewActive)
         {
-            RenderAndFlushFrame();
+            RenderAndFlushFrame(forceVisualizerOnly: true);
         }
     }
 
@@ -745,9 +876,9 @@ public sealed class WledTalker : IDisposable
     /// Core rendering pipeline: combines ambient StageKit RGB colors, White strobe layers,
     /// and rhythmic White accents, mapping them onto the physical WLED strip.
     /// </summary>
-    public void RenderAndFlushFrame()
+    public void RenderAndFlushFrame(bool forceVisualizerOnly = false)
     {
-        if (!_isEnabled) return;
+        if (!_isEnabled && !forceVisualizerOnly) return;
 
         lock (Lock)
         {
@@ -755,6 +886,8 @@ public sealed class WledTalker : IDisposable
             {
                 Array.Resize(ref _outputBuffer, _ledCount);
             }
+
+            WledRgbwColor[] virtualLeds = GetActiveSourceLeds();
 
             // 1. Determine active strobe color if strobe is firing
             WledRgbwColor strobeColor = WledRgbwColor.Black;
@@ -780,39 +913,44 @@ public sealed class WledTalker : IDisposable
             switch (_layoutMode)
             {
                 case WledLayoutMode.TiledRepeat32:
-                    RenderTiledRepeat32(strobeColor, whiteAccent);
+                    RenderTiledRepeat32(virtualLeds, strobeColor, whiteAccent);
                     break;
 
                 case WledLayoutMode.ProportionalStretch:
-                    RenderProportionalStretch(strobeColor, whiteAccent);
+                    RenderProportionalStretch(virtualLeds, strobeColor, whiteAccent);
                     break;
 
                 case WledLayoutMode.FourQuadrantPods:
-                    RenderFourQuadrantPods(strobeColor, whiteAccent);
+                    RenderFourQuadrantPods(virtualLeds, strobeColor, whiteAccent);
                     break;
 
                 case WledLayoutMode.CenterSplit:
-                    RenderCenterSplit(strobeColor, whiteAccent);
+                    RenderCenterSplit(virtualLeds, strobeColor, whiteAccent);
                     break;
 
                 case WledLayoutMode.Direct1to1:
-                    RenderDirect1to1(strobeColor, whiteAccent);
+                    RenderDirect1to1(virtualLeds, strobeColor, whiteAccent);
                     break;
 
                 case WledLayoutMode.FullWash:
-                    RenderFullWash(strobeColor, whiteAccent);
+                    RenderFullWash(virtualLeds, strobeColor, whiteAccent);
                     break;
 
                 case WledLayoutMode.SmoothGradient:
-                    RenderSmoothGradient(strobeColor, whiteAccent);
+                    RenderSmoothGradient(virtualLeds, strobeColor, whiteAccent);
                     break;
             }
 
             // 4. Apply physical strip geometry transforms (reverse direction & start offset)
             ApplyGeometryTransforms();
 
-            // 5. Send frame to WLED and broadcast telemetry to live visualizer
-            _sender.SendFrame(_outputBuffer.AsSpan(0, _ledCount), _protocol, _timeoutSeconds);
+            // 5. Send frame to physical WLED controller (if enabled and connected)
+            if (_isEnabled)
+            {
+                _sender.SendFrame(_outputBuffer.AsSpan(0, _ledCount), _protocol, _timeoutSeconds);
+            }
+
+            // 6. Broadcast telemetry to live visualizer
             OnFrameRendered?.Invoke(_outputBuffer, _ledCount, _reverseDirection, _startOffset);
         }
     }
@@ -836,7 +974,7 @@ public sealed class WledTalker : IDisposable
         }
     }
 
-    private void RenderTiledRepeat32(WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderTiledRepeat32(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
         int tileSize = Math.Clamp(_repeatTileSize > 0 ? _repeatTileSize : StageKitLedCount, 4, 128);
@@ -929,13 +1067,13 @@ public sealed class WledTalker : IDisposable
 
             virtualIndex = Math.Clamp(virtualIndex, 0, StageKitLedCount - 1);
 
-            var baseColor = _stageKitVirtualLeds[virtualIndex];
+            var baseColor = virtualLeds[virtualIndex];
             baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
             _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
     }
 
-    private void RenderProportionalStretch(WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderProportionalStretch(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
         int pad = Math.Clamp(_stretchPadding, 0, Math.Max(0, (_ledCount - 4) / 2));
@@ -963,8 +1101,8 @@ public sealed class WledTalker : IDisposable
                 int v1 = Math.Clamp(v0 + 1, 0, StageKitLedCount - 1);
                 float t = ratio - v0;
 
-                var c0 = ApplyDynamicLayers(_stageKitVirtualLeds[v0], whiteAccent);
-                var c1 = ApplyDynamicLayers(_stageKitVirtualLeds[v1], whiteAccent);
+                var c0 = ApplyDynamicLayers(virtualLeds[v0], whiteAccent);
+                var c1 = ApplyDynamicLayers(virtualLeds[v1], whiteAccent);
                 var blended = WledRgbwColor.Lerp(c0, c1, t);
                 _outputBuffer[i] = blended.ApplyBrightness(_masterBrightness, _whiteBrightness);
             }
@@ -973,14 +1111,14 @@ public sealed class WledTalker : IDisposable
                 int virtualIndex = (int)((long)activeIdx * StageKitLedCount / activeLength);
                 virtualIndex = Math.Clamp(virtualIndex, 0, StageKitLedCount - 1);
 
-                var baseColor = _stageKitVirtualLeds[virtualIndex];
+                var baseColor = virtualLeds[virtualIndex];
                 baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
                 _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
             }
         }
     }
 
-    private void RenderFourQuadrantPods(WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderFourQuadrantPods(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
         int gap = Math.Max(0, _podGapLeds);
@@ -1031,7 +1169,7 @@ public sealed class WledTalker : IDisposable
             int subIndex = thisPodSize > 0 ? (offsetInPod * 8 / thisPodSize) : 0;
             int virtualIndex = Math.Clamp(virtualBase + subIndex, 0, StageKitLedCount - 1);
 
-            var baseColor = _stageKitVirtualLeds[virtualIndex];
+            var baseColor = virtualLeds[virtualIndex];
             baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
             _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
@@ -1046,7 +1184,7 @@ public sealed class WledTalker : IDisposable
         _ => podIndex * 8
     };
 
-    private void RenderCenterSplit(WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderCenterSplit(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
         int center = Math.Clamp((_ledCount / 2) + _centerSplitOffset, 1, _ledCount - 1);
@@ -1072,13 +1210,13 @@ public sealed class WledTalker : IDisposable
 
             int virtualIndex = Math.Clamp((int)(factor * StageKitLedCount), 0, StageKitLedCount - 1);
 
-            var baseColor = _stageKitVirtualLeds[virtualIndex];
+            var baseColor = virtualLeds[virtualIndex];
             baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
             _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
     }
 
-    private void RenderDirect1to1(WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderDirect1to1(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
 
@@ -1088,11 +1226,11 @@ public sealed class WledTalker : IDisposable
             int r = 0, g = 0, b = 0, count = 0;
             for (int k = 0; k < StageKitLedCount; k++)
             {
-                if (_stageKitVirtualLeds[k].R > 0 || _stageKitVirtualLeds[k].G > 0 || _stageKitVirtualLeds[k].B > 0)
+                if (virtualLeds[k].R > 0 || virtualLeds[k].G > 0 || virtualLeds[k].B > 0)
                 {
-                    r += _stageKitVirtualLeds[k].R;
-                    g += _stageKitVirtualLeds[k].G;
-                    b += _stageKitVirtualLeds[k].B;
+                    r += virtualLeds[k].R;
+                    g += virtualLeds[k].G;
+                    b += virtualLeds[k].B;
                     count++;
                 }
             }
@@ -1113,13 +1251,13 @@ public sealed class WledTalker : IDisposable
             WledRgbwColor baseColor;
             if (i < StageKitLedCount)
             {
-                baseColor = _stageKitVirtualLeds[i];
+                baseColor = virtualLeds[i];
             }
             else
             {
                 baseColor = _directExcessMode switch
                 {
-                    WledDirectExcessMode.RepeatPattern => _stageKitVirtualLeds[i % StageKitLedCount],
+                    WledDirectExcessMode.RepeatPattern => virtualLeds[i % StageKitLedCount],
                     WledDirectExcessMode.AmbientWash => ambientWash,
                     _ => WledRgbwColor.Black
                 };
@@ -1167,7 +1305,7 @@ public sealed class WledTalker : IDisposable
         return baseColor;
     }
 
-    private void RenderFullWash(WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderFullWash(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
 
@@ -1184,10 +1322,10 @@ public sealed class WledTalker : IDisposable
         {
             // Determine which pod has the highest count of active LEDs
             int bCount = 0, rCount = 0, gCount = 0, yCount = 0;
-            for (int k = 0; k < 8; k++) if (_stageKitVirtualLeds[k].B > 0) bCount++;
-            for (int k = 8; k < 16; k++) if (_stageKitVirtualLeds[k].R > 0) rCount++;
-            for (int k = 16; k < 24; k++) if (_stageKitVirtualLeds[k].G > 0) gCount++;
-            for (int k = 24; k < 32; k++) if (_stageKitVirtualLeds[k].R > 0 && _stageKitVirtualLeds[k].G > 0) yCount++;
+            for (int k = 0; k < 8; k++) if (virtualLeds[k].B > 0) bCount++;
+            for (int k = 8; k < 16; k++) if (virtualLeds[k].R > 0) rCount++;
+            for (int k = 16; k < 24; k++) if (virtualLeds[k].G > 0) gCount++;
+            for (int k = 24; k < 32; k++) if (virtualLeds[k].R > 0 && virtualLeds[k].G > 0) yCount++;
 
             int maxCount = Math.Max(Math.Max(bCount, rCount), Math.Max(gCount, yCount));
             if (maxCount > 0)
@@ -1206,7 +1344,7 @@ public sealed class WledTalker : IDisposable
 
             for (int i = 0; i < StageKitLedCount; i++)
             {
-                var c = _stageKitVirtualLeds[i];
+                var c = virtualLeds[i];
                 if (c.R > 0 || c.G > 0 || c.B > 0)
                 {
                     sumR += c.R;
@@ -1248,7 +1386,7 @@ public sealed class WledTalker : IDisposable
     /// Interpolates smooth color gradients from StageKit Pod 1 to 8 across the strip LEDs.
     /// Rotations flow like waves across the entire physical strip without jarring discrete steps.
     /// </summary>
-    private void RenderSmoothGradient(WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderSmoothGradient(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
 
@@ -1263,23 +1401,39 @@ public sealed class WledTalker : IDisposable
         Span<WledRgbwColor> podColors = stackalloc WledRgbwColor[8];
         int activePodCount = 0;
 
-        for (int k = 0; k < 8; k++)
+        if (HasActiveStageKitCues())
         {
-            bool isB = (_stageKitBlueParam & (1 << k)) != 0;
-            bool isR = (_stageKitRedParam & (1 << k)) != 0;
-            bool isG = (_stageKitGreenParam & (1 << k)) != 0;
-            bool isY = (_stageKitYellowParam & (1 << k)) != 0;
+            for (int k = 0; k < 8; k++)
+            {
+                bool isB = (_stageKitBlueParam & (1 << k)) != 0;
+                bool isR = (_stageKitRedParam & (1 << k)) != 0;
+                bool isG = (_stageKitGreenParam & (1 << k)) != 0;
+                bool isY = (_stageKitYellowParam & (1 << k)) != 0;
 
-            var (r, g, b, isActive) = StageKitColorBlender.BlendPod(isB, isR, isG, isY);
-            if (isActive)
-            {
-                podColors[k] = new WledRgbwColor(r, g, b, 0);
-                activePodCount++;
+                var (r, g, b, isActive) = StageKitColorBlender.BlendPod(isB, isR, isG, isY);
+                if (isActive)
+                {
+                    podColors[k] = new WledRgbwColor(r, g, b, 0);
+                    activePodCount++;
+                }
+                else
+                {
+                    podColors[k] = WledRgbwColor.Black;
+                }
             }
-            else
-            {
-                podColors[k] = WledRgbwColor.Black;
-            }
+        }
+        else if (_isCalibrationPreviewEnabled || _isAutoPreviewActive)
+        {
+            // Rainbow wave preview across 8 pod samples
+            podColors[0] = virtualLeds[0];  // Blue
+            podColors[1] = new WledRgbwColor(160, 0, 200, 0); // Indigo / Violet
+            podColors[2] = virtualLeds[8];  // Red
+            podColors[3] = new WledRgbwColor(255, 120, 0, 0); // Orange
+            podColors[4] = virtualLeds[24]; // Yellow
+            podColors[5] = virtualLeds[16]; // Green
+            podColors[6] = new WledRgbwColor(0, 200, 255, 0); // Cyan
+            podColors[7] = virtualLeds[6];  // White reference diode
+            activePodCount = 8;
         }
 
         if (activePodCount == 0 && whiteAccent == 0 && !_isStarPowerActive && !_isFogBreathingActive)
@@ -1441,14 +1595,21 @@ public sealed class WledTalker : IDisposable
     }
 
     /// <summary>
-    /// Immediately blacks out all LEDs on the strip.
+    /// Immediately blacks out all LEDs on the strip and cancels active calibration preview.
     /// </summary>
     public void Blackout()
     {
+        _autoPreviewTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        _isAutoPreviewActive = false;
+        _isCalibrationPreviewEnabled = false;
         ClearAllLeds();
         if (_isEnabled)
         {
             RenderAndFlushFrame();
+        }
+        else
+        {
+            RenderAndFlushFrame(forceVisualizerOnly: true);
         }
     }
 
@@ -1564,6 +1725,30 @@ public sealed class WledTalker : IDisposable
     }
 
     /// <summary>
+    /// Asynchronously synchronizes controller power state ("on": true) and global hardware brightness
+    /// ("bri": 0..255) via WLED HTTP JSON API (/json/state) to ensure physical PSU safety scaling.
+    /// </summary>
+    public static async Task<bool> SetControllerStateAsync(string host, bool on, byte brightness, int timeoutMs = 1500)
+    {
+        if (string.IsNullOrWhiteSpace(host)) return false;
+
+        try
+        {
+            using var cts = new CancellationTokenSource(timeoutMs);
+            string trimmed = host.Trim();
+            string url = $"http://{trimmed}/json/state";
+            string json = $"{{\"on\":{(on ? "true" : "false")},\"bri\":{brightness}}}";
+            using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync(url, content, cts.Token).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Asynchronously queries WLED controller hardware parameters via HTTP JSON API (/json/info).
     /// Discovers strip type (RGB vs RGBW), LED count, and device name without blocking UDP streaming.
     /// </summary>
@@ -1584,9 +1769,11 @@ public sealed class WledTalker : IDisposable
     {
         try
         {
-            using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(timeoutMs) };
+            using var cts = new CancellationTokenSource(timeoutMs);
             string url = $"http://{host}/json/info";
-            string json = await client.GetStringAsync(url).ConfigureAwait(false);
+            var response = await HttpClient.GetAsync(url, cts.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) return null;
+            string json = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -1616,6 +1803,9 @@ public sealed class WledTalker : IDisposable
 
         _decayTimer?.Dispose();
         _decayTimer = null;
+
+        _autoPreviewTimer?.Dispose();
+        _autoPreviewTimer = null;
 
         UnsubscribeFromEvents();
         _sender.Dispose();

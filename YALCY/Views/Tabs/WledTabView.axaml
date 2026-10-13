@@ -669,10 +669,23 @@
                             CornerRadius="12"
                             Padding="18">
                         <StackPanel Spacing="14">
-                            <TextBlock Text="💡 Diode Calibration &amp; Brightness Control"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource AppTextPrimary}" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="💡 Diode Calibration &amp; Brightness Control"
+                                               FontSize="14"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource AppTextPrimary}" />
+                                    <TextBlock Text="Real-time brightness scaling, white balance &amp; hardware safety limiter"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource AppTextSecondary}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsChecked="{Binding WledCalibrationPreviewEnabled, Mode=TwoWay}"
+                                              ToolTip.Tip="Toggle live reference test pattern to calibrate brightness &amp; white balance in real time"
+                                              OnContent="Preview Active"
+                                              OffContent="Preview Off"
+                                              VerticalAlignment="Center" />
+                            </Grid>
 
                             <!-- Master RGB Brightness -->
                             <StackPanel Spacing="6">
