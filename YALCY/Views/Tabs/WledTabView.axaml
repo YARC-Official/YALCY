@@ -153,10 +153,10 @@
                                 BorderThickness="1"
                                 CornerRadius="6"
                                 Padding="8,3">
-                            <TextBlock Text="&lt; 2 ms Direct UDP"
+                            <TextBlock Text="{Binding WledLatencyText}"
                                        FontSize="10"
                                        FontWeight="SemiBold"
-                                       Foreground="#4CAF50" />
+                                       Foreground="{Binding WledLatencyColor}" />
                         </Border>
                     </StackPanel>
                 </Grid>
@@ -1105,10 +1105,10 @@
                                         <TextBlock Text="Packet Latency"
                                                    FontSize="10"
                                                    Foreground="{DynamicResource AppTextSecondary}" />
-                                        <TextBlock Text="&lt; 2 ms (UDP)"
+                                        <TextBlock Text="{Binding WledLatencyDetailedText}"
                                                    FontSize="14"
                                                    FontWeight="Bold"
-                                                   Foreground="#4CAF50" />
+                                                   Foreground="{Binding WledLatencyColor}" />
                                     </StackPanel>
                                 </Border>
                             </Grid>

@@ -1,6 +1,7 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using YALCY.ViewModels;
 
 namespace YALCY.Views.Tabs;
@@ -8,11 +9,64 @@ namespace YALCY.Views.Tabs;
 public partial class WledTabView : UserControl
 {
     private bool? _lastIsCompact = null;
+    private DispatcherTimer? _telemetryTimer;
+    private long _lastPingTicks;
 
     public WledTabView()
     {
         InitializeComponent();
         this.DataContextChanged += OnDataContextChanged;
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        StartTelemetryTimer();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        StopTelemetryTimer();
+    }
+
+    private void StartTelemetryTimer()
+    {
+        if (_telemetryTimer == null)
+        {
+            _telemetryTimer = new DispatcherTimer(DispatcherPriority.Normal)
+            {
+                Interval = TimeSpan.FromMilliseconds(200)
+            };
+            _telemetryTimer.Tick += OnTelemetryTimerTick;
+        }
+
+        _telemetryTimer.Start();
+        OnTelemetryTimerTick(null, EventArgs.Empty);
+    }
+
+    private void StopTelemetryTimer()
+    {
+        _telemetryTimer?.Stop();
+    }
+
+    private async void OnTelemetryTimerTick(object? sender, EventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.RefreshWledTelemetry();
+
+            long now = Environment.TickCount64;
+            if (vm.IsWledConnected && (now - _lastPingTicks >= 1500))
+            {
+                _lastPingTicks = now;
+                await vm.MeasureWledLatencyAsync();
+            }
+            else if (!vm.IsWledConnected)
+            {
+                vm.ResetWledLatency();
+            }
+        }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

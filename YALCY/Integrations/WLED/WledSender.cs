@@ -47,10 +47,54 @@ public sealed class WledSender : IDisposable
     private long _lastPacketSentTicks;
 
     public long TotalPacketsSent => Interlocked.Read(ref _packetsSent);
-    public double PacketsPerSecond => Volatile.Read(ref _currentFps);
+    public double PacketsPerSecond
+    {
+        get
+        {
+            if (_udpClient == null || _targetEndPoint == null)
+            {
+                return 0.0;
+            }
+
+            long now = Environment.TickCount64;
+            long lastPacket = Volatile.Read(ref _lastPacketSentTicks);
+            if (lastPacket == 0 || (now - lastPacket) > 1500)
+            {
+                return 0.0;
+            }
+
+            long lastCalc = Volatile.Read(ref _lastFpsCalculationTimestamp);
+            long elapsed = now - lastCalc;
+            if (elapsed >= 500)
+            {
+                lock (_socketLock)
+                {
+                    if (now - _lastFpsCalculationTimestamp >= 500)
+                    {
+                        double seconds = (now - _lastFpsCalculationTimestamp) / 1000.0;
+                        _currentFps = _packetsSinceLastFpsCalc / seconds;
+                        _packetsSinceLastFpsCalc = 0;
+                        _lastFpsCalculationTimestamp = now;
+                    }
+                }
+            }
+
+            return Volatile.Read(ref _currentFps);
+        }
+    }
     public string LastError => Volatile.Read(ref _lastError);
     public bool IsActive => _udpClient != null && _targetEndPoint != null;
     public long LastPacketSentTicks => Volatile.Read(ref _lastPacketSentTicks);
+    public IPEndPoint? TargetEndPoint
+    {
+        get
+        {
+            lock (_socketLock)
+            {
+                return _targetEndPoint;
+            }
+        }
+    }
 
     /// <summary>
     /// Synchronously configures endpoint if valid IP address (0 ms, non-blocking).
@@ -306,12 +350,12 @@ public sealed class WledSender : IDisposable
         long last = Volatile.Read(ref _lastFpsCalculationTimestamp);
         long elapsed = now - last;
 
-        if (elapsed >= 1000)
+        if (elapsed >= 500)
         {
             lock (_socketLock)
             {
                 long currentLast = _lastFpsCalculationTimestamp;
-                if (now - currentLast >= 1000)
+                if (now - currentLast >= 500)
                 {
                     double seconds = (now - currentLast) / 1000.0;
                     _currentFps = _packetsSinceLastFpsCalc / seconds;

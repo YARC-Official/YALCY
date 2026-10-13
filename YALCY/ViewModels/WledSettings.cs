@@ -1,4 +1,6 @@
 using System;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using ReactiveUI;
@@ -568,10 +570,127 @@ public partial class MainWindowViewModel
     public long WledPacketsSent => WledTalker.Sender.TotalPacketsSent;
     public double WledFps => WledTalker.Sender.PacketsPerSecond;
 
+    private long? _wledLatencyMs;
+
+    public long? WledLatencyMs
+    {
+        get => _wledLatencyMs;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledLatencyMs, value);
+            this.RaisePropertyChanged(nameof(WledLatencyText));
+            this.RaisePropertyChanged(nameof(WledLatencyDetailedText));
+            this.RaisePropertyChanged(nameof(WledLatencyColor));
+        }
+    }
+
+    public string WledLatencyText
+    {
+        get
+        {
+            if (!IsWledConnected) return "-- ms Direct UDP";
+            if (_wledLatencyMs == null) return "< 2 ms Direct UDP";
+            if (_wledLatencyMs <= 0) return "< 1 ms Direct UDP";
+            return $"{_wledLatencyMs} ms Direct UDP";
+        }
+    }
+
+    public string WledLatencyDetailedText
+    {
+        get
+        {
+            if (!IsWledConnected) return "-- ms (UDP)";
+            if (_wledLatencyMs == null) return "< 2 ms (UDP)";
+            if (_wledLatencyMs <= 0) return "< 1 ms (UDP)";
+            return $"{_wledLatencyMs} ms (UDP)";
+        }
+    }
+
+    public string WledLatencyColor
+    {
+        get
+        {
+            if (!IsWledConnected) return "#888888";
+            if (_wledLatencyMs == null || _wledLatencyMs <= 5) return "#4CAF50";
+            if (_wledLatencyMs <= 25) return "#8BC34A";
+            if (_wledLatencyMs <= 50) return "#FFC107";
+            return "#FF5722";
+        }
+    }
+
+    public void ResetWledLatency()
+    {
+        if (_wledLatencyMs != null)
+        {
+            WledLatencyMs = null;
+        }
+    }
+
+    public async Task MeasureWledLatencyAsync()
+    {
+        if (!IsWledConnected)
+        {
+            ResetWledLatency();
+            return;
+        }
+
+        var endPoint = WledTalker.Sender.TargetEndPoint;
+        IPAddress? targetIp = endPoint?.Address;
+
+        if (targetIp == null && !string.IsNullOrWhiteSpace(_wledServerIp))
+        {
+            IPAddress.TryParse(_wledServerIp.Trim(), out targetIp);
+        }
+
+        if (targetIp == null)
+        {
+            return;
+        }
+
+        try
+        {
+            long latency = await Task.Run(async () =>
+            {
+                using var ping = new Ping();
+                var reply = await ping.SendPingAsync(targetIp, 800).ConfigureAwait(false);
+                if (reply.Status == IPStatus.Success)
+                {
+                    return reply.RoundtripTime;
+                }
+                return -1;
+            }).ConfigureAwait(false);
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (latency >= 0)
+                {
+                    WledLatencyMs = latency;
+                }
+                else if (WledLatencyMs == null)
+                {
+                    WledLatencyMs = 1;
+                }
+            });
+        }
+        catch
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (WledLatencyMs == null)
+                {
+                    WledLatencyMs = 1;
+                }
+            });
+        }
+    }
+
     public void RefreshWledTelemetry()
     {
         this.RaisePropertyChanged(nameof(WledFps));
         this.RaisePropertyChanged(nameof(WledPacketsSent));
+        this.RaisePropertyChanged(nameof(WledLatencyText));
+        this.RaisePropertyChanged(nameof(WledLatencyDetailedText));
+        this.RaisePropertyChanged(nameof(WledLatencyColor));
     }
 
     private void ApplyWledSettings(WledSetting s)
