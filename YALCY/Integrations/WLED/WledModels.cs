@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace YALCY.Integrations.WLED;
 
@@ -35,9 +36,75 @@ public enum WledProtocol
 }
 
 /// <summary>
-/// Hardware parameters auto-detected from WLED HTTP JSON API (/json/info).
+/// Segment or physical strip division auto-detected from WLED controller via HTTP JSON API (/json or /json/state).
 /// </summary>
-public sealed record WledDeviceInfo(string Name, int LedCount, bool IsRgbw, string Version);
+public sealed record WledSegment(
+    int Id,
+    string Name,
+    int Start,
+    int Stop,
+    bool IsOn = true,
+    byte Brightness = 255,
+    bool IsReversed = false
+)
+{
+    public int Length => Math.Max(0, Stop - Start);
+    public string DisplayRange => $"LEDs {Start}..{Math.Max(Start, Stop - 1)} ({Length} LEDs)";
+    public string DisplayText => $"{Name} • {DisplayRange}";
+    public override string ToString() => DisplayText;
+}
+
+/// <summary>
+/// Routing strategy across multiple physical strips or segments on WLED controllers.
+/// </summary>
+public enum WledMultiStripMode
+{
+    /// <summary>
+    /// Contiguous: All strips and segments form one continuous linear address space (default).
+    /// </summary>
+    Contiguous = 0,
+
+    /// <summary>
+    /// Mirror / Clone per Strip: Each segment renders the full StageKit stage lighting layout in parallel.
+    /// Ideal for stereo left/right pillars, truss pairs, or dual speaker lighting.
+    /// </summary>
+    MirrorPerSegment = 1,
+
+    /// <summary>
+    /// Phase-Aligned Tile: Each segment begins at StageKit LED 0, preventing inter-strip pattern offset.
+    /// </summary>
+    AlignedTilePerSegment = 2,
+
+    /// <summary>
+    /// Role Assignment: Strip 1 = StageKit Lights; Strip 2 = Dedicated Strobe / Rhythm Blinder; Strip 3+ = Ambient/StarPower.
+    /// </summary>
+    RoleBased = 3
+}
+
+/// <summary>
+/// Hardware parameters auto-detected from WLED HTTP JSON API (/json or /json/info).
+/// </summary>
+public sealed record WledDeviceInfo(
+    string Name,
+    int LedCount,
+    bool IsRgbw,
+    string Version,
+    IReadOnlyList<WledSegment>? Segments = null,
+    int MaxPower = 0,
+    int CurrentPower = 0
+);
+
+/// <summary>
+/// Persistent configuration entry for secondary / additional WLED controllers across the network.
+/// </summary>
+public sealed class WledControllerEntrySetting
+{
+    public string Name { get; set; } = "ESP32 Controller";
+    public string IpAddress { get; set; } = "";
+    public int Port { get; set; } = 4048;
+    public int LedCount { get; set; } = 30;
+    public bool IsEnabled { get; set; } = true;
+}
 
 
 /// <summary>

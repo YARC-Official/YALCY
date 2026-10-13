@@ -43,6 +43,9 @@ public sealed class WledSetting
     public int DirectExcessMode { get; set; } = (int)WledDirectExcessMode.Blackout;
     public int WashBlendMode { get; set; } = (int)WledWashBlendMode.HarmonicAverage;
     public int GradientCycles { get; set; } = 1;
+    public int MultiStripMode { get; set; } = (int)WledMultiStripMode.Contiguous;
+    public bool VisualizerStacked { get; set; } = false;
+    public System.Collections.Generic.List<WledControllerEntrySetting> AdditionalControllers { get; set; } = new();
 }
 
 /// <summary>
@@ -99,7 +102,10 @@ public static class WledSettingsManager
             CenterSplitOffset = mainViewModel.WledCenterSplitOffset,
             DirectExcessMode = mainViewModel.WledDirectExcessMode,
             WashBlendMode = mainViewModel.WledWashBlendMode,
-            GradientCycles = mainViewModel.WledGradientCycles
+            GradientCycles = mainViewModel.WledGradientCycles,
+            MultiStripMode = mainViewModel.WledMultiStripMode,
+            VisualizerStacked = mainViewModel.WledVisualizerStacked,
+            AdditionalControllers = mainViewModel.GetAdditionalControllersSettings()
         };
 
         File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(Current, Formatting.Indented));
@@ -173,6 +179,8 @@ public static class WledSettingsManager
         w.PodGapLeds = Math.Clamp(w.PodGapLeds, 0, 50);
         w.CenterSplitOffset = Math.Clamp(w.CenterSplitOffset, -100, 100);
         w.GradientCycles = Math.Clamp(w.GradientCycles, 1, 4);
+        w.MultiStripMode = Math.Clamp(w.MultiStripMode, 0, 3);
+        w.AdditionalControllers ??= new();
     }
 
     private static void SaveCurrent()

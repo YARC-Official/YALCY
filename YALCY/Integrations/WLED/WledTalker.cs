@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -93,6 +94,21 @@ public sealed class WledTalker : IDisposable
     private WledWashBlendMode _washBlendMode = WledWashBlendMode.HarmonicAverage;
     private int _gradientCycles = 1;
     private WledRgbwColor[] _transformBuffer = new WledRgbwColor[32];
+
+    // Multi-Strip Routing & Segment Management
+    private WledMultiStripMode _multiStripMode = WledMultiStripMode.Contiguous;
+    private readonly List<WledSegment> _activeSegments = new();
+
+    public IReadOnlyList<WledSegment> ActiveSegments
+    {
+        get
+        {
+            lock (Lock)
+            {
+                return _activeSegments.ToArray();
+            }
+        }
+    }
 
     public event Action<WledRgbwColor[], int, bool, int>? OnFrameRendered;
 
@@ -298,6 +314,8 @@ public sealed class WledTalker : IDisposable
             (WledWashBlendMode)setting.WashBlendMode,
             setting.GradientCycles
         );
+
+        UpdateMultiStripMode((WledMultiStripMode)setting.MultiStripMode);
     }
 
     #region Enable / Disable & Lifecycle
@@ -466,6 +484,35 @@ public sealed class WledTalker : IDisposable
         {
             RenderAndFlushFrame(forceVisualizerOnly: true);
         }
+    }
+
+    /// <summary>
+    /// Configures multi-strip routing strategy across multiple physical strips / WLED segments.
+    /// </summary>
+    public void UpdateMultiStripMode(WledMultiStripMode mode, IEnumerable<WledSegment>? segments = null)
+    {
+        lock (Lock)
+        {
+            _multiStripMode = mode;
+            if (segments != null)
+            {
+                _activeSegments.Clear();
+                _activeSegments.AddRange(segments);
+            }
+        }
+
+        if (_isEnabled || _isCalibrationPreviewEnabled || _isAutoPreviewActive)
+        {
+            RenderAndFlushFrame(forceVisualizerOnly: true);
+        }
+    }
+
+    /// <summary>
+    /// Updates secondary / additional WLED controller endpoints for simultaneous network broadcasting.
+    /// </summary>
+    public void UpdateAdditionalControllers(IEnumerable<(string ip, int port)> controllers)
+    {
+        _sender.UpdateAdditionalEndpoints(controllers);
     }
 
     /// <summary>
@@ -909,36 +956,14 @@ public sealed class WledTalker : IDisposable
                 whiteAccent = Math.Max(_snareAccentLevel, _beatAccentLevel);
             }
 
-            // 3. Map virtual StageKit LEDs to output buffer based on layout mode
-            switch (_layoutMode)
+            // 3. Map virtual StageKit LEDs to output buffer based on multi-strip routing & layout mode
+            if (_activeSegments.Count > 1 && _multiStripMode != WledMultiStripMode.Contiguous)
             {
-                case WledLayoutMode.TiledRepeat32:
-                    RenderTiledRepeat32(virtualLeds, strobeColor, whiteAccent);
-                    break;
-
-                case WledLayoutMode.ProportionalStretch:
-                    RenderProportionalStretch(virtualLeds, strobeColor, whiteAccent);
-                    break;
-
-                case WledLayoutMode.FourQuadrantPods:
-                    RenderFourQuadrantPods(virtualLeds, strobeColor, whiteAccent);
-                    break;
-
-                case WledLayoutMode.CenterSplit:
-                    RenderCenterSplit(virtualLeds, strobeColor, whiteAccent);
-                    break;
-
-                case WledLayoutMode.Direct1to1:
-                    RenderDirect1to1(virtualLeds, strobeColor, whiteAccent);
-                    break;
-
-                case WledLayoutMode.FullWash:
-                    RenderFullWash(virtualLeds, strobeColor, whiteAccent);
-                    break;
-
-                case WledLayoutMode.SmoothGradient:
-                    RenderSmoothGradient(virtualLeds, strobeColor, whiteAccent);
-                    break;
+                RenderMultiStripSegments(virtualLeds, strobeColor, whiteAccent);
+            }
+            else
+            {
+                RenderLayoutToSlice(_outputBuffer.AsSpan(0, _ledCount), _layoutMode, virtualLeds, strobeColor, whiteAccent);
             }
 
             // 4. Apply physical strip geometry transforms (reverse direction & start offset)
@@ -974,18 +999,139 @@ public sealed class WledTalker : IDisposable
         }
     }
 
-    private void RenderTiledRepeat32(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderMultiStripSegments(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
+        for (int segIdx = 0; segIdx < _activeSegments.Count; segIdx++)
+        {
+            var seg = _activeSegments[segIdx];
+            int start = Math.Clamp(seg.Start, 0, _ledCount);
+            int length = Math.Clamp(seg.Length, 0, _ledCount - start);
+            if (length <= 0) continue;
+
+            var slice = _outputBuffer.AsSpan(start, length);
+
+            switch (_multiStripMode)
+            {
+                case WledMultiStripMode.MirrorPerSegment:
+                    RenderLayoutToSlice(slice, _layoutMode, virtualLeds, strobeColor, whiteAccent);
+                    if (seg.IsReversed)
+                    {
+                        slice.Reverse();
+                    }
+                    break;
+
+                case WledMultiStripMode.AlignedTilePerSegment:
+                    RenderTiledRepeat32(slice, virtualLeds, strobeColor, whiteAccent);
+                    if (seg.IsReversed)
+                    {
+                        slice.Reverse();
+                    }
+                    break;
+
+                case WledMultiStripMode.RoleBased:
+                    if (segIdx == 0)
+                    {
+                        // Primary Strip: Main StageKit lights
+                        RenderLayoutToSlice(slice, _layoutMode, virtualLeds, strobeColor, whiteAccent);
+                    }
+                    else if (segIdx == 1)
+                    {
+                        // Secondary Strip: Dedicated Strobe & Rhythm Blinder
+                        if (strobeColor != WledRgbwColor.Black)
+                        {
+                            var c = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                            slice.Fill(c);
+                        }
+                        else if (whiteAccent > 0)
+                        {
+                            var accentColor = new WledRgbwColor(0, 0, 0, whiteAccent).ApplyBrightness(_masterBrightness, _whiteBrightness);
+                            slice.Fill(accentColor);
+                        }
+                        else
+                        {
+                            var dimAmbient = new WledRgbwColor(10, 10, 20, 0).ApplyBrightness(_masterBrightness, _whiteBrightness);
+                            slice.Fill(dimAmbient);
+                        }
+                    }
+                    else
+                    {
+                        // Tertiary Strip+: Star Power / Fog Haze / Ambient Wash
+                        if (_isStarPowerActive)
+                        {
+                            var starColor = new WledRgbwColor(255, 215, 0, 200).ApplyBrightness(_masterBrightness, _whiteBrightness);
+                            slice.Fill(starColor);
+                        }
+                        else if (_isFogBreathingActive)
+                        {
+                            var fogColor = new WledRgbwColor(0, 120, 255, _fogHazeBoost).ApplyBrightness(_masterBrightness, _whiteBrightness);
+                            slice.Fill(fogColor);
+                        }
+                        else
+                        {
+                            RenderFullWash(slice, virtualLeds, strobeColor, whiteAccent);
+                        }
+                    }
+
+                    if (seg.IsReversed)
+                    {
+                        slice.Reverse();
+                    }
+                    break;
+
+                case WledMultiStripMode.Contiguous:
+                default:
+                    RenderLayoutToSlice(slice, _layoutMode, virtualLeds, strobeColor, whiteAccent);
+                    break;
+            }
+        }
+    }
+
+    private void RenderLayoutToSlice(
+        Span<WledRgbwColor> destination,
+        WledLayoutMode layoutMode,
+        WledRgbwColor[] virtualLeds,
+        WledRgbwColor strobeColor,
+        byte whiteAccent)
+    {
+        switch (layoutMode)
+        {
+            case WledLayoutMode.TiledRepeat32:
+                RenderTiledRepeat32(destination, virtualLeds, strobeColor, whiteAccent);
+                break;
+            case WledLayoutMode.ProportionalStretch:
+                RenderProportionalStretch(destination, virtualLeds, strobeColor, whiteAccent);
+                break;
+            case WledLayoutMode.FourQuadrantPods:
+                RenderFourQuadrantPods(destination, virtualLeds, strobeColor, whiteAccent);
+                break;
+            case WledLayoutMode.CenterSplit:
+                RenderCenterSplit(destination, virtualLeds, strobeColor, whiteAccent);
+                break;
+            case WledLayoutMode.Direct1to1:
+                RenderDirect1to1(destination, virtualLeds, strobeColor, whiteAccent);
+                break;
+            case WledLayoutMode.FullWash:
+                RenderFullWash(destination, virtualLeds, strobeColor, whiteAccent);
+                break;
+            case WledLayoutMode.SmoothGradient:
+                RenderSmoothGradient(destination, virtualLeds, strobeColor, whiteAccent);
+                break;
+        }
+    }
+
+    private void RenderTiledRepeat32(Span<WledRgbwColor> destination, WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    {
+        int count = destination.Length;
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
         int tileSize = Math.Clamp(_repeatTileSize > 0 ? _repeatTileSize : StageKitLedCount, 4, 128);
         int gap = Math.Max(0, _layoutGapLeds);
         int period = tileSize + gap;
 
-        for (int i = 0; i < _ledCount; i++)
+        for (int i = 0; i < count; i++)
         {
             if (hasStrobe)
             {
-                _outputBuffer[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                destination[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
                 continue;
             }
 
@@ -995,7 +1141,7 @@ public sealed class WledTalker : IDisposable
             // In gap between repeating blocks
             if (posInPeriod >= tileSize)
             {
-                _outputBuffer[i] = WledRgbwColor.Black;
+                destination[i] = WledRgbwColor.Black;
                 continue;
             }
 
@@ -1017,8 +1163,6 @@ public sealed class WledTalker : IDisposable
                     break;
 
                 case WledRepeatStyle.InterleavedPodByPod:
-                    // B1, R1, G1, Y1, B2, R2, G2, Y2... up to B8, R8, G8, Y8
-                    // Clusters of 4 LEDs forming each of the 8 StageKit 4-color pods
                     {
                         int podIndex = mappedOffset / 4;   // 0..7 (Pod 1 to 8)
                         int colorInPod = mappedOffset % 4; // 0=Blue, 1=Red, 2=Green, 3=Yellow
@@ -1027,7 +1171,6 @@ public sealed class WledTalker : IDisposable
                     break;
 
                 case WledRepeatStyle.InterleavedPingPong:
-                    // Interleaved pods in ping-pong reversal (Pod 1→8 then Pod 8→1)
                     {
                         int podIndex = mappedOffset / 4;
                         if (tileIndex % 2 == 1) podIndex = 7 - podIndex;
@@ -1037,8 +1180,6 @@ public sealed class WledTalker : IDisposable
                     break;
 
                 case WledRepeatStyle.PairedInterleaved:
-                    // B1,B2, R1,R2, G1,G2, Y1,Y2...
-                    // 2 LEDs per color grouped in 8-LED fixture clusters
                     {
                         int cluster = mappedOffset / 8;     // 0..3
                         int posInCluster = mappedOffset % 8; // 0..7
@@ -1049,8 +1190,6 @@ public sealed class WledTalker : IDisposable
                     break;
 
                 case WledRepeatStyle.CrossCoolWarm:
-                    // B1, G1, R1, Y1, B2, G2, R2, Y2...
-                    // Alternates cold (Blue, Green) and warm (Red, Yellow) colors
                     {
                         int podIndex = mappedOffset / 4;
                         int step = mappedOffset % 4;
@@ -1069,27 +1208,28 @@ public sealed class WledTalker : IDisposable
 
             var baseColor = virtualLeds[virtualIndex];
             baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
-            _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+            destination[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
     }
 
-    private void RenderProportionalStretch(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderProportionalStretch(Span<WledRgbwColor> destination, WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
+        int count = destination.Length;
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
-        int pad = Math.Clamp(_stretchPadding, 0, Math.Max(0, (_ledCount - 4) / 2));
-        int activeLength = Math.Max(1, _ledCount - (pad * 2));
+        int pad = Math.Clamp(_stretchPadding, 0, Math.Max(0, (count - 4) / 2));
+        int activeLength = Math.Max(1, count - (pad * 2));
 
-        for (int i = 0; i < _ledCount; i++)
+        for (int i = 0; i < count; i++)
         {
             if (hasStrobe)
             {
-                _outputBuffer[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                destination[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
                 continue;
             }
 
-            if (i < pad || i >= _ledCount - pad)
+            if (i < pad || i >= count - pad)
             {
-                _outputBuffer[i] = WledRgbwColor.Black;
+                destination[i] = WledRgbwColor.Black;
                 continue;
             }
 
@@ -1104,7 +1244,7 @@ public sealed class WledTalker : IDisposable
                 var c0 = ApplyDynamicLayers(virtualLeds[v0], whiteAccent);
                 var c1 = ApplyDynamicLayers(virtualLeds[v1], whiteAccent);
                 var blended = WledRgbwColor.Lerp(c0, c1, t);
-                _outputBuffer[i] = blended.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                destination[i] = blended.ApplyBrightness(_masterBrightness, _whiteBrightness);
             }
             else
             {
@@ -1113,17 +1253,18 @@ public sealed class WledTalker : IDisposable
 
                 var baseColor = virtualLeds[virtualIndex];
                 baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
-                _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                destination[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
             }
         }
     }
 
-    private void RenderFourQuadrantPods(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderFourQuadrantPods(Span<WledRgbwColor> destination, WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
+        int count = destination.Length;
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
         int gap = Math.Max(0, _podGapLeds);
         int totalGaps = 3 * gap;
-        int usableLeds = Math.Max(4, _ledCount - totalGaps);
+        int usableLeds = Math.Max(4, count - totalGaps);
         int podSize = usableLeds / 4;
         int remainder = usableLeds % 4;
 
@@ -1138,11 +1279,11 @@ public sealed class WledTalker : IDisposable
             currentPos = podEnds[q] + gap;
         }
 
-        for (int i = 0; i < _ledCount; i++)
+        for (int i = 0; i < count; i++)
         {
             if (hasStrobe)
             {
-                _outputBuffer[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                destination[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
                 continue;
             }
 
@@ -1158,8 +1299,7 @@ public sealed class WledTalker : IDisposable
 
             if (podIndex == -1)
             {
-                // In gap between pods
-                _outputBuffer[i] = WledRgbwColor.Black;
+                destination[i] = WledRgbwColor.Black;
                 continue;
             }
 
@@ -1171,7 +1311,7 @@ public sealed class WledTalker : IDisposable
 
             var baseColor = virtualLeds[virtualIndex];
             baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
-            _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+            destination[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
     }
 
@@ -1184,18 +1324,19 @@ public sealed class WledTalker : IDisposable
         _ => podIndex * 8
     };
 
-    private void RenderCenterSplit(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderCenterSplit(Span<WledRgbwColor> destination, WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
+        int count = destination.Length;
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
-        int center = Math.Clamp((_ledCount / 2) + _centerSplitOffset, 1, _ledCount - 1);
+        int center = Math.Clamp((count / 2) + _centerSplitOffset, 1, Math.Max(1, count - 1));
         int leftSpan = center;
-        int rightSpan = _ledCount - center;
+        int rightSpan = count - center;
 
-        for (int i = 0; i < _ledCount; i++)
+        for (int i = 0; i < count; i++)
         {
             if (hasStrobe)
             {
-                _outputBuffer[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                destination[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
                 continue;
             }
 
@@ -1212,18 +1353,19 @@ public sealed class WledTalker : IDisposable
 
             var baseColor = virtualLeds[virtualIndex];
             baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
-            _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+            destination[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
     }
 
-    private void RenderDirect1to1(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderDirect1to1(Span<WledRgbwColor> destination, WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
+        int count = destination.Length;
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
 
         WledRgbwColor ambientWash = WledRgbwColor.Black;
         if (_directExcessMode == WledDirectExcessMode.AmbientWash && !hasStrobe)
         {
-            int r = 0, g = 0, b = 0, count = 0;
+            int r = 0, g = 0, b = 0, actCount = 0;
             for (int k = 0; k < StageKitLedCount; k++)
             {
                 if (virtualLeds[k].R > 0 || virtualLeds[k].G > 0 || virtualLeds[k].B > 0)
@@ -1231,20 +1373,20 @@ public sealed class WledTalker : IDisposable
                     r += virtualLeds[k].R;
                     g += virtualLeds[k].G;
                     b += virtualLeds[k].B;
-                    count++;
+                    actCount++;
                 }
             }
-            if (count > 0)
+            if (actCount > 0)
             {
-                ambientWash = new WledRgbwColor((byte)(r / (count * 4)), (byte)(g / (count * 4)), (byte)(b / (count * 4)), (byte)(whiteAccent / 4));
+                ambientWash = new WledRgbwColor((byte)(r / (actCount * 4)), (byte)(g / (actCount * 4)), (byte)(b / (actCount * 4)), (byte)(whiteAccent / 4));
             }
         }
 
-        for (int i = 0; i < _ledCount; i++)
+        for (int i = 0; i < count; i++)
         {
             if (hasStrobe)
             {
-                _outputBuffer[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+                destination[i] = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
                 continue;
             }
 
@@ -1264,7 +1406,7 @@ public sealed class WledTalker : IDisposable
             }
 
             baseColor = ApplyDynamicLayers(baseColor, whiteAccent);
-            _outputBuffer[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
+            destination[i] = baseColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
     }
 
@@ -1305,14 +1447,15 @@ public sealed class WledTalker : IDisposable
         return baseColor;
     }
 
-    private void RenderFullWash(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderFullWash(Span<WledRgbwColor> destination, WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
+        int count = destination.Length;
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
 
         if (hasStrobe)
         {
             var strobed = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
-            for (int i = 0; i < _ledCount; i++) _outputBuffer[i] = strobed;
+            for (int i = 0; i < count; i++) destination[i] = strobed;
             return;
         }
 
@@ -1376,9 +1519,9 @@ public sealed class WledTalker : IDisposable
         }
 
         var finalWash = washColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
-        for (int i = 0; i < _ledCount; i++)
+        for (int i = 0; i < count; i++)
         {
-            _outputBuffer[i] = finalWash;
+            destination[i] = finalWash;
         }
     }
 
@@ -1386,14 +1529,15 @@ public sealed class WledTalker : IDisposable
     /// Interpolates smooth color gradients from StageKit Pod 1 to 8 across the strip LEDs.
     /// Rotations flow like waves across the entire physical strip without jarring discrete steps.
     /// </summary>
-    private void RenderSmoothGradient(WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
+    private void RenderSmoothGradient(Span<WledRgbwColor> destination, WledRgbwColor[] virtualLeds, WledRgbwColor strobeColor, byte whiteAccent)
     {
+        int n = destination.Length;
         bool hasStrobe = strobeColor != WledRgbwColor.Black;
 
         if (hasStrobe)
         {
             var strobed = strobeColor.ApplyBrightness(_masterBrightness, _whiteBrightness);
-            for (int i = 0; i < _ledCount; i++) _outputBuffer[i] = strobed;
+            for (int i = 0; i < n; i++) destination[i] = strobed;
             return;
         }
 
@@ -1438,18 +1582,17 @@ public sealed class WledTalker : IDisposable
 
         if (activePodCount == 0 && whiteAccent == 0 && !_isStarPowerActive && !_isFogBreathingActive)
         {
-            for (int i = 0; i < _ledCount; i++)
+            for (int i = 0; i < n; i++)
             {
-                _outputBuffer[i] = WledRgbwColor.Black;
+                destination[i] = WledRgbwColor.Black;
             }
             return;
         }
 
-        int n = _ledCount;
         if (n == 1)
         {
             var single = ApplyDynamicLayers(podColors[0], whiteAccent);
-            _outputBuffer[0] = single.ApplyBrightness(_masterBrightness, _whiteBrightness);
+            destination[0] = single.ApplyBrightness(_masterBrightness, _whiteBrightness);
             return;
         }
 
@@ -1474,7 +1617,7 @@ public sealed class WledTalker : IDisposable
 
             var interpolated = new WledRgbwColor(r, g, b, 0);
             interpolated = ApplyDynamicLayers(interpolated, whiteAccent);
-            _outputBuffer[i] = interpolated.ApplyBrightness(_masterBrightness, _whiteBrightness);
+            destination[i] = interpolated.ApplyBrightness(_masterBrightness, _whiteBrightness);
         }
     }
 
@@ -1770,25 +1913,70 @@ public sealed class WledTalker : IDisposable
         try
         {
             using var cts = new CancellationTokenSource(timeoutMs);
-            string url = $"http://{host}/json/info";
+            string url = $"http://{host}/json";
             var response = await HttpClient.GetAsync(url, cts.Token).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode) return null;
+            bool queriedCombined = response.IsSuccessStatusCode;
+            if (!queriedCombined)
+            {
+                url = $"http://{host}/json/info";
+                response = await HttpClient.GetAsync(url, cts.Token).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode) return null;
+            }
+
             string json = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            string name = root.TryGetProperty("name", out var n) ? n.GetString() ?? "WLED" : "WLED";
-            string ver = root.TryGetProperty("ver", out var v) ? v.GetString() ?? "" : "";
+            JsonElement infoElement = (queriedCombined && root.TryGetProperty("info", out var ip)) ? ip : root;
+            JsonElement stateElement = (queriedCombined && root.TryGetProperty("state", out var sp)) ? sp : default;
+
+            string name = infoElement.TryGetProperty("name", out var n) ? n.GetString() ?? "WLED" : "WLED";
+            string ver = infoElement.TryGetProperty("ver", out var v) ? v.GetString() ?? "" : "";
             int count = 0;
             bool isRgbw = false;
+            int maxPwr = 0;
+            int curPwr = 0;
 
-            if (root.TryGetProperty("leds", out var leds))
+            if (infoElement.TryGetProperty("leds", out var leds))
             {
                 if (leds.TryGetProperty("count", out var c)) count = c.GetInt32();
                 if (leds.TryGetProperty("rgbw", out var rw)) isRgbw = rw.GetBoolean();
+                if (leds.TryGetProperty("maxpwr", out var mp)) maxPwr = mp.GetInt32();
+                if (leds.TryGetProperty("pwr", out var cp)) curPwr = cp.GetInt32();
             }
 
-            return new WledDeviceInfo(name, count, isRgbw, ver);
+            var segments = new List<WledSegment>();
+            if (stateElement.ValueKind == JsonValueKind.Object && stateElement.TryGetProperty("seg", out var segArray) && segArray.ValueKind == JsonValueKind.Array)
+            {
+                int index = 0;
+                foreach (var seg in segArray.EnumerateArray())
+                {
+                    int id = seg.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : index;
+                    int start = seg.TryGetProperty("start", out var sProp) ? sProp.GetInt32() : 0;
+                    int stop = seg.TryGetProperty("stop", out var stopProp) ? stopProp.GetInt32() : count;
+                    string segName = seg.TryGetProperty("n", out var nameProp) ? nameProp.GetString() ?? "" : "";
+                    if (string.IsNullOrWhiteSpace(segName))
+                    {
+                        segName = $"Strip {id + 1}";
+                    }
+                    bool on = !seg.TryGetProperty("on", out var onProp) || onProp.GetBoolean();
+                    byte bri = seg.TryGetProperty("bri", out var briProp) ? (byte)briProp.GetInt32() : (byte)255;
+                    bool rev = seg.TryGetProperty("rev", out var revProp) && revProp.GetBoolean();
+
+                    if (stop > start)
+                    {
+                        segments.Add(new WledSegment(id, segName, start, stop, on, bri, rev));
+                    }
+                    index++;
+                }
+            }
+
+            if (segments.Count == 0 && count > 0)
+            {
+                segments.Add(new WledSegment(0, "Main Strip", 0, count));
+            }
+
+            return new WledDeviceInfo(name, count, isRgbw, ver, segments, maxPwr, curPwr);
         }
         catch
         {

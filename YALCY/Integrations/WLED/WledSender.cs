@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -33,6 +34,7 @@ public sealed class WledSender : IDisposable
     private readonly object _socketLock = new();
     private UdpClient? _udpClient;
     private IPEndPoint? _targetEndPoint;
+    private readonly List<IPEndPoint> _additionalEndPoints = new();
     private byte[] _txBuffer = new byte[2048]; // Preallocated buffer, dynamically resized if needed
 
     // Rolling 4-bit sequence counter for DDP (1 to 15; 0 means unsequenced)
@@ -51,7 +53,7 @@ public sealed class WledSender : IDisposable
     {
         get
         {
-            if (_udpClient == null || _targetEndPoint == null)
+            if (_udpClient == null || (_targetEndPoint == null && _additionalEndPoints.Count == 0))
             {
                 return 0.0;
             }
@@ -83,7 +85,7 @@ public sealed class WledSender : IDisposable
         }
     }
     public string LastError => Volatile.Read(ref _lastError);
-    public bool IsActive => _udpClient != null && _targetEndPoint != null;
+    public bool IsActive => _udpClient != null && (_targetEndPoint != null || _additionalEndPoints.Count > 0);
     public long LastPacketSentTicks => Volatile.Read(ref _lastPacketSentTicks);
     public IPEndPoint? TargetEndPoint
     {
@@ -92,6 +94,29 @@ public sealed class WledSender : IDisposable
             lock (_socketLock)
             {
                 return _targetEndPoint;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Thread-safely updates additional secondary controller endpoints for network broadcasting.
+    /// </summary>
+    public void UpdateAdditionalEndpoints(System.Collections.Generic.IEnumerable<(string ip, int port)> destinations)
+    {
+        lock (_socketLock)
+        {
+            _additionalEndPoints.Clear();
+            foreach (var (ip, port) in destinations)
+            {
+                if (string.IsNullOrWhiteSpace(ip)) continue;
+                if (IPAddress.TryParse(ip.Trim(), out var parsedIp))
+                {
+                    _additionalEndPoints.Add(new IPEndPoint(parsedIp, port));
+                }
+            }
+            if (_additionalEndPoints.Count > 0)
+            {
+                EnsureUdpClient();
             }
         }
     }
@@ -202,7 +227,7 @@ public sealed class WledSender : IDisposable
 
         lock (_socketLock)
         {
-            if (_udpClient == null || _targetEndPoint == null) return;
+            if (_udpClient == null || (_targetEndPoint == null && _additionalEndPoints.Count == 0)) return;
 
             bool isRgbw = protocol is WledProtocol.DdpRgbw or WledProtocol.RealtimeDrgbw;
             bool isDdp = protocol is WledProtocol.DdpRgbw or WledProtocol.DdpRgb;
@@ -260,8 +285,17 @@ public sealed class WledSender : IDisposable
 
             try
             {
-                _udpClient.Send(_txBuffer, packetSize, _targetEndPoint);
-                RecordPacketSent();
+                if (_targetEndPoint != null)
+                {
+                    _udpClient.Send(_txBuffer, packetSize, _targetEndPoint);
+                    RecordPacketSent();
+                }
+
+                for (int k = 0; k < _additionalEndPoints.Count; k++)
+                {
+                    _udpClient.Send(_txBuffer, packetSize, _additionalEndPoints[k]);
+                    RecordPacketSent();
+                }
             }
             catch (Exception ex)
             {

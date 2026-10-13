@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
@@ -9,6 +12,38 @@ using YALCY.Integrations.WLED;
 using YALCY.Views.Components;
 
 namespace YALCY.ViewModels;
+
+/// <summary>
+/// Observable view model representing a single WLED controller destination.
+/// </summary>
+public sealed class WledControllerViewModel : ReactiveObject
+{
+    private string _name;
+    private string _ipAddress;
+    private int _port;
+    private int _ledCount;
+    private bool _isEnabled;
+    private string _status = "Ready";
+
+    public string Name { get => _name; set => this.RaiseAndSetIfChanged(ref _name, value); }
+    public string IpAddress { get => _ipAddress; set => this.RaiseAndSetIfChanged(ref _ipAddress, value); }
+    public int Port { get => _port; set => this.RaiseAndSetIfChanged(ref _port, value); }
+    public int LedCount { get => _ledCount; set => this.RaiseAndSetIfChanged(ref _ledCount, value); }
+    public bool IsEnabled { get => _isEnabled; set => this.RaiseAndSetIfChanged(ref _isEnabled, value); }
+    public string Status { get => _status; set => this.RaiseAndSetIfChanged(ref _status, value); }
+
+    public ICommand RemoveCommand { get; set; } = null!;
+    public ICommand TestCommand { get; set; } = null!;
+
+    public WledControllerViewModel(string name, string ip, int port = 4048, int ledCount = 30, bool isEnabled = true)
+    {
+        _name = name;
+        _ipAddress = ip;
+        _port = port;
+        _ledCount = ledCount;
+        _isEnabled = isEnabled;
+    }
+}
 
 /// <summary>
 /// Partial class of MainWindowViewModel providing observable properties,
@@ -50,11 +85,62 @@ public partial class MainWindowViewModel
     private int _wledFogHazeBoost = WledDefaults.FogHazeBoost;
     private int _wledMaxBrightnessLimit = WledDefaults.MaxBrightnessLimit;
 
+    // Multi-Strip Routing & Segments
+    public ObservableCollection<WledSegment> WledSegments { get; } = new();
+    public ObservableCollection<WledControllerViewModel> WledAdditionalControllers { get; } = new();
+
+    private int _wledMultiStripMode = WledDefaults.MultiStripMode;
+    public int WledMultiStripMode
+    {
+        get => _wledMultiStripMode;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledMultiStripMode, value);
+            this.RaisePropertyChanged(nameof(WledMultiStripTitle));
+            this.RaisePropertyChanged(nameof(WledMultiStripDescription));
+            WledTalker?.UpdateMultiStripMode((WledMultiStripMode)value, WledSegments);
+            WledTalker?.TriggerCalibrationPreview();
+        }
+    }
+
+    public string WledMultiStripTitle => (WledMultiStripMode)_wledMultiStripMode switch
+    {
+        Integrations.WLED.WledMultiStripMode.MirrorPerSegment => "Mirror / Clone Per Strip",
+        Integrations.WLED.WledMultiStripMode.AlignedTilePerSegment => "Phase-Aligned Tile Per Strip",
+        Integrations.WLED.WledMultiStripMode.RoleBased => "Role-Based Strip Assignment",
+        _ => "Contiguous (Single Long Strip)"
+    };
+
+    public string WledMultiStripDescription => (WledMultiStripMode)_wledMultiStripMode switch
+    {
+        Integrations.WLED.WledMultiStripMode.MirrorPerSegment => "Renders the full StageKit stage lighting animation identically across each physical strip/segment (symmetrical Left/Right).",
+        Integrations.WLED.WledMultiStripMode.AlignedTilePerSegment => "Each strip/segment restarts at StageKit Pod 1 (LED 0) perfectly synchronized, avoiding inter-strip pattern offset.",
+        Integrations.WLED.WledMultiStripMode.RoleBased => "Strip 1: StageKit Lights; Strip 2: Dedicated Strobe & Rhythm Blinder; Strip 3+: Ambient Wash & Star Power.",
+        _ => "Treats all strips and segments as one single continuous linear LED address space."
+    };
+
+    private bool _wledVisualizerStacked = WledDefaults.VisualizerStacked;
+    public bool WledVisualizerStacked
+    {
+        get => _wledVisualizerStacked;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _wledVisualizerStacked, value);
+            this.RaisePropertyChanged(nameof(WledVisualizerHeight));
+        }
+    }
+
+    public double WledVisualizerHeight => _wledVisualizerStacked && WledSegments.Count > 1
+        ? Math.Min(180, Math.Max(56, WledSegments.Count * 44.0))
+        : 56.0;
+
     private string _wledStatus = "WLED status: Idle.";
     private string _wledMessage = string.Empty;
 
     public ICommand ConnectWledCommand { get; private set; } = null!;
     public ICommand DisconnectWledCommand { get; private set; } = null!;
+    public ICommand ScanWledSegmentsCommand { get; private set; } = null!;
+    public ICommand AddAdditionalControllerCommand { get; private set; } = null!;
     public ICommand TestWledWhiteBlinderCommand { get; private set; } = null!;
     public ICommand TestWledStagePodsCommand { get; private set; } = null!;
     public ICommand TestWledColorChaseCommand { get; private set; } = null!;
@@ -795,6 +881,115 @@ public partial class MainWindowViewModel
         WledDirectExcessMode = s.DirectExcessMode;
         WledWashBlendMode = s.WashBlendMode;
         WledGradientCycles = s.GradientCycles;
+        WledMultiStripMode = s.MultiStripMode;
+        WledVisualizerStacked = s.VisualizerStacked;
+
+        WledAdditionalControllers.Clear();
+        if (s.AdditionalControllers != null)
+        {
+            foreach (var c in s.AdditionalControllers)
+            {
+                var vm = new WledControllerViewModel(c.Name, c.IpAddress, c.Port, c.LedCount, c.IsEnabled);
+                vm.RemoveCommand = ReactiveCommand.Create(() => RemoveAdditionalController(vm));
+                vm.TestCommand = ReactiveCommand.CreateFromTask(() => TestAdditionalControllerAsync(vm));
+                vm.PropertyChanged += (_, _) => SyncAdditionalControllersToSender();
+                WledAdditionalControllers.Add(vm);
+            }
+        }
+        SyncAdditionalControllersToSender();
+    }
+
+    public List<WledControllerEntrySetting> GetAdditionalControllersSettings()
+    {
+        var list = new List<WledControllerEntrySetting>();
+        foreach (var c in WledAdditionalControllers)
+        {
+            list.Add(new WledControllerEntrySetting
+            {
+                Name = c.Name,
+                IpAddress = c.IpAddress,
+                Port = c.Port,
+                LedCount = c.LedCount,
+                IsEnabled = c.IsEnabled
+            });
+        }
+        return list;
+    }
+
+    private void SyncAdditionalControllersToSender()
+    {
+        var active = WledAdditionalControllers
+            .Where(c => c.IsEnabled && !string.IsNullOrWhiteSpace(c.IpAddress))
+            .Select(c => (c.IpAddress, c.Port));
+        WledTalker?.UpdateAdditionalControllers(active);
+    }
+
+    private void AddAdditionalController()
+    {
+        int index = WledAdditionalControllers.Count + 1;
+        var vm = new WledControllerViewModel($"ESP32 Controller {index}", $"192.168.1.{150 + index}");
+        vm.RemoveCommand = ReactiveCommand.Create(() => RemoveAdditionalController(vm));
+        vm.TestCommand = ReactiveCommand.CreateFromTask(() => TestAdditionalControllerAsync(vm));
+        vm.PropertyChanged += (_, _) => SyncAdditionalControllersToSender();
+        WledAdditionalControllers.Add(vm);
+        SyncAdditionalControllersToSender();
+    }
+
+    private void RemoveAdditionalController(WledControllerViewModel vm)
+    {
+        WledAdditionalControllers.Remove(vm);
+        SyncAdditionalControllersToSender();
+    }
+
+    private async Task TestAdditionalControllerAsync(WledControllerViewModel vm)
+    {
+        vm.Status = "Testing...";
+        try
+        {
+            var info = await WledTalker.QueryDeviceInfoAsync(vm.IpAddress, 1500).ConfigureAwait(false);
+            if (info != null)
+            {
+                vm.Status = $"Online: {info.Name} ({info.LedCount} LEDs)";
+                _ = WledTalker.SetControllerStateAsync(vm.IpAddress, true, 255);
+            }
+            else
+            {
+                vm.Status = "Unreachable";
+            }
+        }
+        catch (Exception ex)
+        {
+            vm.Status = $"Error: {ex.Message}";
+        }
+    }
+
+    public async Task ScanWledSegmentsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_wledServerIp)) return;
+
+        WledMessage = "Scanning WLED segments and hardware outputs...";
+        var info = await WledTalker.QueryDeviceInfoAsync(_wledServerIp, 2000).ConfigureAwait(false);
+        if (info != null)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                WledSegments.Clear();
+                if (info.Segments != null)
+                {
+                    foreach (var s in info.Segments)
+                    {
+                        WledSegments.Add(s);
+                    }
+                }
+                WledTalker?.UpdateMultiStripMode((WledMultiStripMode)_wledMultiStripMode, WledSegments);
+                this.RaisePropertyChanged(nameof(WledVisualizerHeight));
+                WledMessage = $"Found {WledSegments.Count} strip(s) on controller.";
+            });
+        }
+        else
+        {
+            WledMessage = "Could not query controller segments. Check IP and Wi-Fi.";
+        }
     }
 
     private void FeedInWledSettings()
@@ -824,6 +1019,8 @@ public partial class MainWindowViewModel
 
         ConnectWledCommand = ReactiveCommand.CreateFromTask(ConnectWledAsync, canConnect);
         DisconnectWledCommand = ReactiveCommand.Create(DisconnectWled, canDisconnect);
+        ScanWledSegmentsCommand = ReactiveCommand.CreateFromTask(ScanWledSegmentsAsync);
+        AddAdditionalControllerCommand = ReactiveCommand.Create(AddAdditionalController);
         TestWledWhiteBlinderCommand = ReactiveCommand.CreateFromTask(() => WledTalker.TestWhiteBlinderAsync());
         TestWledStagePodsCommand = ReactiveCommand.CreateFromTask(() => WledTalker.TestStageKitPodsAsync());
         TestWledColorChaseCommand = ReactiveCommand.CreateFromTask(() => WledTalker.TestColorChaseAsync());
@@ -912,6 +1109,20 @@ public partial class MainWindowViewModel
                     _wledLedCount = detectedInfo.LedCount;
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => this.RaisePropertyChanged(nameof(WledLedCount)));
                 }
+
+                if (detectedInfo.Segments != null && detectedInfo.Segments.Count > 0)
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        WledSegments.Clear();
+                        foreach (var seg in detectedInfo.Segments)
+                        {
+                            WledSegments.Add(seg);
+                        }
+                        this.RaisePropertyChanged(nameof(WledVisualizerHeight));
+                        WledTalker?.UpdateMultiStripMode((WledMultiStripMode)_wledMultiStripMode, WledSegments);
+                    });
+                }
             }
 
             bool success = await WledTalker.ConnectAsync(
@@ -947,6 +1158,8 @@ public partial class MainWindowViewModel
                     }
 
                     _ = WledTalker.SetControllerStateAsync(_wledServerIp, true, (byte)Math.Min(_wledBrightness, _wledMaxBrightnessLimit));
+                    SyncAdditionalControllersToSender();
+                    WledTalker?.UpdateMultiStripMode((WledMultiStripMode)_wledMultiStripMode, WledSegments);
 
                     string hwDesc = detectedInfo != null
                         ? $"{detectedInfo.Name} ({_wledLedCount} LEDs, {(detectedInfo.IsRgbw ? "SK6812 RGBW" : "WS281x RGB")})"
