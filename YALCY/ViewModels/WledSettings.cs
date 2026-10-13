@@ -131,8 +131,8 @@ public partial class MainWindowViewModel
     }
 
     public double WledVisualizerHeight => _wledVisualizerStacked && WledSegments.Count > 1
-        ? Math.Min(150, Math.Max(42, WledSegments.Count * 36.0))
-        : 42.0;
+        ? Math.Min(120, Math.Max(18, WledSegments.Count * 24.0))
+        : 18.0;
 
     private int _wledSelectedSubTab = 0;
     public int WledSelectedSubTab

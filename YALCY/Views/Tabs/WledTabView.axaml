@@ -109,67 +109,61 @@
             </components:TabHeroHeader.BadgeContent>
         </components:TabHeroHeader>
 
-        <!-- Row 1: Compact Rackmount Live LED Strip Preview Monitor -->
+        <!-- Row 1: Ultra-Minimalist Live LED Strip Monitor -->
         <Border Grid.Row="1"
                 Background="{DynamicResource AppPanelBackground}"
                 BorderBrush="{DynamicResource AppBorder}"
                 BorderThickness="1"
-                CornerRadius="10"
-                Padding="14,10"
+                CornerRadius="8"
+                Padding="12,7"
                 Margin="0,0,0,10">
-            <StackPanel Spacing="8">
+            <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                    <!-- Left: Live Status Indicator -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Ellipse Width="8" Height="8" Fill="#4CAF50" VerticalAlignment="Center" />
-                        <TextBlock Text="LIVE OUTPUT PREVIEW"
+                    <!-- Left: Minimalist Status -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Ellipse Width="6" Height="6" Fill="#22C55E" VerticalAlignment="Center" />
+                        <TextBlock Text="Live Preview"
                                    FontSize="11"
-                                   FontWeight="Bold"
+                                   FontWeight="SemiBold"
                                    Foreground="{DynamicResource AppTextPrimary}"
                                    VerticalAlignment="Center" />
-                        <TextBlock Text="• Physical RGBW Diode Emulation"
+                        <TextBlock Text="{Binding WledLedCount, StringFormat='{} • {0} LEDs'}"
                                    FontSize="10"
                                    Foreground="{DynamicResource AppTextMuted}"
                                    VerticalAlignment="Center" />
                     </StackPanel>
 
-                    <!-- Right: Stacked Toggle, FPS & Latency Badges -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- Right: Minimalist Stacked CheckBox & Inline Telemetry -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <CheckBox IsChecked="{Binding WledVisualizerStacked, Mode=TwoWay}"
+                                  ToolTip.Tip="Display each detected segment on an independent lane"
+                                  VerticalAlignment="Center"
+                                  Padding="4,0,0,0"
+                                  Margin="0">
                             <TextBlock Text="Stacked Lanes"
                                        FontSize="10"
-                                       FontWeight="SemiBold"
                                        Foreground="{DynamicResource AppTextSecondary}"
                                        VerticalAlignment="Center" />
-                            <ToggleSwitch IsChecked="{Binding WledVisualizerStacked, Mode=TwoWay}"
-                                          ToolTip.Tip="Toggle between single continuous strip and stacked individual lane view for each detected segment"
-                                          OnContent=""
-                                          OffContent=""
-                                          VerticalAlignment="Center"
-                                          Margin="0" />
-                        </StackPanel>
+                        </CheckBox>
 
-                        <Border Background="{DynamicResource AppCardBackground}"
-                                BorderBrush="{DynamicResource AppBorder}"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="8,2">
+                        <Border Width="1" Height="10" Background="{DynamicResource AppBorderStrong}" VerticalAlignment="Center" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <TextBlock Text="{Binding WledFps, StringFormat='{}{0:F1} FPS'}"
                                        FontSize="10"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource AppAccentText}" />
-                        </Border>
-
-                        <Border Background="{DynamicResource AppCardBackground}"
-                                BorderBrush="{DynamicResource AppBorder}"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="8,2">
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppAccentText}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="•"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource AppTextMuted}"
+                                       VerticalAlignment="Center" />
                             <TextBlock Text="{Binding WledLatencyText}"
                                        FontSize="10"
-                                       FontWeight="Bold"
-                                       Foreground="{Binding WledLatencyColor}" />
-                        </Border>
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding WledLatencyColor}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
 
