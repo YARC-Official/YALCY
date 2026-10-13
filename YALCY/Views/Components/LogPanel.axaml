@@ -1,6 +1,18 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="YALCY.Views.Components.LogPanel">
+    <UserControl.Styles>
+        <Style Selector="Expander#LogExpander /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander#LogExpander:down /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander#LogExpander /template/ ToggleButton#ExpanderHeader /template/ Path#ExpandCollapseChevron">
+            <Setter Property="Data" Value="M 0 7 L 7 0 L 14 7" />
+        </Style>
+    </UserControl.Styles>
+
     <Expander x:Name="LogExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
         <Expander.Header><TextBlock x:Name="Summary" Text="Log" /></Expander.Header>
         <Grid RowDefinitions="Auto,Auto,*" Height="220" MinHeight="130" MaxHeight="420" Margin="8,0,8,6" x:Name="LogBody">
