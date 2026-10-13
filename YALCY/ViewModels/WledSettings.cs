@@ -568,6 +568,12 @@ public partial class MainWindowViewModel
     public long WledPacketsSent => WledTalker.Sender.TotalPacketsSent;
     public double WledFps => WledTalker.Sender.PacketsPerSecond;
 
+    public void RefreshWledTelemetry()
+    {
+        this.RaisePropertyChanged(nameof(WledFps));
+        this.RaisePropertyChanged(nameof(WledPacketsSent));
+    }
+
     private void ApplyWledSettings(WledSetting s)
     {
         WledServerIp = s.ServerIp;

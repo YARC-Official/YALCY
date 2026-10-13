@@ -98,6 +98,14 @@ public sealed class WledTalker : IDisposable
 
     // Background decay timer for smooth rhythm impulses (snare flash, beat pulse)
     private Timer? _decayTimer;
+
+    // Heartbeat keep-alive timer (~10 Hz) to maintain the active lighting state on WLED.
+    // WLED controllers drop realtime/DDP mode if no packets arrive within 2–2.5 seconds.
+    // This heartbeat ensures static stage colors persist seamlessly without blacking out.
+    private Timer? _heartbeatTimer;
+    private const int HeartbeatIntervalMs = 100;
+    private int _heartbeatTelemetryCounter;
+
     private MainWindowViewModel? _mainViewModel;
 
     // Raw StageKit parameters for state preservation
@@ -114,6 +122,7 @@ public sealed class WledTalker : IDisposable
     {
         // Initialize decay timer (runs every ~16ms for ~60 FPS decay interpolation)
         _decayTimer = new Timer(OnDecayTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+        _heartbeatTimer = new Timer(OnHeartbeatTimerTick, null, Timeout.Infinite, Timeout.Infinite);
         ApplyConfiguration(WledSettingsManager.Current);
     }
 
@@ -187,6 +196,8 @@ public sealed class WledTalker : IDisposable
             _sender.ConfigureEndpoint(_targetIp, _targetPort);
             SubscribeToEvents();
 
+            _heartbeatTimer?.Change(HeartbeatIntervalMs, HeartbeatIntervalMs);
+
             // If not verified connected yet, initiate real probe & connection check via ConnectWledAsync
             if (_mainViewModel != null && !_mainViewModel.IsWledConnected)
             {
@@ -202,6 +213,7 @@ public sealed class WledTalker : IDisposable
         _isEnabled = false;
         _manualStrobeFlasher.Stop(SetManualStrobeFlashStateAsync);
         _decayTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        _heartbeatTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
         UnsubscribeFromEvents();
 
@@ -361,6 +373,7 @@ public sealed class WledTalker : IDisposable
         bool success = await _sender.ConfigureEndpointAsync(_targetIp, _targetPort).ConfigureAwait(false);
         if (success && _isEnabled)
         {
+            _heartbeatTimer?.Change(HeartbeatIntervalMs, HeartbeatIntervalMs);
             RenderAndFlushFrame();
         }
 
@@ -372,6 +385,7 @@ public sealed class WledTalker : IDisposable
     /// </summary>
     public void Disconnect()
     {
+        _heartbeatTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         lock (Lock)
         {
             ClearAllLeds();
@@ -646,6 +660,43 @@ public sealed class WledTalker : IDisposable
         {
             // Accents reached zero: pause the background decay timer to consume 0 CPU cycles
             _decayTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+    }
+
+    /// <summary>
+    /// Periodic heartbeat timer tick (~10 FPS) to maintain the active lighting state on WLED.
+    /// WLED controllers have a firmware live-data timeout (typically 2–2.5 seconds); if packets cease
+    /// during static color states without animation, WLED times out and turns black.
+    /// This heartbeat ensures steady keep-alive frame transmissions so static colors persist seamlessly,
+    /// matching OpenRGB persistent behavior.
+    /// </summary>
+    private void OnHeartbeatTimerTick(object? state)
+    {
+        if (!_isEnabled || !_sender.IsActive) return;
+
+        long now = Environment.TickCount64;
+        long elapsed = now - _sender.LastPacketSentTicks;
+
+        // Retransmit current frame buffer if no frame was sent recently (>= HeartbeatIntervalMs)
+        if (elapsed >= HeartbeatIntervalMs)
+        {
+            lock (Lock)
+            {
+                if (!_isEnabled || !_sender.IsActive) return;
+                _sender.SendFrame(_outputBuffer.AsSpan(0, _ledCount), _protocol, _timeoutSeconds);
+            }
+        }
+
+        // Periodically refresh UI telemetry (WledFps & WledPacketsSent) every ~500ms (5 ticks)
+        if (++_heartbeatTelemetryCounter >= 5)
+        {
+            _heartbeatTelemetryCounter = 0;
+            if (_mainViewModel != null)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(
+                    _mainViewModel.RefreshWledTelemetry,
+                    Avalonia.Threading.DispatcherPriority.Background);
+            }
         }
     }
 
@@ -1560,6 +1611,9 @@ public sealed class WledTalker : IDisposable
 
     public void Dispose()
     {
+        _heartbeatTimer?.Dispose();
+        _heartbeatTimer = null;
+
         _decayTimer?.Dispose();
         _decayTimer = null;
 

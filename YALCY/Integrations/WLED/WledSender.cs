@@ -44,11 +44,13 @@ public sealed class WledSender : IDisposable
     private long _packetsSinceLastFpsCalc;
     private double _currentFps;
     private string _lastError = string.Empty;
+    private long _lastPacketSentTicks;
 
     public long TotalPacketsSent => Interlocked.Read(ref _packetsSent);
     public double PacketsPerSecond => Volatile.Read(ref _currentFps);
     public string LastError => Volatile.Read(ref _lastError);
     public bool IsActive => _udpClient != null && _targetEndPoint != null;
+    public long LastPacketSentTicks => Volatile.Read(ref _lastPacketSentTicks);
 
     /// <summary>
     /// Synchronously configures endpoint if valid IP address (0 ms, non-blocking).
@@ -154,79 +156,73 @@ public sealed class WledSender : IDisposable
     {
         if (leds.IsEmpty) return;
 
-        UdpClient? client;
-        IPEndPoint? endPoint;
-
         lock (_socketLock)
         {
-            client = _udpClient;
-            endPoint = _targetEndPoint;
-        }
+            if (_udpClient == null || _targetEndPoint == null) return;
 
-        if (client == null || endPoint == null) return;
+            bool isRgbw = protocol is WledProtocol.DdpRgbw or WledProtocol.RealtimeDrgbw;
+            bool isDdp = protocol is WledProtocol.DdpRgbw or WledProtocol.DdpRgb;
 
-        bool isRgbw = protocol is WledProtocol.DdpRgbw or WledProtocol.RealtimeDrgbw;
-        bool isDdp = protocol is WledProtocol.DdpRgbw or WledProtocol.DdpRgb;
+            int bytesPerLed = isRgbw ? 4 : 3;
+            int payloadSize = leds.Length * bytesPerLed;
+            int headerSize = isDdp ? DdpHeaderSize : RealtimeHeaderSize;
+            int packetSize = headerSize + payloadSize;
 
-        int bytesPerLed = isRgbw ? 4 : 3;
-        int payloadSize = leds.Length * bytesPerLed;
-        int headerSize = isDdp ? DdpHeaderSize : RealtimeHeaderSize;
-        int packetSize = headerSize + payloadSize;
-
-        // Ensure buffer is large enough
-        if (_txBuffer.Length < packetSize)
-        {
-            Array.Resize(ref _txBuffer, Math.Max(packetSize, _txBuffer.Length * 2));
-        }
-
-        if (isDdp)
-        {
-            EncodeDdpHeader(_txBuffer, payloadSize, isRgbw);
-        }
-        else
-        {
-            EncodeRealtimeHeader(_txBuffer, isRgbw, timeoutSeconds);
-        }
-
-        // Pack LED payload
-        int writeIndex = headerSize;
-        for (int i = 0; i < leds.Length; i++)
-        {
-            var c = leds[i];
-            if (isRgbw)
+            // Ensure buffer is large enough
+            if (_txBuffer.Length < packetSize)
             {
-                _txBuffer[writeIndex++] = c.R;
-                _txBuffer[writeIndex++] = c.G;
-                _txBuffer[writeIndex++] = c.B;
-                _txBuffer[writeIndex++] = c.W;
+                Array.Resize(ref _txBuffer, Math.Max(packetSize, _txBuffer.Length * 2));
+            }
+
+            if (isDdp)
+            {
+                EncodeDdpHeader(_txBuffer, payloadSize, isRgbw);
             }
             else
             {
-                // In 3-channel RGB mode (WS2812B/WS2811), if the color has a dedicated White (W) component,
-                // blend the White channel evenly across R, G, and B to generate authentic white light on RGB hardware.
-                if (c.W > 0)
-                {
-                    _txBuffer[writeIndex++] = (byte)Math.Min(255, c.R + c.W);
-                    _txBuffer[writeIndex++] = (byte)Math.Min(255, c.G + c.W);
-                    _txBuffer[writeIndex++] = (byte)Math.Min(255, c.B + c.W);
-                }
-                else
+                EncodeRealtimeHeader(_txBuffer, isRgbw, timeoutSeconds);
+            }
+
+            // Pack LED payload
+            int writeIndex = headerSize;
+            for (int i = 0; i < leds.Length; i++)
+            {
+                var c = leds[i];
+                if (isRgbw)
                 {
                     _txBuffer[writeIndex++] = c.R;
                     _txBuffer[writeIndex++] = c.G;
                     _txBuffer[writeIndex++] = c.B;
+                    _txBuffer[writeIndex++] = c.W;
+                }
+                else
+                {
+                    // In 3-channel RGB mode (WS2812B/WS2811), if the color has a dedicated White (W) component,
+                    // blend the White channel evenly across R, G, and B to generate authentic white light on RGB hardware.
+                    if (c.W > 0)
+                    {
+                        _txBuffer[writeIndex++] = (byte)Math.Min(255, c.R + c.W);
+                        _txBuffer[writeIndex++] = (byte)Math.Min(255, c.G + c.W);
+                        _txBuffer[writeIndex++] = (byte)Math.Min(255, c.B + c.W);
+                    }
+                    else
+                    {
+                        _txBuffer[writeIndex++] = c.R;
+                        _txBuffer[writeIndex++] = c.G;
+                        _txBuffer[writeIndex++] = c.B;
+                    }
                 }
             }
-        }
 
-        try
-        {
-            client.Send(_txBuffer, packetSize, endPoint);
-            RecordPacketSent();
-        }
-        catch (Exception ex)
-        {
-            Volatile.Write(ref _lastError, ex.Message);
+            try
+            {
+                _udpClient.Send(_txBuffer, packetSize, _targetEndPoint);
+                RecordPacketSent();
+            }
+            catch (Exception ex)
+            {
+                Volatile.Write(ref _lastError, ex.Message);
+            }
         }
     }
 
@@ -295,33 +291,34 @@ public sealed class WledSender : IDisposable
         // Byte 0: Protocol mode (3 = DRGBW, 2 = DRGB)
         buffer[0] = isRgbw ? WledRealtimeDrgbw : WledRealtimeDrgb;
 
-        // Byte 1: Timeout in seconds
-        buffer[1] = timeoutSeconds;
+        // Byte 1: Timeout in seconds (clamped to at least 2 seconds safety buffer)
+        buffer[1] = Math.Max((byte)2, timeoutSeconds);
     }
 
     private void RecordPacketSent()
     {
         Interlocked.Increment(ref _packetsSent);
+        Volatile.Write(ref _lastPacketSentTicks, Environment.TickCount64);
+
+        Interlocked.Increment(ref _packetsSinceLastFpsCalc);
 
         long now = Environment.TickCount64;
-        long elapsed = now - Volatile.Read(ref _lastFpsCalculationTimestamp);
+        long last = Volatile.Read(ref _lastFpsCalculationTimestamp);
+        long elapsed = now - last;
 
         if (elapsed >= 1000)
         {
             lock (_socketLock)
             {
-                if (now - _lastFpsCalculationTimestamp >= 1000)
+                long currentLast = _lastFpsCalculationTimestamp;
+                if (now - currentLast >= 1000)
                 {
-                    double seconds = (now - _lastFpsCalculationTimestamp) / 1000.0;
+                    double seconds = (now - currentLast) / 1000.0;
                     _currentFps = _packetsSinceLastFpsCalc / seconds;
                     _packetsSinceLastFpsCalc = 0;
                     _lastFpsCalculationTimestamp = now;
                 }
             }
-        }
-        else
-        {
-            Interlocked.Increment(ref _packetsSinceLastFpsCalc);
         }
     }
 

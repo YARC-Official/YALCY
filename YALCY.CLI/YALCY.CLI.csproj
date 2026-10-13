@@ -8,6 +8,12 @@
         <LangVersion>default</LangVersion>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+        <SelfContained>true</SelfContained>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    </PropertyGroup>
+
     <PropertyGroup Condition="$([MSBuild]::IsOsPlatform('Windows'))">
         <DefineConstants>WINDOWS</DefineConstants>
     </PropertyGroup>

@@ -33,6 +33,7 @@ public partial class StrobeVisualizerWindow : Window
     public StrobeVisualizerWindow()
     {
         InitializeComponent();
+        this.Opened += (_, _) => SingleInstanceManager.SetWindowAppId(this, "YALCY.StrobeVisualizer");
 
         _strobeFlashTimer = new DispatcherTimer(DispatcherPriority.Render);
         _strobeFlashTimer.Tick += OnStrobeFlashTick;

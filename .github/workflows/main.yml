@@ -23,10 +23,10 @@ jobs:
         run: dotnet build --configuration Release YALCY.sln
 
       - name: Publish GUI
-        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+        run: dotnet publish -c Release -r win-x64 --self-contained=true -p:PublishSingleFile=true --output ./publish YALCY/YALCY.csproj
 
       - name: Publish CLI
-        run: dotnet publish -c Release -r win-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
+        run: dotnet publish -c Release -r win-x64 --self-contained=true -p:PublishSingleFile=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload Windows Binaries
         uses: actions/upload-artifact@v4
@@ -53,10 +53,10 @@ jobs:
         run: dotnet build --configuration Release YALCY.sln
 
       - name: Publish GUI
-        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+        run: dotnet publish -c Release -r linux-x64 --self-contained=true -p:PublishSingleFile=true --output ./publish YALCY/YALCY.csproj
 
       - name: Publish CLI
-        run: dotnet publish -c Release -r linux-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
+        run: dotnet publish -c Release -r linux-x64 --self-contained=true -p:PublishSingleFile=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload Linux Binaries
         uses: actions/upload-artifact@v4
@@ -83,10 +83,10 @@ jobs:
         run: dotnet build --configuration Release YALCY.sln
 
       - name: Publish GUI
-        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish YALCY/YALCY.csproj
+        run: dotnet publish -c Release -r osx-x64 --self-contained=true -p:PublishSingleFile=true --output ./publish YALCY/YALCY.csproj
 
       - name: Publish CLI
-        run: dotnet publish -c Release -r osx-x64 --self-contained=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
+        run: dotnet publish -c Release -r osx-x64 --self-contained=true -p:PublishSingleFile=true --output ./publish YALCY.CLI/YALCY.CLI.csproj
 
       - name: Upload macOS Binaries
         uses: actions/upload-artifact@v4

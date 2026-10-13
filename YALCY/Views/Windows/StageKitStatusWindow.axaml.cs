@@ -131,6 +131,7 @@ public partial class StageKitStatusWindow : Window
     {
         ActiveInstance = this;
         InitializeComponent();
+        this.Opened += (_, _) => SingleInstanceManager.SetWindowAppId(this, "YALCY.StageKitStatus");
         BuildLedGrids();
 
         // 100ms rhythm pulse timer so beats flash crisply and return to resting state

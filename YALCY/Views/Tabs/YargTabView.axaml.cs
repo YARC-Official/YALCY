@@ -136,54 +136,138 @@ public partial class YargTabView : UserControl
         catch (TaskCanceledException) { }
     }
 
+    public static void OpenLedVisualizer(MainWindowViewModel? vm = null)
+    {
+        if (_allDetachedWindow != null)
+        {
+            if (!_allDetachedWindow.IsVisible)
+            {
+                _allDetachedWindow.Show();
+            }
+            if (_allDetachedWindow.WindowState == WindowState.Minimized)
+            {
+                _allDetachedWindow.WindowState = WindowState.Normal;
+            }
+            _allDetachedWindow.Activate();
+            SingleInstanceManager.BringWindowToForeground(_allDetachedWindow);
+            return;
+        }
+
+        vm ??= (Application.Current as App)?.MainViewModel;
+        if (vm != null)
+        {
+            vm.IsVisualizerDetached = true;
+        }
+
+        var window = new LedVisualizerWindow
+        {
+            DataContext = vm
+        };
+        _allDetachedWindow = window;
+
+        window.Closed += (s, args) =>
+        {
+            _allDetachedWindow = null;
+            if (!_isAppClosing && vm != null)
+            {
+                vm.IsVisualizerDetached = false;
+            }
+        };
+
+        window.Show();
+        SingleInstanceManager.BringWindowToForeground(window);
+    }
+
+    public static void CloseLedVisualizer()
+    {
+        if (_allDetachedWindow != null)
+        {
+            var win = _allDetachedWindow;
+            _allDetachedWindow = null;
+            try { win.Close(); } catch (Exception) { }
+        }
+    }
+
+    public static void OpenStrobeVisualizer()
+    {
+        if (_allStrobeWindow != null)
+        {
+            if (!_allStrobeWindow.IsVisible)
+            {
+                _allStrobeWindow.Show();
+            }
+            if (_allStrobeWindow.WindowState == WindowState.Minimized)
+            {
+                _allStrobeWindow.WindowState = WindowState.Normal;
+            }
+            _allStrobeWindow.Activate();
+            SingleInstanceManager.BringWindowToForeground(_allStrobeWindow);
+            return;
+        }
+
+        var window = new StrobeVisualizerWindow();
+        _allStrobeWindow = window;
+
+        window.Closed += (s, args) =>
+        {
+            _allStrobeWindow = null;
+        };
+
+        window.Show();
+        SingleInstanceManager.BringWindowToForeground(window);
+    }
+
+    public static void CloseStrobeVisualizer()
+    {
+        if (_allStrobeWindow != null)
+        {
+            var win = _allStrobeWindow;
+            _allStrobeWindow = null;
+            try { win.Close(); } catch (Exception) { }
+        }
+    }
+
+    public static void OpenStageKitStatus()
+    {
+        var window = StageKitStatusWindow.ActiveInstance;
+        if (window != null)
+        {
+            if (!window.IsVisible)
+            {
+                window.Show();
+            }
+            if (window.WindowState == WindowState.Minimized)
+            {
+                window.WindowState = WindowState.Normal;
+            }
+            window.Activate();
+            SingleInstanceManager.BringWindowToForeground(window);
+            return;
+        }
+
+        window = new StageKitStatusWindow();
+        window.Show();
+        SingleInstanceManager.BringWindowToForeground(window);
+    }
+
     private void OnDetachVisualizerClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var toggleButton = sender as Avalonia.Controls.Primitives.ToggleButton;
         if (toggleButton?.IsChecked == false)
         {
-            // Close detached visualizer window and re-dock to YARG tab
-            if (_detachedWindow != null)
-            {
-                try { _detachedWindow.Close(); } catch (Exception) { }
-                _detachedWindow = null;
-            }
-            _allDetachedWindow = null;
-            if (this.DataContext is YALCY.ViewModels.MainWindowViewModel vm)
-            {
-                vm.IsVisualizerDetached = false;
-            }
+            CloseLedVisualizer();
+            _detachedWindow = null;
         }
         else
         {
-            // Detach visualizer into floating window
-            if (_detachedWindow == null)
+            OpenLedVisualizer(this.DataContext as MainWindowViewModel);
+            _detachedWindow = _allDetachedWindow;
+            if (_detachedWindow != null && toggleButton != null)
             {
-                if (this.DataContext is YALCY.ViewModels.MainWindowViewModel vm)
-                {
-                    vm.IsVisualizerDetached = true;
-                }
-
-                _detachedWindow = new LedVisualizerWindow
-                {
-                    DataContext = this.DataContext
-                };
-                _allDetachedWindow = _detachedWindow;
-
                 _detachedWindow.Closed += (s, args) =>
                 {
-                    _detachedWindow = null;
-                    _allDetachedWindow = null;
-                    if (toggleButton != null)
-                    {
-                        toggleButton.IsChecked = false;
-                    }
-                    if (!_isAppClosing && this.DataContext is YALCY.ViewModels.MainWindowViewModel closeVm)
-                    {
-                        closeVm.IsVisualizerDetached = false;
-                    }
+                    toggleButton.IsChecked = false;
                 };
-
-                _detachedWindow.Show();
             }
         }
     }
@@ -193,33 +277,19 @@ public partial class YargTabView : UserControl
         var toggleButton = sender as Avalonia.Controls.Primitives.ToggleButton;
         if (toggleButton?.IsChecked == false)
         {
-            // Close strobe visualizer
-            if (_strobeVisualizerWindow != null)
-            {
-                try { _strobeVisualizerWindow.Close(); } catch (Exception) { }
-                _strobeVisualizerWindow = null;
-            }
-            _allStrobeWindow = null;
+            CloseStrobeVisualizer();
+            _strobeVisualizerWindow = null;
         }
         else
         {
-            // Open strobe visualizer
-            if (_strobeVisualizerWindow == null)
+            OpenStrobeVisualizer();
+            _strobeVisualizerWindow = _allStrobeWindow;
+            if (_strobeVisualizerWindow != null && toggleButton != null)
             {
-                _strobeVisualizerWindow = new StrobeVisualizerWindow();
-                _allStrobeWindow = _strobeVisualizerWindow;
-
                 _strobeVisualizerWindow.Closed += (s, args) =>
                 {
-                    _allStrobeWindow = null;
-                    _strobeVisualizerWindow = null;
-                    if (toggleButton != null)
-                    {
-                        toggleButton.IsChecked = false;
-                    }
+                    toggleButton.IsChecked = false;
                 };
-                
-                _strobeVisualizerWindow.Show();
             }
         }
     }
