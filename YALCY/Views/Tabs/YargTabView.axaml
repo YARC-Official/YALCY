@@ -38,8 +38,7 @@
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="20,16,20,20" RowDefinitions="Auto,Auto,*">
+    <Grid Margin="20,16,20,20" RowDefinitions="Auto,Auto,*">
         <components:TabHeroHeader Grid.Row="0"
                                   Margin="0,0,0,16"
                                   HeaderTitle="YARG UDP Receiver"
@@ -199,7 +198,7 @@
             </Border>
 
             <!-- Bottom Live Telemetry & Visualizer Area -->
-            <Grid Grid.Row="2" x:Name="ContentAreaGrid" ColumnDefinitions="*,Auto" Height="480" MinHeight="460">
+            <Grid Grid.Row="2" x:Name="ContentAreaGrid" ColumnDefinitions="*,Auto">
                 <!-- Live Telemetry Card -->
                 <Border Grid.Column="0" x:Name="DataGridCard"
                     Background="{DynamicResource AppPanelBackground}" 
@@ -530,5 +529,4 @@
                 </Border>
             </Grid>
         </Grid>
-    </ScrollViewer>
 </UserControl>
