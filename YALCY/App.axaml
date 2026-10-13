@@ -95,6 +95,17 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" />
         </Style>
+
+        <!-- Expander Chevron Direction Style -->
+        <Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander:down /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander /template/ ToggleButton#ExpanderHeader /template/ Path#ExpandCollapseChevron">
+            <Setter Property="Data" Value="M 0 7 L 7 0 L 14 7" />
+        </Style>
     </Application.Styles>
 
     <Application.Resources>

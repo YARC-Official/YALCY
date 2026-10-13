@@ -7,6 +7,18 @@
              x:Class="YALCY.Views.Tabs.SerialTabView"
              x:DataType="vm:MainWindowViewModel"
              mc:Ignorable="d">
+    <UserControl.Styles>
+        <Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander:down /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="Theme" Value="{DynamicResource FluentExpanderToggleButtonUpTheme}" />
+        </Style>
+        <Style Selector="Expander /template/ ToggleButton#ExpanderHeader /template/ Path#ExpandCollapseChevron">
+            <Setter Property="Data" Value="M 0 7 L 7 0 L 14 7" />
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Margin="20,16,20,20">
             <Grid.RowDefinitions>
