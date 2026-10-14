@@ -25,10 +25,15 @@ YALCY currently supports:
 ## 📥 Downloading and Playing
 
 Download the release for your operating system.
+
 Run it, can be minimized.
-Run YARG.l
+
+Run YARG.
+
 Turn on UDP data stream in experimental settings.
+
 Some protocols need some setup, see those tabs for more info.
+
 Rock on!
 
 ## 🔨 Building
