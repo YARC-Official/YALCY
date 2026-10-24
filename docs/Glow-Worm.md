@@ -15,5 +15,3 @@ The status indicator means YALCY is sending UDP, which has no delivery acknowled
 Blackout overrides color tests. Disabling output or exiting attempts a final black frame. UDP cannot guarantee that a powered-off or disconnected device receives it, and the controller's own firmware determines its subsequent idle behavior.
 
 Protocol references: [Glow Worm firmware](https://github.com/sblantipodi/glow_worm_luciferin/blob/master/src/NetManager.cpp) and [Ape's YARG bridge](https://github.com/Ape/yarg-glowworm). Packets contain `DPsoftware`, total LED count, brightness, total chunks, zero-based chunk index, and decimal packed RGB colors. Each chunk contains up to 140 LEDs, with a small pause between chunks.
-
-Developer checks: `dotnet run --project YALCY.GlowWormTests` uses local UDP and HTTP receivers, without contacting physical lighting hardware. Run `dotnet run --project YALCY.WledSerialTests` to verify the shared RGB rendering path as well.
