@@ -7,7 +7,7 @@ Help test YALCY!
 
 ## Supported Protocols & Hardware
 
-Each output protocol can be enabled independently. Stage Kit only controls Stage Kit hardware; other outputs do not require it to be enabled or connected. All outputs share the YARG cue stream and global blackout controls.
+Each output protocol can be enabled independently. All protocols share the YARG cue stream and global blackout controls.
 
 ## Summary
 YALCY currently supports:
@@ -18,7 +18,7 @@ YALCY currently supports:
 | **Philips Hue** | Entertainment API (UDP) | ![Working][working] |
 | **LIFX** | HTTP API | ![Working][working] |
 | **LIFX** | LAN Protocol | ![In Testing][testing] |
-| **WLED** | DDP & Realtime UDP | ![In Testing][testing] |
+| **WLED** | DDP & Realtime UDP & Serial | ![In Testing][testing] |
 | **[Glow Worm Luciferin](docs/Glow-Worm.md)** | RGB UDP + HTTP Bias light control | ![In Testing][testing] |
 | **OpenRGB** | Network Client (SDK) | ![Working][working] |
 | **RB3E** (Lighting DATA) | UDP Stream (Partial) | ![Working][working] |
