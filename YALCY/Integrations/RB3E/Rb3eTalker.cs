@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using YALCY.Diagnostics;
 using System;
 using System.Net;
@@ -5,9 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
 
@@ -31,31 +30,31 @@ namespace YALCY.Integrations.RB3E;
             if (isEnabled)
             {
                 if (_sendClient != null) return;
-                UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+                LightingOutput.CommandReceived += OnStageKitEvent;
                 StatusFooter.UpdateStatus("RB3E", IntegrationStatus.Connected);
                 _sendClient = new UdpClient();
             }
             else
             {
                 if (_sendClient == null) return;
-                UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+                LightingOutput.CommandReceived -= OnStageKitEvent;
                 _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
                 StatusFooter.UpdateStatus("RB3E", IntegrationStatus.Off);
-                SendPacket(StageKitTalker.CommandId.DisableAll, 0x00);
+                SendPacket(LightingCommand.DisableAll, 0x00);
 
                 _sendClient.Dispose();
                 _sendClient = null;
             }
         }
 
-        private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+        private void OnStageKitEvent(LightingCommand commandId, byte parameter)
         {
             switch (commandId)
             {
-                case StageKitTalker.CommandId.StrobeSlow:
-                case StageKitTalker.CommandId.StrobeMedium:
-                case StageKitTalker.CommandId.StrobeFast:
-                case StageKitTalker.CommandId.StrobeFastest:
+                case LightingCommand.StrobeSlow:
+                case LightingCommand.StrobeMedium:
+                case LightingCommand.StrobeFast:
+                case LightingCommand.StrobeFastest:
                     if (_mainViewModel?.Rb3eStrobeMode == StrobeOutputModes.ManualFlash)
                     {
                         _manualStrobeFlasher.Start(
@@ -69,12 +68,12 @@ namespace YALCY.Integrations.RB3E;
                     SendPacket(commandId, parameter);
                     return;
 
-                case StageKitTalker.CommandId.StrobeOff:
+                case LightingCommand.StrobeOff:
                     _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
                     SendPacket(commandId, parameter);
                     return;
 
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
                     SendPacket(commandId, parameter);
                     return;
@@ -87,11 +86,11 @@ namespace YALCY.Integrations.RB3E;
 
         private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
         {
-            SendPacket(isOn ? StageKitTalker.CommandId.StrobeFastest : StageKitTalker.CommandId.StrobeOff, 0x00);
+            SendPacket(isOn ? LightingCommand.StrobeFastest : LightingCommand.StrobeOff, 0x00);
             return Task.CompletedTask;
         }
 
-        private static void SendPacket(StageKitTalker.CommandId commandId, byte parameter)
+        private static void SendPacket(LightingCommand commandId, byte parameter)
         {
             var packetData = new byte[]
             {

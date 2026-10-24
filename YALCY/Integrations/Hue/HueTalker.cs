@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
@@ -12,9 +13,7 @@ using HueApi.Entertainment.Models;
 using HueApi.Models;
 using HueApi.Models.Exceptions;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
 
@@ -114,7 +113,7 @@ public class HueTalker : IDisposable
                     ApplyStrobeIdle();
                 }
 
-                UsbDeviceMonitor.OnStageKitCommand += SendRequest;
+                LightingOutput.CommandReceived += SendRequest;
 
                 StatusFooter.UpdateStatus("Hue", IntegrationStatus.Connected);
                 _streamingActive = true;
@@ -189,7 +188,7 @@ public class HueTalker : IDisposable
             _cancellationTokenSource?.Cancel();
 
             // Remove event handlers
-            UsbDeviceMonitor.OnStageKitCommand -= SendRequest;
+            LightingOutput.CommandReceived -= SendRequest;
             StatusFooter.UpdateStatus("Hue", IntegrationStatus.Off);
 
             // Dispose of the client and cancellation token
@@ -290,7 +289,7 @@ public class HueTalker : IDisposable
         }
     }
 
-    private void SendRequest(StageKitTalker.CommandId commandId, byte parameter)
+    private void SendRequest(LightingCommand commandId, byte parameter)
     {
         if (_entArea != null && _entArea.Data.First().Status != EntertainmentConfigurationStatus.active)
         {
@@ -299,14 +298,14 @@ public class HueTalker : IDisposable
 
         switch (commandId)
         {
-            case StageKitTalker.CommandId.StrobeSlow:
-            case StageKitTalker.CommandId.StrobeMedium:
-            case StageKitTalker.CommandId.StrobeFast:
-            case StageKitTalker.CommandId.StrobeFastest:
+            case LightingCommand.StrobeSlow:
+            case LightingCommand.StrobeMedium:
+            case LightingCommand.StrobeFast:
+            case LightingCommand.StrobeFastest:
                 HandleStrobeCommand(commandId);
                 return;
 
-            case StageKitTalker.CommandId.StrobeOff:
+            case LightingCommand.StrobeOff:
                 StopStrobe();
                 return;
         }
@@ -318,23 +317,23 @@ public class HueTalker : IDisposable
             // stay visible together.
             switch (commandId)
             {
-                case StageKitTalker.CommandId.BlueLeds:
+                case LightingCommand.BlueLeds:
                     _blueMask = parameter;
                     break;
 
-                case StageKitTalker.CommandId.GreenLeds:
+                case LightingCommand.GreenLeds:
                     _greenMask = parameter;
                     break;
 
-                case StageKitTalker.CommandId.YellowLeds:
+                case LightingCommand.YellowLeds:
                     _yellowMask = parameter;
                     break;
 
-                case StageKitTalker.CommandId.RedLeds:
+                case LightingCommand.RedLeds:
                     _redMask = parameter;
                     break;
 
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     StopStrobe();
                     _blueMask = _greenMask = _yellowMask = _redMask = 0;
                     break;
@@ -386,7 +385,7 @@ public class HueTalker : IDisposable
                 _strobeRunning = true;
             }
 
-            _manualStrobeFlasher.Start(StageKitTalker.CommandId.StrobeSlow, 120f, SetManualStrobeStateAsync);
+            _manualStrobeFlasher.Start(LightingCommand.StrobeSlow, 120f, SetManualStrobeStateAsync);
             await Task.Delay(TimeSpan.FromSeconds(3));
         }
         finally
@@ -510,7 +509,7 @@ public class HueTalker : IDisposable
                 }
             }
 
-            var (r, g, b, isActive) = StageKitColorBlender.BlendPod(
+            var (r, g, b, isActive) = LightingColorBlender.BlendPod(
                 (_blueMask & positions) != 0,
                 (_redMask & positions) != 0,
                 (_greenMask & positions) != 0,
@@ -536,7 +535,7 @@ public class HueTalker : IDisposable
         }
     }
 
-    private void HandleStrobeCommand(StageKitTalker.CommandId commandId)
+    private void HandleStrobeCommand(LightingCommand commandId)
     {
         // Dedicated strobe lamps always flash. Without them, only flash everything in "Manual flash" mode.
         if (!HasDedicatedStrobeLamps() && _mainViewModel?.HueStrobeMode != StrobeOutputModes.ManualFlash)
@@ -572,7 +571,7 @@ public class HueTalker : IDisposable
         }
 
         // The safety blackout (no data from YARG) would swallow the test flashes, so the test bypasses it.
-        if (UsbDeviceMonitor.IsOutputSuppressed && !_testStrobeActive)
+        if (LightingOutput.IsOutputSuppressed && !_testStrobeActive)
         {
             isOn = false;
         }

@@ -1,11 +1,10 @@
+using YALCY.Lighting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using YALCY.Diagnostics;
-using YALCY.Integrations.StageKit;
-using YALCY.Usb;
 
 namespace YALCY.Integrations.Lifx;
 
@@ -68,7 +67,7 @@ public sealed partial class LifxTalker
             var strobe = (int)udp.StrobeState.Value;
             if (strobe != 24 && strobe is not (>= 20 and <= 23)) strobe = cue;
             if (strobe is not (>= 20 and <= 23)) strobe = 0;
-            var brightness = UsbDeviceMonitor.IsOutputSuppressed || cue is 8 or 9 or 10 ? 0 : Options.Brightness;
+            var brightness = LightingOutput.IsOutputSuppressed || cue is 8 or 9 or 10 ? 0 : Options.Brightness;
             var state = (color, strobe, brightness, Udp.UdpIntake.BeatsPerMinute.Value);
             if (_lastSongState == state) return;
             _lastSongState = state;
@@ -78,13 +77,13 @@ public sealed partial class LifxTalker
             {
                 var command = strobe switch
                 {
-                    20 => StageKitTalker.CommandId.StrobeFastest, 21 => StageKitTalker.CommandId.StrobeFast,
-                    22 => StageKitTalker.CommandId.StrobeMedium, _ => StageKitTalker.CommandId.StrobeSlow
+                    20 => LightingCommand.StrobeFastest, 21 => LightingCommand.StrobeFast,
+                    22 => LightingCommand.StrobeMedium, _ => LightingCommand.StrobeSlow
                 };
                 _songFlasher.Start(command, state.Item4, (on, token) =>
                 {
                     if (_isEnabled && !token.IsCancellationRequested)
-                        SendWholeColor(on && !UsbDeviceMonitor.IsOutputSuppressed ? _songColor : _songColor.WithBrightness(0), 0);
+                        SendWholeColor(on && !LightingOutput.IsOutputSuppressed ? _songColor : _songColor.WithBrightness(0), 0);
                     return Task.CompletedTask;
                 });
             }

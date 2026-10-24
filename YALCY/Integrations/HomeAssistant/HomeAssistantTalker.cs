@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
@@ -9,9 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
 
@@ -198,7 +197,7 @@ public sealed class HomeAssistantTalker : IDisposable
             return;
         }
 
-        UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+        LightingOutput.CommandReceived += OnStageKitEvent;
         _isSubscribedToStageKit = true;
     }
 
@@ -209,11 +208,11 @@ public sealed class HomeAssistantTalker : IDisposable
             return;
         }
 
-        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        LightingOutput.CommandReceived -= OnStageKitEvent;
         _isSubscribedToStageKit = false;
     }
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         if (!_isEnabled || _client == null)
         {
@@ -222,23 +221,23 @@ public sealed class HomeAssistantTalker : IDisposable
 
         switch (commandId)
         {
-            case StageKitTalker.CommandId.BlueLeds:
+            case LightingCommand.BlueLeds:
                 UpdateColorBank(parameter, static (state, isOn) => state.Blue = isOn);
                 break;
 
-            case StageKitTalker.CommandId.GreenLeds:
+            case LightingCommand.GreenLeds:
                 UpdateColorBank(parameter, static (state, isOn) => state.Green = isOn);
                 break;
 
-            case StageKitTalker.CommandId.YellowLeds:
+            case LightingCommand.YellowLeds:
                 UpdateColorBank(parameter, static (state, isOn) => state.Yellow = isOn);
                 break;
 
-            case StageKitTalker.CommandId.RedLeds:
+            case LightingCommand.RedLeds:
                 UpdateColorBank(parameter, static (state, isOn) => state.Red = isOn);
                 break;
 
-            case StageKitTalker.CommandId.DisableAll:
+            case LightingCommand.DisableAll:
                 ClearAllSlots();
                 QueueSendWork(async token =>
                 {
@@ -252,10 +251,10 @@ public sealed class HomeAssistantTalker : IDisposable
                 });
                 break;
 
-            case StageKitTalker.CommandId.StrobeSlow:
-            case StageKitTalker.CommandId.StrobeMedium:
-            case StageKitTalker.CommandId.StrobeFast:
-            case StageKitTalker.CommandId.StrobeFastest:
+            case LightingCommand.StrobeSlow:
+            case LightingCommand.StrobeMedium:
+            case LightingCommand.StrobeFast:
+            case LightingCommand.StrobeFastest:
                 if (_mainViewModel?.HomeAssistantStrobeMode == StrobeOutputModes.ManualFlash)
                 {
                     _manualStrobeFlasher.Start(
@@ -270,7 +269,7 @@ public sealed class HomeAssistantTalker : IDisposable
                 }
                 break;
 
-            case StageKitTalker.CommandId.StrobeOff:
+            case LightingCommand.StrobeOff:
                 _manualStrobeFlasher.Stop(SendManualStrobeFlashStateAsync);
                 QueueSendWork(token => SendStrobeStateAsync(false, token));
                 break;
@@ -380,7 +379,7 @@ public sealed class HomeAssistantTalker : IDisposable
 
     private async Task SendStrobeStateAsync(bool isOn, CancellationToken cancellationToken, bool force = false)
     {
-        if (UsbDeviceMonitor.IsOutputSuppressed)
+        if (LightingOutput.IsOutputSuppressed)
         {
             isOn = false;
         }

@@ -1,8 +1,8 @@
+using YALCY.Lighting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using YALCY.Integrations.StageKit;
 
 namespace YALCY.Integrations.Lifx;
 
@@ -29,7 +29,7 @@ internal static class LifxStageAssignments
         return canonical ?? Unassigned;
     }
 
-    public static bool TryGetAssignmentLabel(StageKitTalker.CommandId commandId, int slotIndex, out string label)
+    public static bool TryGetAssignmentLabel(LightingCommand commandId, int slotIndex, out string label)
     {
         if (!TryGetColorName(commandId, out var colorName) || slotIndex < 0 || slotIndex >= 8)
         {
@@ -41,7 +41,7 @@ internal static class LifxStageAssignments
         return true;
     }
 
-    public static bool TryGetAssignmentSlot(string? assignment, StageKitTalker.CommandId commandId, out int slotIndex)
+    public static bool TryGetAssignmentSlot(string? assignment, LightingCommand commandId, out int slotIndex)
     {
         slotIndex = -1;
         if (!TryGetColorName(commandId, out var colorName))
@@ -71,19 +71,19 @@ internal static class LifxStageAssignments
         return new Queue<string>(available);
     }
 
-    private static bool TryGetColorName(StageKitTalker.CommandId commandId, out string colorName)
+    private static bool TryGetColorName(LightingCommand commandId, out string colorName)
     {
         colorName = commandId switch
         {
-            StageKitTalker.CommandId.BlueLeds => "Blue",
-            StageKitTalker.CommandId.GreenLeds => "Green",
-            StageKitTalker.CommandId.YellowLeds => "Yellow",
-            StageKitTalker.CommandId.RedLeds => "Red",
-            StageKitTalker.CommandId.StrobeFastest => "Strobe",
-            StageKitTalker.CommandId.StrobeFast => "Strobe",
-            StageKitTalker.CommandId.StrobeMedium => "Strobe",
-            StageKitTalker.CommandId.StrobeSlow => "Strobe",
-            StageKitTalker.CommandId.StrobeOff => "Strobe",
+            LightingCommand.BlueLeds => "Blue",
+            LightingCommand.GreenLeds => "Green",
+            LightingCommand.YellowLeds => "Yellow",
+            LightingCommand.RedLeds => "Red",
+            LightingCommand.StrobeFastest => "Strobe",
+            LightingCommand.StrobeFast => "Strobe",
+            LightingCommand.StrobeMedium => "Strobe",
+            LightingCommand.StrobeSlow => "Strobe",
+            LightingCommand.StrobeOff => "Strobe",
             _ => string.Empty
         };
 

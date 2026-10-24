@@ -37,24 +37,17 @@
                                                 GitHubUsername="TheFatBastid"
                                                 Margin="0,0,7,15"/>
 
-                         <!-- Kadu -->
-                         <components:PersonCard DisplayName="Kadu" 
-                                                Role="Designer" 
-                                                GitHubUsername="kaduwaengertner"
-                                                Margin="7,0,0,15"/>
-                         
-                        
                          <!-- Nyxyxylyth -->
                          <components:PersonCard DisplayName="Nyxyxylyth" 
                                                 Role="Developer" 
                                                 GitHubUsername="Nyxyxylyth"
-                                                Margin="0,0,7,0"/>
+                                                Margin="7,0,0,15"/>
 
                         <!-- NevesPT -->
                         <components:PersonCard  DisplayName="NevesPT" 
                                                 Role="Developer | Designer" 
                                                 GitHubUsername="nevespt"
-                                                Margin="7,0,0,0"/>
+                                                Margin="0,0,7,0"/>
                      </UniformGrid>
                 </StackPanel>
             </Border>
@@ -89,13 +82,19 @@
                            <!-- Alink2thepatrick -->
                            <components:PersonCard DisplayName="Alink2thepatrick" 
                                                   Role="Community Member"
-                                                  Margin="0,0,7,0"/>
+                                                  Margin="0,0,7,15"/>
                            
+                           <!-- Kadu -->
+                           <components:PersonCard DisplayName="Kadu"
+                                                  Role="Designer"
+                                                  GitHubUsername="kaduwaengertner"
+                                                  Margin="7,0,0,15"/>
+
                            <!-- YARG -->
                            <components:PersonCard DisplayName="YARG Team" 
                                                   Role="and, of course, everyone from the YARG mother-ship"
                                                   GitHubUsername="YARC-Official"
-                                                  Margin="7,0,0,0"/>
+                                                  Margin="0,0,7,0"/>
                            
                        </UniformGrid>
                 </StackPanel>

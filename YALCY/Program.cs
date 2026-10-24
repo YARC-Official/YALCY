@@ -49,6 +49,13 @@ sealed class Program
         }
         finally
         {
+            if (Application.Current is App app && app.MainViewModel is { } vm)
+            {
+                try { vm.WledSerial.Output.EnableAsync(false, vm.WledSerial.Options).GetAwaiter().GetResult(); }
+                catch (Exception ex) { AppLog.Write(LogLevel.Error, "WLED Serial", $"Shutdown failed: {ex.Message}"); }
+                try { vm.GlowWorm.Output.EnableAsync(false, vm.GlowWorm.Options).GetAwaiter().GetResult(); }
+                catch (Exception ex) { AppLog.Write(LogLevel.Error, "Glow Worm", $"Shutdown failed: {ex.Message}"); }
+            }
             if (!allowMultiple)
             {
                 SingleInstanceManager.Release();

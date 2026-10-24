@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,6 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using HidSharp;
 using HidSharp.Experimental;
-using YALCY.Integrations.StageKit;
 using YALCY.ViewModels;
 
 namespace YALCY.Usb;
@@ -31,15 +31,10 @@ public class UsbDeviceMonitor
     private static List<BleDevice> _connectedBLEDevices = new();
 
     private static List<int> _connectedXInputStageKitIndices = new();
-    private static int _outputSuppressed;
 
     public static Action<Device> DeviceInserted;
     public static Action<Device> DeviceRemoved;
     public static Action<SerialDevice> SerialDeviceAdded;
-
-    public static event Action<StageKitTalker.CommandId, byte> OnStageKitCommand;
-
-    internal static bool IsOutputSuppressed => Volatile.Read(ref _outputSuppressed) != 0;
 
     private MainWindowViewModel? _mainViewModel;
     private bool _isRunning;
@@ -217,54 +212,8 @@ public class UsbDeviceMonitor
         }
     }
 
-    public static void SendReport(StageKitTalker.CommandId commandId, byte parameter)
+    public static void SendReport(LightingCommand commandId, byte parameter)
     {
-        if (IsOutputSuppressed)
-        {
-            return;
-        }
-
-        DispatchReport(commandId, parameter);
-    }
-
-    internal static void EnterSafetyBlackout()
-    {
-        if (Interlocked.Exchange(ref _outputSuppressed, 1) != 0)
-        {
-            return;
-        }
-
-        DispatchReport(StageKitTalker.CommandId.DisableAll, 0);
-    }
-
-    internal static void ExitSafetyBlackout()
-    {
-        Interlocked.Exchange(ref _outputSuppressed, 0);
-    }
-
-    public static void SimulateStageKitCommand(StageKitTalker.CommandId commandId, byte parameter)
-    {
-        DispatchReport(commandId, parameter);
-    }
-
-    private static void DispatchReport(StageKitTalker.CommandId commandId, byte parameter)
-    {
-        var subscribers = OnStageKitCommand?.GetInvocationList();
-        if (subscribers != null)
-        {
-            foreach (var subscriber in subscribers)
-            {
-                try
-                {
-                    ((Action<StageKitTalker.CommandId, byte>)subscriber)(commandId, parameter);
-                }
-                catch (Exception ex)
-                {
-                    AppLog.Write(LogLevel.Error, "StageKit", $"Stage Kit command subscriber failed: {ex.Message}");
-                }
-            }
-        }
-
 #if WINDOWS
         List<int> stageKitIndices;
         lock (DeviceStateLock)

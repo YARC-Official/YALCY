@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -5,8 +6,6 @@ using Avalonia.Platform;
 using System;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using YALCY.Integrations.StageKit;
-using YALCY.Usb;
 
 namespace YALCY.ViewModels;
 
@@ -113,7 +112,7 @@ public class LedDisplay : Control
         LedStates = new bool[8];
         AttachedToVisualTree += (_, _) =>
         {
-            UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            LightingOutput.CommandReceived += OnStageKitEvent;
             OnGlobalShowLabelsChanged += OnGlobalLabelsToggled;
             if (Application.Current != null)
             {
@@ -122,7 +121,7 @@ public class LedDisplay : Control
         };
         DetachedFromVisualTree += (_, _) =>
         {
-            UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+            LightingOutput.CommandReceived -= OnStageKitEvent;
             OnGlobalShowLabelsChanged -= OnGlobalLabelsToggled;
             if (Application.Current != null)
             {
@@ -292,31 +291,31 @@ public class LedDisplay : Control
         }
     }
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             var updateLed = false;
             switch (commandId)
             {
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     Array.Clear(LedStates, 0, LedStates.Length);
                     InvalidateVisual();
                     return;
 
-                case StageKitTalker.CommandId.BlueLeds:
+                case LightingCommand.BlueLeds:
                     updateLed = (Color == 0);
                     break;
 
-                case StageKitTalker.CommandId.GreenLeds:
+                case LightingCommand.GreenLeds:
                     updateLed = (Color == 1);
                     break;
 
-                case StageKitTalker.CommandId.YellowLeds:
+                case LightingCommand.YellowLeds:
                     updateLed = (Color == 2);
                     break;
 
-                case StageKitTalker.CommandId.RedLeds:
+                case LightingCommand.RedLeds:
                     updateLed = (Color == 3);
                     break;
             }

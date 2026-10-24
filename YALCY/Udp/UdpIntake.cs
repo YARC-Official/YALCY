@@ -158,6 +158,7 @@ public partial class UdpIntake : ReactiveObject
 
     private static UdpClient? _udpClient;
     private static CancellationTokenSource? _cancellationTokenSource;
+    private static Task? _receiveTask;
     private static Timer? _healthCheckTimer;
     private const int HEALTH_CHECK_INTERVAL_MS = 1000; // Check once per second
 
@@ -230,20 +231,26 @@ public partial class UdpIntake : ReactiveObject
                 return;
             }
 
-            await Task.Run(async () =>
+            // Startup completes once the socket is bound; receiving has its own lifetime.
+            var token = cancellationTokenSource.Token;
+            _receiveTask = Task.Run(async () =>
             {
                 try
                 {
-                    while (!cancellationTokenSource.Token.IsCancellationRequested)
+                    while (!token.IsCancellationRequested)
                     {
-                        var result = await udpClient.ReceiveAsync().ConfigureAwait(false);
+                        var result = await udpClient.ReceiveAsync(token).ConfigureAwait(false);
 
                         DeserializePacket(result.Buffer);
                     }
                 }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    // Normal listener shutdown.
+                }
                 catch (ObjectDisposedException)
                 {
-                    if (!cancellationTokenSource.IsCancellationRequested)
+                    if (!token.IsCancellationRequested)
                         StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error,
                             "The YARG UDP listening socket was closed unexpectedly. Disable and re-enable UDP input to restart the listener.");
                 }
@@ -256,11 +263,11 @@ public partial class UdpIntake : ReactiveObject
                     StatusFooter.UpdateStatus("UDP", IntegrationStatus.Error,
                         $"The YARG UDP listener stopped while receiving data: {ex.GetType().Name}: {ex.Message} Check network access, then disable and re-enable UDP input.");
                 }
-            }, cancellationTokenSource.Token);
+            }, token);
         }
         else
         {
-            StopUdpClient();
+            await StopUdpClientAsync();
         }
     }
 
@@ -638,19 +645,27 @@ public partial class UdpIntake : ReactiveObject
         }
     }
 
-    private void StopUdpClient()
+    private async Task StopUdpClientAsync()
     {
         try
         {
             _safetyController?.NotifyStreamStopped();
-            _cancellationTokenSource?.Cancel();
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = null;
+            var receiver = _receiveTask;
+            var cancellation = _cancellationTokenSource;
+            cancellation?.Cancel();
             _healthCheckTimer?.Dispose();
             _healthCheckTimer = null;
             _udpClient?.Close();
             _udpClient?.Dispose();
             _udpClient = null;
+            if (receiver != null)
+            {
+                try { await receiver.ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
+            }
+            cancellation?.Dispose();
+            _cancellationTokenSource = null;
+            _receiveTask = null;
             StatusFooter.UpdateStatus("UDP", IntegrationStatus.Off);
             //        ClearByteIndexes();
         }

@@ -1,7 +1,7 @@
+using YALCY.Lighting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using YALCY.Integrations.StageKit;
 
 namespace YALCY.Integrations;
 
@@ -17,7 +17,7 @@ public sealed class ManualStrobeFlasher : IDisposable
     }
 
     public void Start(
-        StageKitTalker.CommandId commandId,
+        LightingCommand commandId,
         float bpm,
         Func<bool, CancellationToken, Task> setFlashState)
     {
@@ -56,14 +56,14 @@ public sealed class ManualStrobeFlasher : IDisposable
         }
     }
 
-    public static bool TryGetSpeed(StageKitTalker.CommandId commandId, out int speed)
+    public static bool TryGetSpeed(LightingCommand commandId, out int speed)
     {
         speed = commandId switch
         {
-            StageKitTalker.CommandId.StrobeSlow => 1,
-            StageKitTalker.CommandId.StrobeMedium => 2,
-            StageKitTalker.CommandId.StrobeFast => 3,
-            StageKitTalker.CommandId.StrobeFastest => 4,
+            LightingCommand.StrobeSlow => 1,
+            LightingCommand.StrobeMedium => 2,
+            LightingCommand.StrobeFast => 3,
+            LightingCommand.StrobeFastest => 4,
             _ => 0
         };
 

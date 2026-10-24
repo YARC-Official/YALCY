@@ -178,6 +178,14 @@
                 <tabs:WledTabView />
             </TabItem>
             <TabItem>
+                <TabItem.Header><components:TabHeader Text="WLED Serial" /></TabItem.Header>
+                <tabs:WledSerialTabView />
+            </TabItem>
+            <TabItem>
+                <TabItem.Header><components:TabHeader Text="Glow Worm" /></TabItem.Header>
+                <tabs:GlowWormTabView />
+            </TabItem>
+            <TabItem>
                 <TabItem.Header>
                     <components:TabHeader Text="Settings" />
                 </TabItem.Header>

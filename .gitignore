@@ -407,3 +407,6 @@ FodyWeavers.xsd
 # draw.io temp.backup files
 *.bkp
 *.dtmp
+
+# Local verification build output
+.codex_tmp/

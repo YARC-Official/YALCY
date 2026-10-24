@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using YALCY.Usb;
 
-namespace YALCY.Integrations.StageKit;
+namespace YALCY.Lighting;
 
     // Parent of primitives
     // Grandparent of cues
-    public abstract class StageKitLighting
+    public abstract class LightingPattern
     {
         protected const byte None = 0b00000000;
         protected const byte Zero = 0b00000001;
@@ -38,47 +37,47 @@ namespace YALCY.Integrations.StageKit;
     }
 
     // This is the parent class of all lighting cues. (not primitives)
-    public abstract class StageKitLightingCue : StageKitLighting
+    public abstract class LightingCue : LightingPattern
     {
-        protected const StageKitTalker.CommandId Blue = StageKitTalker.CommandId.BlueLeds;
-        protected const StageKitTalker.CommandId Green = StageKitTalker.CommandId.GreenLeds;
-        protected const StageKitTalker.CommandId Yellow = StageKitTalker.CommandId.YellowLeds;
-        protected const StageKitTalker.CommandId Red = StageKitTalker.CommandId.RedLeds;
+        protected const LightingCommand Blue = LightingCommand.BlueLeds;
+        protected const LightingCommand Green = LightingCommand.GreenLeds;
+        protected const LightingCommand Yellow = LightingCommand.YellowLeds;
+        protected const LightingCommand Red = LightingCommand.RedLeds;
 
-        public List<StageKitLighting> CuePrimitives = new();
+        public List<LightingPattern> CuePrimitives = new();
     }
-    public class NoCue : StageKitLightingCue
+    public class NoCue : LightingCue
     {
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(StageKitTalker.CommandId.DisableAll, None);
+            LightingOutput.Publish(LightingCommand.DisableAll, None);
         }
     }
 
-    public class BigRockEnding : StageKitLightingCue
+    public class BigRockEnding : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList1 =
+        private static readonly (LightingCommand, byte)[] PatternList1 =
         {
             (Red, All),
             (Red, None),
             (Red, None),
             (Red, None),
         };
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList2 =
+        private static readonly (LightingCommand, byte)[] PatternList2 =
         {
             (Yellow, None),
             (Yellow, None),
             (Yellow, All),
             (Yellow, None),
         };
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList3 =
+        private static readonly (LightingCommand, byte)[] PatternList3 =
         {
             (Green, None),
             (Green, All),
             (Green, None),
             (Green, None),
         };
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList4 =
+        private static readonly (LightingCommand, byte)[] PatternList4 =
         {
             (Blue, None),
             (Blue, None),
@@ -92,10 +91,10 @@ namespace YALCY.Integrations.StageKit;
             CuePrimitives.Add(new BeatPattern(PatternList2, 2f)); //?
             CuePrimitives.Add(new BeatPattern(PatternList3, 2f)); //?
             CuePrimitives.Add(new BeatPattern(PatternList4, 2f)); //?
-            UsbDeviceMonitor.SendReport(Blue, All);
-            UsbDeviceMonitor.SendReport(Red, All);
-            UsbDeviceMonitor.SendReport(Yellow, All);
-            UsbDeviceMonitor.SendReport(Green, All);
+            LightingOutput.Publish(Blue, All);
+            LightingOutput.Publish(Red, All);
+            LightingOutput.Publish(Yellow, All);
+            LightingOutput.Publish(Green, All);
 
             foreach (var primitive in CuePrimitives)
             {
@@ -104,9 +103,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class LoopWarm : StageKitLightingCue
+    public class LoopWarm : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList1 =
+        private static readonly (LightingCommand, byte)[] PatternList1 =
         {
             (Red, Zero | Four),
             (Red, One | Five),
@@ -114,7 +113,7 @@ namespace YALCY.Integrations.StageKit;
             (Red, Three | Seven),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList2 =
+        private static readonly (LightingCommand, byte)[] PatternList2 =
         {
             (Yellow, Two),
             (Yellow, One),
@@ -128,8 +127,8 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Green, None);
-            UsbDeviceMonitor.SendReport(Blue, None);
+            LightingOutput.Publish(Green, None);
+            LightingOutput.Publish(Blue, None);
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
 
@@ -140,9 +139,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class LoopCool : StageKitLightingCue
+    public class LoopCool : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList1 =
+        private static readonly (LightingCommand, byte)[] PatternList1 =
         {
             (Blue, Zero | Four),
             (Blue, One | Five),
@@ -150,7 +149,7 @@ namespace YALCY.Integrations.StageKit;
             (Blue, Three | Seven),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList2 =
+        private static readonly (LightingCommand, byte)[] PatternList2 =
         {
             (Green, Two),
             (Green, One),
@@ -164,8 +163,8 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Yellow, None);
-            UsbDeviceMonitor.SendReport(Red, None);
+            LightingOutput.Publish(Yellow, None);
+            LightingOutput.Publish(Red, None);
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
 
@@ -176,9 +175,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class Harmony : StageKitLightingCue
+    public class Harmony : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList1 =
+        private static readonly (LightingCommand, byte)[] LargePatternList1 =
         {
             (Yellow, Three),
             (Yellow, Two),
@@ -190,7 +189,7 @@ namespace YALCY.Integrations.StageKit;
             (Yellow, Four),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList2 =
+        private static readonly (LightingCommand, byte)[] LargePatternList2 =
         {
             (Red, Four),
             (Red, Three),
@@ -202,7 +201,7 @@ namespace YALCY.Integrations.StageKit;
             (Red, Five),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList1 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList1 =
         {
             (Green, Four),
             (Green, Five),
@@ -214,7 +213,7 @@ namespace YALCY.Integrations.StageKit;
             (Green, Three),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList2 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList2 =
         {
             (Blue, Four),
             (Blue, Five),
@@ -230,15 +229,15 @@ namespace YALCY.Integrations.StageKit;
         {
             if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
-                UsbDeviceMonitor.SendReport(Blue, None);
-                UsbDeviceMonitor.SendReport(Green, None);
+                LightingOutput.Publish(Blue, None);
+                LightingOutput.Publish(Green, None);
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 1f/LargePatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(LargePatternList2, 1f/LargePatternList2.Length)); //set
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Red, None);
-                UsbDeviceMonitor.SendReport(Yellow, None);
+                LightingOutput.Publish(Red, None);
+                LightingOutput.Publish(Yellow, None);
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 1f/SmallPatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 1f/SmallPatternList1.Length)); //set
             }
@@ -250,9 +249,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class Sweep : StageKitLightingCue
+    public class Sweep : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList1 =
+        private static readonly (LightingCommand, byte)[] LargePatternList1 =
         {
             (Red, Six | Two),
             (Red, Five | One),
@@ -260,7 +259,7 @@ namespace YALCY.Integrations.StageKit;
             (Red, Three | Seven),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList1 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList1 =
         {
             (Yellow, Six | Two),
             (Yellow, Five | One),
@@ -268,7 +267,7 @@ namespace YALCY.Integrations.StageKit;
             (Yellow, Three | Seven),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList2 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList2 =
         {
             (Blue, Zero),
             (Blue, One),
@@ -279,7 +278,7 @@ namespace YALCY.Integrations.StageKit;
             (Blue, None),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList3 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList3 =
         {
             (Green, None),
             (Green, None),
@@ -296,14 +295,14 @@ namespace YALCY.Integrations.StageKit;
         {
             if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
-                UsbDeviceMonitor.SendReport(Yellow, None);
-                UsbDeviceMonitor.SendReport(Blue, None);
-                UsbDeviceMonitor.SendReport(Green, None);
+                LightingOutput.Publish(Yellow, None);
+                LightingOutput.Publish(Blue, None);
+                LightingOutput.Publish(Green, None);
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 1f/LargePatternList1.Length)); //set
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Red, None);
+                LightingOutput.Publish(Red, None);
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 1f/SmallPatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 1f/SmallPatternList1.Length)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList3, 1f/SmallPatternList3.Length)); //set
@@ -316,10 +315,10 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class Frenzy : StageKitLightingCue
+    public class Frenzy : LightingCue
     {
         // Red off blue yellow
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList1 =
+        private static readonly (LightingCommand, byte)[] LargePatternList1 =
         {
             (Red, All),
             (Red, None),
@@ -327,7 +326,7 @@ namespace YALCY.Integrations.StageKit;
             (Red, None),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList2 =
+        private static readonly (LightingCommand, byte)[] LargePatternList2 =
         {
             (Blue, None),
             (Blue, None),
@@ -335,7 +334,7 @@ namespace YALCY.Integrations.StageKit;
             (Blue, None),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList3 =
+        private static readonly (LightingCommand, byte)[] LargePatternList3 =
         {
             (Yellow, None),
             (Yellow, None),
@@ -345,7 +344,7 @@ namespace YALCY.Integrations.StageKit;
 
         // Small venue: half red, other half red, 4 green , 2 side blue, other 6 blue
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList1 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList1 =
         {
             (Red, None),
             (Red, All),
@@ -353,7 +352,7 @@ namespace YALCY.Integrations.StageKit;
             (Red, One | Three | Five | Seven),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList2 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList2 =
         {
             (Green, None),
             (Green, None),
@@ -361,7 +360,7 @@ namespace YALCY.Integrations.StageKit;
             (Green, None),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList3 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList3 =
         {
             (Blue, All),
             (Blue, None),
@@ -373,7 +372,7 @@ namespace YALCY.Integrations.StageKit;
         {
             if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
-                UsbDeviceMonitor.SendReport(Green, None);
+                LightingOutput.Publish(Green, None);
                 // 4 times a beats to control on and off because of the 2 different patterns on one color
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 1f)); //set
                 CuePrimitives.Add(new BeatPattern(LargePatternList2, 1f)); //set
@@ -381,7 +380,7 @@ namespace YALCY.Integrations.StageKit;
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Yellow, None);
+                LightingOutput.Publish(Yellow, None);
                 // 4 times a beats to control on and off because of the 2 different patterns on one color
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 1f)); //set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 1f)); //set
@@ -395,9 +394,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class SearchLight : StageKitLightingCue
+    public class SearchLight : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList1 =
+        private static readonly (LightingCommand, byte)[] LargePatternList1 =
         {
             (Yellow, Two),
             (Yellow, Three),
@@ -409,7 +408,7 @@ namespace YALCY.Integrations.StageKit;
             (Yellow, One),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList2 =
+        private static readonly (LightingCommand, byte)[] LargePatternList2 =
         {
             (Blue, Zero),
             (Blue, Seven),
@@ -421,7 +420,7 @@ namespace YALCY.Integrations.StageKit;
             (Blue, One),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList1 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList1 =
         {
             (Yellow, Zero),
             (Yellow, Seven),
@@ -433,7 +432,7 @@ namespace YALCY.Integrations.StageKit;
             (Yellow, One),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList2 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList2 =
         {
             (Red, Zero),
             (Red, Seven),
@@ -449,18 +448,18 @@ namespace YALCY.Integrations.StageKit;
         {
             if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
-                UsbDeviceMonitor.SendReport(Red, None);
+                LightingOutput.Publish(Red, None);
                 CuePrimitives.Add(new BeatPattern(LargePatternList1, 0.5f)); //Set
                 CuePrimitives.Add(new BeatPattern(LargePatternList2, 0.5f)); //Set
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Blue, None);
+                LightingOutput.Publish(Blue, None);
                 CuePrimitives.Add(new BeatPattern(SmallPatternList1, 0.5f)); //Set
                 CuePrimitives.Add(new BeatPattern(SmallPatternList2, 0.5f)); //Set
             }
 
-            UsbDeviceMonitor.SendReport(Green, None);
+            LightingOutput.Publish(Green, None);
 
             foreach (var primitive in CuePrimitives)
             {
@@ -469,83 +468,83 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class Intro : StageKitLightingCue
+    public class Intro : LightingCue
     {
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Yellow, None);
-            UsbDeviceMonitor.SendReport(Red, None);
-            UsbDeviceMonitor.SendReport(Blue, None);
-            UsbDeviceMonitor.SendReport(Green, All);
+            LightingOutput.Publish(Yellow, None);
+            LightingOutput.Publish(Red, None);
+            LightingOutput.Publish(Blue, None);
+            LightingOutput.Publish(Green, All);
         }
     }
 
-    public class FlareFast : StageKitLightingCue
+    public class FlareFast : LightingCue
     {
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Yellow, None);
-            UsbDeviceMonitor.SendReport(Red, None);
+            LightingOutput.Publish(Yellow, None);
+            LightingOutput.Publish(Red, None);
 
-            if (StageKitTalker.PreviousLightingCue is ManualCool or LoopCool)
+            if (LightingEngine.PreviousLightingCue is ManualCool or LoopCool)
             {
-                UsbDeviceMonitor.SendReport(Green, All);
+                LightingOutput.Publish(Green, All);
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Green, None);
+                LightingOutput.Publish(Green, None);
             }
 
-            UsbDeviceMonitor.SendReport(Blue, All);
+            LightingOutput.Publish(Blue, All);
         }
     }
 
-    public class FlareSlow : StageKitLightingCue
+    public class FlareSlow : LightingCue
     {
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Blue, All);
-            UsbDeviceMonitor.SendReport(Red, All);
-            UsbDeviceMonitor.SendReport(Yellow, All);
-            UsbDeviceMonitor.SendReport(Green, All);
+            LightingOutput.Publish(Blue, All);
+            LightingOutput.Publish(Red, All);
+            LightingOutput.Publish(Yellow, All);
+            LightingOutput.Publish(Green, All);
         }
     }
 
     //Probably needs some off logic to unsubscribe from the beat event
-    public class SilhouetteSpot : StageKitLightingCue
+    public class SilhouetteSpot : LightingCue
     {
         private bool _blueOn = true;
         private bool _enableBlueLedVocals;
 
         public override void Enable()
         {
-            if (StageKitTalker.PreviousLightingCue is Intro)
+            if (LightingEngine.PreviousLightingCue is Intro)
             {
-                CuePrimitives.Add(new ListenPattern(new (StageKitTalker.CommandId, byte)[] { (Blue, All) }, ListenTypes.RedFretDrums, true));
+                CuePrimitives.Add(new ListenPattern(new (LightingCommand, byte)[] { (Blue, All) }, ListenTypes.RedFretDrums, true));
             }
 
             Udp.UdpIntake.OnBeat += HandleBeatlineEvent;
             Udp.UdpIntake.OnVocalHarmony += HandleVocalEvent;
 
-            if (StageKitTalker.PreviousLightingCue is Dischord)
+            if (LightingEngine.PreviousLightingCue is Dischord)
             {
-                UsbDeviceMonitor.SendReport(Red, None);
-                UsbDeviceMonitor.SendReport(Yellow, None);
-                UsbDeviceMonitor.SendReport(Blue, One | Three | Five | Seven);
-                UsbDeviceMonitor.SendReport(Green, All);
+                LightingOutput.Publish(Red, None);
+                LightingOutput.Publish(Yellow, None);
+                LightingOutput.Publish(Blue, One | Three | Five | Seven);
+                LightingOutput.Publish(Green, All);
 
                 _enableBlueLedVocals = true;
             }
-            else if (StageKitTalker.PreviousLightingCue is Stomp)
+            else if (LightingEngine.PreviousLightingCue is Stomp)
             {
                 // Do nothing (for the chop suey ending at least)
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Red, None);
-                UsbDeviceMonitor.SendReport(Green, None);
-                UsbDeviceMonitor.SendReport(Blue, None);
-                UsbDeviceMonitor.SendReport(Yellow, None);
+                LightingOutput.Publish(Red, None);
+                LightingOutput.Publish(Green, None);
+                LightingOutput.Publish(Blue, None);
+                LightingOutput.Publish(Yellow, None);
             }
 
             foreach (var primitive in CuePrimitives)
@@ -573,12 +572,12 @@ namespace YALCY.Integrations.StageKit;
 
             if (_blueOn)
             {
-                UsbDeviceMonitor.SendReport(Blue, None);
+                LightingOutput.Publish(Blue, None);
                 _blueOn = false;
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Blue, One | Three | Five | Seven);
+                LightingOutput.Publish(Blue, One | Three | Five | Seven);
                 _blueOn = true;
             }
 
@@ -587,36 +586,36 @@ namespace YALCY.Integrations.StageKit;
 
         private void HandleBeatlineEvent(byte eventName)
         {
-            if (eventName != (byte)Udp.UdpIntake.BeatByte.Measure || StageKitTalker.PreviousLightingCue is not Dischord) return;
+            if (eventName != (byte)Udp.UdpIntake.BeatByte.Measure || LightingEngine.PreviousLightingCue is not Dischord) return;
             _enableBlueLedVocals = true;
         }
     }
 
-    public class Silhouettes : StageKitLightingCue
+    public class Silhouettes : LightingCue
     {
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Green, All);
-            UsbDeviceMonitor.SendReport(Yellow, None);
-            UsbDeviceMonitor.SendReport(Blue, None);
-            UsbDeviceMonitor.SendReport(Red, None);
+            LightingOutput.Publish(Green, All);
+            LightingOutput.Publish(Yellow, None);
+            LightingOutput.Publish(Blue, None);
+            LightingOutput.Publish(Red, None);
         }
     }
 
-    public class Blackout : StageKitLightingCue
+    public class Blackout : LightingCue
     {
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Green, None);
-            UsbDeviceMonitor.SendReport(Yellow, None);
-            UsbDeviceMonitor.SendReport(Blue, None);
-            UsbDeviceMonitor.SendReport(Red, None);
+            LightingOutput.Publish(Green, None);
+            LightingOutput.Publish(Yellow, None);
+            LightingOutput.Publish(Blue, None);
+            LightingOutput.Publish(Red, None);
         }
     }
 
-    public class ManualWarm : StageKitLightingCue
+    public class ManualWarm : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList1 =
+        private static readonly (LightingCommand, byte)[] PatternList1 =
         {
             (Red, Zero | Four),
             (Red, One | Five),
@@ -624,7 +623,7 @@ namespace YALCY.Integrations.StageKit;
             (Red, Three | Seven),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList2 =
+        private static readonly (LightingCommand, byte)[] PatternList2 =
         {
             (Yellow, Two),
             (Yellow, One),
@@ -638,12 +637,12 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Green, None);
-            UsbDeviceMonitor.SendReport(Blue, None);
+            LightingOutput.Publish(Green, None);
+            LightingOutput.Publish(Blue, None);
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
             // I thought the Manuals listens to the next but it doesn't seem to. I'll save this for funky fresh mode
-            // new ListenPattern(new List<(int, byte)>(), StageKitLightingPrimitives.ListenTypes.Next);
+            // new ListenPattern(new List<(int, byte)>(), LightingPatternPrimitives.ListenTypes.Next);
 
             foreach (var primitive in CuePrimitives)
             {
@@ -652,9 +651,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class ManualCool : StageKitLightingCue
+    public class ManualCool : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList1 =
+        private static readonly (LightingCommand, byte)[] PatternList1 =
         {
             (Blue, Zero | Four),
             (Blue, One | Five),
@@ -662,7 +661,7 @@ namespace YALCY.Integrations.StageKit;
             (Blue, Three | Seven),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList2 =
+        private static readonly (LightingCommand, byte)[] PatternList2 =
         {
             (Green, Two),
             (Green, One),
@@ -678,8 +677,8 @@ namespace YALCY.Integrations.StageKit;
         {
             CuePrimitives.Add(new BeatPattern(PatternList1, 1f/PatternList1.Length)); //Set
             CuePrimitives.Add(new BeatPattern(PatternList2, 1f/PatternList2.Length)); //Set
-            UsbDeviceMonitor.SendReport(Yellow, None);
-            UsbDeviceMonitor.SendReport(Red, None);
+            LightingOutput.Publish(Yellow, None);
+            LightingOutput.Publish(Red, None);
 
             foreach (var primitive in CuePrimitives)
             {
@@ -688,7 +687,7 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class Stomp : StageKitLightingCue
+    public class Stomp : LightingCue
     {
         private bool _anythingOn;
 
@@ -698,16 +697,16 @@ namespace YALCY.Integrations.StageKit;
 
             if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
-                UsbDeviceMonitor.SendReport(Blue, All);
+                LightingOutput.Publish(Blue, All);
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Blue, None);
+                LightingOutput.Publish(Blue, None);
             }
 
-            UsbDeviceMonitor.SendReport(Red, All);
-            UsbDeviceMonitor.SendReport(Green, All);
-            UsbDeviceMonitor.SendReport(Yellow, All);
+            LightingOutput.Publish(Red, All);
+            LightingOutput.Publish(Green, All);
+            LightingOutput.Publish(Yellow, All);
 
             _anythingOn = true;
 
@@ -722,25 +721,25 @@ namespace YALCY.Integrations.StageKit;
             if (eventName != (byte)Udp.UdpIntake.KeyFrameByte.KeyframeNext) return;
             if (_anythingOn)
             {
-                UsbDeviceMonitor.SendReport(Red, None);
-                UsbDeviceMonitor.SendReport(Green, None);
-                UsbDeviceMonitor.SendReport(Blue, None);
-                UsbDeviceMonitor.SendReport(Yellow, None);
+                LightingOutput.Publish(Red, None);
+                LightingOutput.Publish(Green, None);
+                LightingOutput.Publish(Blue, None);
+                LightingOutput.Publish(Yellow, None);
             }
             else
             {
                 if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
                 {
-                    UsbDeviceMonitor.SendReport(Blue, All);
+                    LightingOutput.Publish(Blue, All);
                 }
                 else
                 {
-                    UsbDeviceMonitor.SendReport(Blue, None);
+                    LightingOutput.Publish(Blue, None);
                 }
 
-                UsbDeviceMonitor.SendReport(Red, All);
-                UsbDeviceMonitor.SendReport(Green, All);
-                UsbDeviceMonitor.SendReport(Yellow, All);
+                LightingOutput.Publish(Red, All);
+                LightingOutput.Publish(Green, All);
+                LightingOutput.Publish(Yellow, All);
             }
 
             _anythingOn = !_anythingOn;
@@ -748,15 +747,15 @@ namespace YALCY.Integrations.StageKit;
     }
 
     //Probably needs some off logic to unsubscribe from the beat event
-    public class Dischord : StageKitLightingCue
+    public class Dischord : LightingCue
     {
         private bool _greenIsSpinning;
         private bool _blueOnTwo = true;
-        private StageKitLighting _greenPattern;
+        private LightingPattern _greenPattern;
         private BeatPattern _blueFour;
         private BeatPattern _blueTwo;
 
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList1 =
+        private static readonly (LightingCommand, byte)[] PatternList1 =
         {
             (Yellow, Zero),
             (Yellow, One),
@@ -767,7 +766,7 @@ namespace YALCY.Integrations.StageKit;
             (Yellow, Six),
             (Yellow, Seven),
         };
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList2 =
+        private static readonly (LightingCommand, byte)[] PatternList2 =
         {
             (Green, Zero),
             (Green, Seven),
@@ -779,13 +778,13 @@ namespace YALCY.Integrations.StageKit;
             (Green, One),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] BlueFourPattern =
+        private static readonly (LightingCommand, byte)[] BlueFourPattern =
         {
             (Blue, None),
             (Blue, Zero | Two | Four | Six),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] BlueTwoPattern =
+        private static readonly (LightingCommand, byte)[] BlueTwoPattern =
         {
             (Blue, None),
             (Blue, Two | Six),
@@ -798,7 +797,7 @@ namespace YALCY.Integrations.StageKit;
             _blueFour = new BeatPattern(BlueFourPattern, 1f, false); //?
             _blueTwo = new BeatPattern(BlueTwoPattern, 1f, false); //?
             CuePrimitives.Add(new ListenPattern(PatternList1, ListenTypes.MajorBeat | ListenTypes.MinorBeat));
-            CuePrimitives.Add(new ListenPattern(new (StageKitTalker.CommandId, byte)[] { (Red, All) }, ListenTypes.RedFretDrums, true));
+            CuePrimitives.Add(new ListenPattern(new (LightingCommand, byte)[] { (Red, All) }, ListenTypes.RedFretDrums, true));
             CuePrimitives.Add(_blueTwo);
             CuePrimitives.Add(_blueFour);
             CuePrimitives.Add(_greenPattern);
@@ -806,8 +805,8 @@ namespace YALCY.Integrations.StageKit;
             Udp.UdpIntake.OnBeat += HandleBeatlineEvent;
             Udp.UdpIntake.OnKeyFrame += HandleKeyFrameEvent;
 
-            UsbDeviceMonitor.SendReport(Red, None);
-            UsbDeviceMonitor.SendReport(Blue, Two | Six);
+            LightingOutput.Publish(Red, None);
+            LightingOutput.Publish(Blue, Two | Six);
 
             // Don't want to enable all, that turns on both blue patterns.
             CuePrimitives[0].Enable();
@@ -851,7 +850,7 @@ namespace YALCY.Integrations.StageKit;
             {
                 _greenPattern.KillSelf();
 
-                UsbDeviceMonitor.SendReport(Green, All);
+                LightingOutput.Publish(Green, All);
             }
             else
             {
@@ -862,15 +861,15 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class Default : StageKitLightingCue
+    public class Default : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList1 =
+        private static readonly (LightingCommand, byte)[] LargePatternList1 =
         {
             (Blue, All),
             (Red, All),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList1 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList1 =
         {
             (Red, All),
             (Blue, All),
@@ -878,7 +877,7 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Green, None);
+            LightingOutput.Publish(Green, None);
 
             if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
@@ -886,8 +885,8 @@ namespace YALCY.Integrations.StageKit;
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Yellow, None);
-                CuePrimitives.Add(new ListenPattern(new (StageKitTalker.CommandId, byte)[] { (Yellow, All) }, ListenTypes.RedFretDrums, true, true));
+                LightingOutput.Publish(Yellow, None);
+                CuePrimitives.Add(new ListenPattern(new (LightingCommand, byte)[] { (Yellow, All) }, ListenTypes.RedFretDrums, true, true));
                 CuePrimitives.Add(new ListenPattern(SmallPatternList1, ListenTypes.Next));
             }
 
@@ -898,9 +897,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class MenuLighting : StageKitLightingCue
+    public class MenuLighting : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList1 =
+        private static readonly (LightingCommand, byte)[] PatternList1 =
         {
             (Blue, Zero),
             (Blue, One),
@@ -914,9 +913,9 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Green, None);
-            UsbDeviceMonitor.SendReport(Red, None);
-            UsbDeviceMonitor.SendReport(Yellow, None);
+            LightingOutput.Publish(Green, None);
+            LightingOutput.Publish(Red, None);
+            LightingOutput.Publish(Yellow, None);
             CuePrimitives.Add(new TimedPattern(PatternList1, 2f));
             foreach (var primitive in CuePrimitives)
             {
@@ -925,9 +924,9 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class ScoreLighting : StageKitLightingCue
+    public class ScoreLighting : LightingCue
     {
-        private static readonly (StageKitTalker.CommandId, byte)[] LargePatternList1 =
+        private static readonly (LightingCommand, byte)[] LargePatternList1 =
         {
             (Red, Six | Two),
             (Red, One | Five),
@@ -935,7 +934,7 @@ namespace YALCY.Integrations.StageKit;
             (Red, Seven | Three),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] SmallPatternList1 =
+        private static readonly (LightingCommand, byte)[] SmallPatternList1 =
         {
             (Blue, Zero),
             (Blue, Seven),
@@ -947,7 +946,7 @@ namespace YALCY.Integrations.StageKit;
             (Blue, One),
         };
 
-        private static readonly (StageKitTalker.CommandId, byte)[] PatternList2 =
+        private static readonly (LightingCommand, byte)[] PatternList2 =
         {
             (Yellow, Six | Two),
             (Yellow, Seven | Three),
@@ -957,16 +956,16 @@ namespace YALCY.Integrations.StageKit;
 
         public override void Enable()
         {
-            UsbDeviceMonitor.SendReport(Green, None);
+            LightingOutput.Publish(Green, None);
 
             if (Udp.UdpIntake.Venue.Value == (byte)Udp.UdpIntake.VenueSizeByte.Large)
             {
-                UsbDeviceMonitor.SendReport(Blue, None);
+                LightingOutput.Publish(Blue, None);
                 CuePrimitives.Add(new TimedPattern(LargePatternList1, 1f));
             }
             else
             {
-                UsbDeviceMonitor.SendReport(Red, None);
+                LightingOutput.Publish(Red, None);
                 CuePrimitives.Add(new TimedPattern(SmallPatternList1, 1f));
             }
 

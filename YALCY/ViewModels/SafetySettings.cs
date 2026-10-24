@@ -1,10 +1,10 @@
+using YALCY.Lighting;
 using System;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Threading;
 using ReactiveUI;
 using YALCY.Safety;
-using YALCY.Usb;
 using YALCY.Views.Components;
 
 namespace YALCY.ViewModels;
@@ -100,14 +100,14 @@ public partial class MainWindowViewModel
 
         public void EnterSafeMode()
         {
-            UsbDeviceMonitor.EnterSafetyBlackout();
-            _viewModel.StageKitTalker.SuspendCurrentCue();
+            LightingOutput.EnterSafetyBlackout();
+            _viewModel.LightingEngine.SuspendCurrentCue();
             _viewModel.UdpIntake.EnterSafetyBlackout();
         }
 
         public void ExitSafeMode(bool replayState)
         {
-            UsbDeviceMonitor.ExitSafetyBlackout();
+            LightingOutput.ExitSafetyBlackout();
             if (replayState)
             {
                 _viewModel.UdpIntake.ReplayOutputState();

@@ -34,7 +34,7 @@ public partial class StatusFooter : UserControl
         { "LIFX", "#808080" },
         { "HomeAssistant", "#808080" },
         { "OpenRGB", "#808080" },
-        { "WLED", "#808080" }
+        { "WLED", "#808080" }, { "WLED Serial", "#808080" }, { "Glow Worm", "#808080" }
     };
 
     // References to the status ellipses
@@ -48,6 +48,8 @@ public partial class StatusFooter : UserControl
     private Ellipse? _homeAssistantStatusEllipse;
     private Ellipse? _openRgbStatusEllipse;
     private Ellipse? _wledStatusEllipse;
+    private Ellipse? _wledSerialStatusEllipse;
+    private Ellipse? _glowWormStatusEllipse;
 
     public StatusFooter()
     {
@@ -64,6 +66,8 @@ public partial class StatusFooter : UserControl
         _homeAssistantStatusEllipse = this.FindControl<Ellipse>("HomeAssistantStatusEllipse");
         _openRgbStatusEllipse = this.FindControl<Ellipse>("OpenRgbStatusEllipse");
         _wledStatusEllipse = this.FindControl<Ellipse>("WledStatusEllipse");
+        _wledSerialStatusEllipse = this.FindControl<Ellipse>("WledSerialStatusEllipse");
+        _glowWormStatusEllipse = this.FindControl<Ellipse>("GlowWormStatusEllipse");
         
         // Subscribe to status change events
         StatusColorChanged += OnStatusColorChanged;
@@ -116,6 +120,8 @@ public partial class StatusFooter : UserControl
             "HOMEASSISTANT" => _homeAssistantStatusEllipse,
             "OPENRGB" => _openRgbStatusEllipse,
             "WLED" => _wledStatusEllipse,
+            "WLED SERIAL" => _wledSerialStatusEllipse,
+            "GLOW WORM" => _glowWormStatusEllipse,
             _ => null
         };
     }

@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using System;
 using System.Timers;
 using Avalonia;
@@ -5,9 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 
 namespace YALCY.Views.Windows;
 
@@ -170,7 +169,7 @@ public partial class StageKitStatusWindow : Window
         };
 
         // Hardware command subscriptions
-        UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+        LightingOutput.CommandReceived += OnStageKitEvent;
 
         // UDP LightShow telemetry subscriptions
         UdpIntake.Venue.PropertyChanged += OnVenuePropertyChanged;
@@ -205,7 +204,7 @@ public partial class StageKitStatusWindow : Window
         _beatPulseTimer.Stop();
         _strobeOffDebounceTimer.Stop();
         _bonusEffectHoldTimer.Stop();
-        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        LightingOutput.CommandReceived -= OnStageKitEvent;
         UdpIntake.Venue.PropertyChanged -= OnVenuePropertyChanged;
         UdpIntake.BeatsPerMinute.PropertyChanged -= OnBpmPropertyChanged;
         UdpIntake.OnLightingCue -= OnLightingCueReceived;
@@ -491,7 +490,7 @@ public partial class StageKitStatusWindow : Window
         return name.Replace('_', ' ');
     }
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         if (_isDisposed) return;
         Dispatcher.UIThread.Post(() =>
@@ -499,7 +498,7 @@ public partial class StageKitStatusWindow : Window
             if (_isDisposed) return;
             switch (commandId)
             {
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     Array.Clear(_redLeds, 0, _redLeds.Length);
                     Array.Clear(_greenLeds, 0, _greenLeds.Length);
                     Array.Clear(_blueLeds, 0, _blueLeds.Length);
@@ -511,59 +510,59 @@ public partial class StageKitStatusWindow : Window
                     RenderBeatSegment(0);
                     break;
 
-                case StageKitTalker.CommandId.RedLeds:
+                case LightingCommand.RedLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         _redLeds[i] = (parameter & (1 << i)) != 0;
                     }
                     break;
 
-                case StageKitTalker.CommandId.GreenLeds:
+                case LightingCommand.GreenLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         _greenLeds[i] = (parameter & (1 << i)) != 0;
                     }
                     break;
 
-                case StageKitTalker.CommandId.BlueLeds:
+                case LightingCommand.BlueLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         _blueLeds[i] = (parameter & (1 << i)) != 0;
                     }
                     break;
 
-                case StageKitTalker.CommandId.YellowLeds:
+                case LightingCommand.YellowLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         _yellowLeds[i] = (parameter & (1 << i)) != 0;
                     }
                     break;
 
-                case StageKitTalker.CommandId.FogOn:
+                case LightingCommand.FogOn:
                     UpdateFogState(true);
                     break;
 
-                case StageKitTalker.CommandId.FogOff:
+                case LightingCommand.FogOff:
                     UpdateFogState(false);
                     break;
 
-                case StageKitTalker.CommandId.StrobeOff:
+                case LightingCommand.StrobeOff:
                     UpdateStrobeState("OFF");
                     break;
 
-                case StageKitTalker.CommandId.StrobeSlow:
+                case LightingCommand.StrobeSlow:
                     UpdateStrobeState("SLOW");
                     break;
 
-                case StageKitTalker.CommandId.StrobeMedium:
+                case LightingCommand.StrobeMedium:
                     UpdateStrobeState("MED");
                     break;
 
-                case StageKitTalker.CommandId.StrobeFast:
+                case LightingCommand.StrobeFast:
                     UpdateStrobeState("FAST");
                     break;
 
-                case StageKitTalker.CommandId.StrobeFastest:
+                case LightingCommand.StrobeFastest:
                     UpdateStrobeState("FASTEST");
                     break;
             }
@@ -746,7 +745,7 @@ public partial class StageKitStatusWindow : Window
 
     private void UpdateBlendedBox(int index)
     {
-        var (cr, cg, cb, isActive) = StageKitColorBlender.BlendPod(
+        var (cr, cg, cb, isActive) = LightingColorBlender.BlendPod(
             _blueLeds[index],
             _redLeds[index],
             _greenLeds[index],

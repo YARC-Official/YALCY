@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,8 +10,6 @@ using YALCY.Views.Components;
 using YALCY.Views.Windows;
 using Avalonia.Interactivity;
 using YALCY.ViewModels;
-using YALCY.Usb;
-using YALCY.Integrations.StageKit;
 
 namespace YALCY.Views.Tabs;
 
@@ -90,16 +89,16 @@ public partial class YargTabView : UserControl
     private void OnTestAllLedsClicked(object? sender, RoutedEventArgs e)
     {
         _testAnimationCts?.Cancel();
-        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.BlueLeds, 0xFF);
-        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.GreenLeds, 0xFF);
-        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.YellowLeds, 0xFF);
-        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.RedLeds, 0xFF);
+        LightingOutput.Preview(LightingCommand.BlueLeds, 0xFF);
+        LightingOutput.Preview(LightingCommand.GreenLeds, 0xFF);
+        LightingOutput.Preview(LightingCommand.YellowLeds, 0xFF);
+        LightingOutput.Preview(LightingCommand.RedLeds, 0xFF);
     }
 
     private void OnClearLedsClicked(object? sender, RoutedEventArgs e)
     {
         _testAnimationCts?.Cancel();
-        UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.DisableAll, 0x00);
+        LightingOutput.Preview(LightingCommand.DisableAll, 0x00);
     }
 
     private async void OnTestRotateLedsClicked(object? sender, RoutedEventArgs e)
@@ -119,10 +118,10 @@ public partial class YargTabView : UserControl
                     byte y = (byte)(1 << ((i + 4) % 8));
                     byte r = (byte)(1 << ((i + 6) % 8));
 
-                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.BlueLeds, b);
-                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.GreenLeds, g);
-                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.YellowLeds, y);
-                    UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.RedLeds, r);
+                    LightingOutput.Preview(LightingCommand.BlueLeds, b);
+                    LightingOutput.Preview(LightingCommand.GreenLeds, g);
+                    LightingOutput.Preview(LightingCommand.YellowLeds, y);
+                    LightingOutput.Preview(LightingCommand.RedLeds, r);
 
                     await Task.Delay(85, ct);
                 }
@@ -130,7 +129,7 @@ public partial class YargTabView : UserControl
 
             if (!ct.IsCancellationRequested)
             {
-                UsbDeviceMonitor.SimulateStageKitCommand(StageKitTalker.CommandId.DisableAll, 0x00);
+                LightingOutput.Preview(LightingCommand.DisableAll, 0x00);
             }
         }
         catch (TaskCanceledException) { }

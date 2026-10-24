@@ -33,17 +33,6 @@ public class HeadlessHost : IDisposable
         ViewModel.UsbDeviceMonitor.StartUsbDeviceMonitor(ViewModel);
         AppLog.Write(LogLevel.Information, "Application", "  USB device monitor: Started");
 
-        // Initialize UDP intake first (needed by other integrations)
-        if (ViewModel.UdpEnableSetting.IsEnabled)
-        {
-            await ViewModel.UdpIntake.EnableUdpIntake(true, ViewModel);
-            AppLog.Write(LogLevel.Information, "Application", "  UDP intake: Enabled");
-        }
-        else
-        {
-            AppLog.Write(LogLevel.Information, "Application", "  UDP intake: Disabled");
-        }
-
         // Initialize DMX/sACN
         if (ViewModel.DmxEnabledSetting.IsEnabled)
         {
@@ -141,6 +130,19 @@ public class HeadlessHost : IDisposable
         else
         {
             AppLog.Write(LogLevel.Information, "Application", "  WLED: Disabled");
+        }
+
+        await ViewModel.WledSerial.Output.EnableAsync(ViewModel.WledSerialEnabledSetting.IsEnabled, ViewModel.WledSerial.Options);
+        await ViewModel.GlowWorm.Output.EnableAsync(ViewModel.GlowWormEnabledSetting.IsEnabled, ViewModel.GlowWorm.Options);
+        // Start input after outputs are ready so initial cues reach every enabled output.
+        if (ViewModel.UdpEnableSetting.IsEnabled)
+        {
+            await ViewModel.UdpIntake.EnableUdpIntake(true, ViewModel);
+            AppLog.Write(LogLevel.Information, "Application", "  UDP intake: Enabled");
+        }
+        else
+        {
+            AppLog.Write(LogLevel.Information, "Application", "  UDP intake: Disabled");
         }
 
         AppLog.Write(LogLevel.Information, "Application", "Initialization complete.");

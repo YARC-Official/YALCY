@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using YALCY.Diagnostics;
 using System;
 using Dmx.Net.Controllers;
@@ -6,7 +7,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using HidSharp;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
@@ -45,7 +45,7 @@ public class SerialTalker: IDisposable
         SerialEnabled = isEnabled;
         if (SerialEnabled)
         {
-            UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            LightingOutput.CommandReceived += OnStageKitEvent;
             StatusFooter.UpdateStatus("Serial", IntegrationStatus.Connected);
 
             controller = new OpenDmxController();
@@ -87,7 +87,7 @@ public class SerialTalker: IDisposable
         }
     }
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         if (_mainViewModel == null) return;
 
@@ -99,7 +99,7 @@ public class SerialTalker: IDisposable
         {
             switch (commandId)
             {
-                case StageKitTalker.CommandId.BlueLeds:
+                case LightingCommand.BlueLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         if (_mainViewModel.BlueChannels.Channel != null)
@@ -110,7 +110,7 @@ public class SerialTalker: IDisposable
 
                     break;
 
-                case StageKitTalker.CommandId.GreenLeds:
+                case LightingCommand.GreenLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         if (_mainViewModel.GreenChannels.Channel != null)
@@ -121,7 +121,7 @@ public class SerialTalker: IDisposable
 
                     break;
 
-                case StageKitTalker.CommandId.YellowLeds:
+                case LightingCommand.YellowLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         if (_mainViewModel.YellowChannels.Channel != null)
@@ -132,7 +132,7 @@ public class SerialTalker: IDisposable
 
                     break;
 
-                case StageKitTalker.CommandId.RedLeds:
+                case LightingCommand.RedLeds:
                     for (int i = 0; i < 8; i++)
                     {
                         if (_mainViewModel.RedChannels.Channel != null)
@@ -143,36 +143,36 @@ public class SerialTalker: IDisposable
 
                     break;
 
-                case StageKitTalker.CommandId.FogOn:
+                case LightingCommand.FogOn:
                     SetChannels(_mainViewModel.FogChannels.Channel, 255);
                     break;
 
-                case StageKitTalker.CommandId.FogOff:
+                case LightingCommand.FogOff:
                     SetChannels(_mainViewModel.FogChannels.Channel, 0);
                     break;
 
-                case StageKitTalker.CommandId.StrobeOff:
+                case LightingCommand.StrobeOff:
                     _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
                     SetStrobeChannels(0);
                     break;
 
-                case StageKitTalker.CommandId.StrobeSlow:
+                case LightingCommand.StrobeSlow:
                     HandleStrobeCommand(commandId, 4);
                     break;
 
-                case StageKitTalker.CommandId.StrobeMedium:
+                case LightingCommand.StrobeMedium:
                     HandleStrobeCommand(commandId, 6);
                     break;
 
-                case StageKitTalker.CommandId.StrobeFast:
+                case LightingCommand.StrobeFast:
                     HandleStrobeCommand(commandId, 8);
                     break;
 
-                case StageKitTalker.CommandId.StrobeFastest:
+                case LightingCommand.StrobeFastest:
                     HandleStrobeCommand(commandId, 10);
                     break;
 
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
                     ClearAllOutputChannels();
                     break;
@@ -180,7 +180,7 @@ public class SerialTalker: IDisposable
         }
     }
 
-    private void HandleStrobeCommand(StageKitTalker.CommandId commandId, int commandMultiplier)
+    private void HandleStrobeCommand(LightingCommand commandId, int commandMultiplier)
     {
         if (_mainViewModel == null) return;
 
@@ -199,7 +199,7 @@ public class SerialTalker: IDisposable
 
     private Task SetStrobeChannelsForManualFlashAsync(bool isOn, CancellationToken cancellationToken)
     {
-        var allowFlash = isOn && !UsbDeviceMonitor.IsOutputSuppressed;
+        var allowFlash = isOn && !LightingOutput.IsOutputSuppressed;
         SetStrobeChannels(allowFlash ? (byte)255 : (byte)0);
         return Task.CompletedTask;
     }
@@ -256,7 +256,7 @@ public class SerialTalker: IDisposable
 
         var udpIntake = _mainViewModel.UdpIntake;
 
-        if (UsbDeviceMonitor.IsOutputSuppressed)
+        if (LightingOutput.IsOutputSuppressed)
         {
             controller.WriteSafe();
             return;
@@ -293,7 +293,7 @@ public class SerialTalker: IDisposable
 
     public void Dispose()
     {
-        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        LightingOutput.CommandReceived -= OnStageKitEvent;
         _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
         StatusFooter.UpdateStatus("Serial", IntegrationStatus.Off);
         if (controller != null)

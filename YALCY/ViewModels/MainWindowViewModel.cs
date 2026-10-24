@@ -1,4 +1,5 @@
 using YALCY.Diagnostics;
+using YALCY.Lighting;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -84,6 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     public readonly WledTalker WledTalker;
     public readonly DmxTalker DmxTalker;
     public readonly StageKitTalker StageKitTalker;
+    public readonly LightingEngine LightingEngine;
     public readonly Rb3eTalker Rb3ETalker;
     public readonly SerialTalker SerialTalker;
     public readonly Udp.UdpIntake UdpIntake;
@@ -199,6 +201,8 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         HomeAssistantTalker = new HomeAssistantTalker();
         WledTalker = new WledTalker();
         DmxTalker = new DmxTalker();
+        LightingEngine = new LightingEngine();
+        LightingEngine.Start();
         StageKitTalker = new StageKitTalker();
         Rb3ETalker = new Rb3eTalker();
         UdpIntake = new Udp.UdpIntake();
@@ -248,6 +252,13 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
     private void InitializeEnableSettings()
     {
+        GlowWormEnabledSetting = new EnableSetting("Glow Worm Enabled", SettingsManager.GlowWormEnabled,
+            "Glow Worm enabled", "Glow Worm disabled", enabled => GlowWorm.Output.EnableAsync(enabled, GlowWorm.Options),
+            "Send RGB frames to Glow Worm Luciferin over UDP");
+        WledSerialEnabledSetting = new EnableSetting("WLED Serial Enabled", SettingsManager.WledSerialEnabled,
+            "WLED Serial enabled", "WLED Serial disabled",
+            enabled => WledSerial.Output.EnableAsync(enabled, WledSerial.Options),
+            "Send Adalight RGB frames to WLED over a USB serial port");
         HueEnabledSetting = new EnableSetting(
             "Hue Enabled",
             SettingsManager.HueEnabledSettingIsEnabled,
@@ -362,6 +373,8 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     /// </summary>
     public async Task ShutdownAsync()
     {
+        LightingEngine.Dispose();
+
         // Save the settings
         SettingsManager.SaveSettings(this);
 
@@ -391,6 +404,8 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
         // Turn off the WLED Talker
         await WledTalker.EnableWled(false, this);
+        await WledSerial.Output.EnableAsync(false, WledSerial.Options);
+        await GlowWorm.Output.EnableAsync(false, GlowWorm.Options);
 
         // Turn off the USB device monitor
         UsbDeviceMonitor.StopUsbDeviceMonitor();

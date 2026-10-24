@@ -2,19 +2,18 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using YALCY.Udp;
-using YALCY.Usb;
 
-namespace YALCY.Integrations.StageKit;
+namespace YALCY.Lighting;
 
-    public class BeatPattern : StageKitLighting
+    public class BeatPattern : LightingPattern
     {
         private readonly bool _continuous;
         private int _patternIndex;
-        private readonly (StageKitTalker.CommandId color, byte data)[] _patternList;
+        private readonly (LightingCommand color, byte data)[] _patternList;
         private readonly float _cyclesPerBeat;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public BeatPattern((StageKitTalker.CommandId, byte)[] patternList, float cyclesPerBeat, bool continuous = true)
+        public BeatPattern((LightingCommand, byte)[] patternList, float cyclesPerBeat, bool continuous = true)
         {
             _continuous = continuous;
             _patternList = patternList;
@@ -30,7 +29,7 @@ namespace YALCY.Integrations.StageKit;
             {
                 while (!_cancellationTokenSource.Token.IsCancellationRequested)
                 {
-                    UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
+                    LightingOutput.Publish(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
                     _patternIndex++;
 
                     // Some beat patterns are not continuous (single fire), so we need to kill them after they've run once
@@ -59,16 +58,16 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class ListenPattern : StageKitLighting
+    public class ListenPattern : LightingPattern
     {
         private readonly ListenTypes _listenType;
         private int _patternIndex;
-        private readonly (StageKitTalker.CommandId color, byte data)[] _patternList;
+        private readonly (LightingCommand color, byte data)[] _patternList;
         private readonly bool _flash;
         private readonly bool _inverse;
         private bool _enabled;
 
-        public ListenPattern((StageKitTalker.CommandId color, byte data)[] patternList, ListenTypes listenType,
+        public ListenPattern((LightingCommand color, byte data)[] patternList, ListenTypes listenType,
             bool flash = false, bool inverse = false)
         {
             _flash = flash;
@@ -86,7 +85,7 @@ namespace YALCY.Integrations.StageKit;
             _patternIndex = 0;
             _enabled = true;
             if (!_inverse) return;
-            UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
+            LightingOutput.Publish(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
             _patternIndex++;
 
             if (_patternIndex >= _patternList.Length)
@@ -150,11 +149,11 @@ namespace YALCY.Integrations.StageKit;
 
             if (_inverse)
             {
-                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, None);
+                LightingOutput.Publish(_patternList[_patternIndex].color, None);
             }
             else
             {
-                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
+                LightingOutput.Publish(_patternList[_patternIndex].color, _patternList[_patternIndex].data);
             }
 
             if (_flash)
@@ -177,12 +176,12 @@ namespace YALCY.Integrations.StageKit;
             await Task.Delay(200);
             if (_inverse)
             {
-                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color,
+                LightingOutput.Publish(_patternList[_patternIndex].color,
                     _patternList[_patternIndex].data);
             }
             else
             {
-                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color, None);
+                LightingOutput.Publish(_patternList[_patternIndex].color, None);
             }
         }
 
@@ -195,14 +194,14 @@ namespace YALCY.Integrations.StageKit;
         }
     }
 
-    public class TimedPattern : StageKitLighting
+    public class TimedPattern : LightingPattern
     {
         private readonly float _seconds;
         private int _patternIndex;
-        private readonly (StageKitTalker.CommandId color, byte data)[] _patternList;
+        private readonly (LightingCommand color, byte data)[] _patternList;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public TimedPattern((StageKitTalker.CommandId, byte)[] patternList, float seconds)
+        public TimedPattern((LightingCommand, byte)[] patternList, float seconds)
         {
             // Token only for timed events
             _cancellationTokenSource = new CancellationTokenSource();
@@ -221,7 +220,7 @@ namespace YALCY.Integrations.StageKit;
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                UsbDeviceMonitor.SendReport(_patternList[_patternIndex].color,
+                LightingOutput.Publish(_patternList[_patternIndex].color,
                     _patternList[_patternIndex].data);
 
                 await Task.Delay(TimeSpan.FromSeconds(_seconds / _patternList.Length), cancellationToken: cancellationToken);

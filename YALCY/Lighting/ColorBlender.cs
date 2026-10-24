@@ -1,8 +1,8 @@
 using System;
 
-namespace YALCY.Integrations.StageKit;
+namespace YALCY.Lighting;
 
-public static class StageKitColorBlender
+public static class LightingColorBlender
 {
     /// <summary>
     /// Computes the blended RGB color for a single StageKit Pod given the active status of Blue, Red, Green, and Yellow LEDs.

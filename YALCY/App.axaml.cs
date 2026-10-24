@@ -211,6 +211,8 @@ public class App : Application
 
     private static async Task InitializeAsync(MainWindowViewModel mainViewModel)
     {
+        await mainViewModel.WledSerial.Output.EnableAsync(mainViewModel.WledSerialEnabledSetting.IsEnabled, mainViewModel.WledSerial.Options);
+        await mainViewModel.GlowWorm.Output.EnableAsync(mainViewModel.GlowWormEnabledSetting.IsEnabled, mainViewModel.GlowWorm.Options);
         // Start listening to YARG first and don't wait for it: the receive loop only returns when UDP is switched off.
         _ = StartUdpIntakeAsync(mainViewModel);
 

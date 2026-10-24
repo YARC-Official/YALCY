@@ -1,12 +1,11 @@
+using YALCY.Lighting;
 using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 
 namespace YALCY.Views.Windows;
 
@@ -48,7 +47,7 @@ public partial class StrobeVisualizerWindow : Window
             ExecuteStopStrobeEffect();
         };
 
-        UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+        LightingOutput.CommandReceived += OnStageKitEvent;
         
         Closing += (_, _) => CleanupSubscriptions();
         Closed += (_, _) => CleanupSubscriptions();
@@ -64,7 +63,7 @@ public partial class StrobeVisualizerWindow : Window
 
         _strobeStopDebounceTimer.Stop();
         _strobeFlashTimer.Stop();
-        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        LightingOutput.CommandReceived -= OnStageKitEvent;
     }
 
     private void OnStrobeFlashTick(object? sender, EventArgs e)
@@ -85,7 +84,7 @@ public partial class StrobeVisualizerWindow : Window
         }
     }
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         if (_isDisposed) return;
         Dispatcher.UIThread.Post(() =>
@@ -93,24 +92,24 @@ public partial class StrobeVisualizerWindow : Window
             if (_isDisposed) return;
             switch (commandId)
             {
-                case StageKitTalker.CommandId.StrobeOff:
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.StrobeOff:
+                case LightingCommand.DisableAll:
                     RequestStopStrobeEffect();
                     break;
 
-                case StageKitTalker.CommandId.StrobeSlow:
+                case LightingCommand.StrobeSlow:
                     StartStrobeEffect(1);
                     break;
 
-                case StageKitTalker.CommandId.StrobeMedium:
+                case LightingCommand.StrobeMedium:
                     StartStrobeEffect(2);
                     break;
 
-                case StageKitTalker.CommandId.StrobeFast:
+                case LightingCommand.StrobeFast:
                     StartStrobeEffect(3);
                     break;
 
-                case StageKitTalker.CommandId.StrobeFastest:
+                case LightingCommand.StrobeFastest:
                     StartStrobeEffect(4);
                     break;
             }

@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:YALCY.ViewModels" xmlns:serial="clr-namespace:YALCY.Integrations.WledSerial"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
+             x:Class="YALCY.Views.Tabs.WledSerialTabView" x:DataType="vm:MainWindowViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="{DynamicResource AppPanelBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+            <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="12" /><Setter Property="Padding" Value="16" />
+        </Style>
+        <Style Selector="TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" /><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="FontSize" Value="12" /></Style>
+        <Style Selector="TextBlock.heading"><Setter Property="FontSize" Value="15" /><Setter Property="FontWeight" Value="Bold" /></Style>
+    </UserControl.Styles>
+    <ScrollViewer>
+        <StackPanel Margin="20,16,20,20" Spacing="12">
+            <components:TabHeroHeader HeaderTitle="WLED Serial" Subtitle="USB lighting for ESP32 controllers running stock WLED" IconData="{StaticResource IconSerial}">
+                <components:TabHeroHeader.BadgeContent>
+                    <ToggleSwitch IsChecked="{Binding WledSerialEnabledSetting.IsEnabled, Mode=TwoWay}" OnContent="Enabled" OffContent="Disabled" />
+                </components:TabHeroHeader.BadgeContent>
+            </components:TabHeroHeader>
+            <Border Classes="panel">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="heading" Text="Connection" />
+                    <TextBlock Classes="hint" Text="Connect the ESP32 with a USB data cable. Select its serial port and match the baud rate in WLED → Config → Sync Interfaces. Disable output before editing settings. This uses Adalight RGB; it does not use the Serial/DMX adapter output." />
+                    <StackPanel Spacing="10" IsEnabled="{Binding !WledSerialEnabledSetting.IsEnabled}">
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,12,8" Spacing="6"><TextBlock Text="Detected ports" /><ComboBox MinWidth="160" ItemsSource="{Binding WledSerial.Ports}" SelectedItem="{Binding WledSerial.Options.Port, Mode=TwoWay}" /></StackPanel>
+                            <Button Content="Refresh ports" Command="{Binding WledSerial.RefreshPortsCommand}" VerticalAlignment="Bottom" Margin="0,0,12,8" />
+                            <StackPanel Margin="0,0,12,8" Spacing="6"><TextBlock Text="Port / device path" /><TextBox Width="200" Text="{Binding WledSerial.Options.Port, Mode=TwoWay}" Watermark="COM3 or /dev/ttyUSB0" /></StackPanel>
+                            <StackPanel Margin="0,0,12,8" Spacing="6"><TextBlock Text="Baud rate" /><ComboBox MinWidth="130" ItemsSource="{Binding WledSerial.BaudRates}" SelectedItem="{Binding WledSerial.Options.Baud, Mode=TwoWay}" /></StackPanel>
+                            <StackPanel Margin="0,0,12,8" Spacing="6"><TextBlock Text="LED count" /><NumericUpDown Width="130" Minimum="1" Maximum="2048" Value="{Binding WledSerial.Options.LedCount, Mode=TwoWay}" /></StackPanel>
+                            <StackPanel Margin="0,0,12,8" Spacing="6"><TextBlock Text="Brightness (%)" /><NumericUpDown Width="130" Minimum="0" Maximum="100" Value="{Binding WledSerial.Options.Brightness, Mode=TwoWay}" /></StackPanel>
+                        </WrapPanel>
+                    </StackPanel>
+                    <TextBlock Text="{Binding WledSerial.Status}" TextWrapping="Wrap" />
+                    <TextBlock Classes="hint" Text="115200 is WLED's default. Longer strips lower the refresh rate; choose a higher matching baud rate for faster updates. A successfully opened port does not confirm that WLED received the frames. Disconnects retry automatically." />
+                </StackPanel>
+            </Border>
+            <Border Classes="panel">
+                <StackPanel Spacing="10" IsEnabled="{Binding !WledSerialEnabledSetting.IsEnabled}">
+                    <TextBlock Classes="heading" Text="LED &amp; group mapping" />
+                    <TextBlock Classes="hint" Text="LED numbers start at 1. Each row controls a range. A bank repeats its eight Stage Kit LEDs across that range; a numbered light drives the entire range together. Strobe uses BPM-timed white flashes. Gaps and Unassigned ranges stay black. Ranges must not overlap." />
+                    <WrapPanel>
+                        <Button Content="Add range" Command="{Binding WledSerial.AddMappingCommand}" Margin="0,0,8,0" />
+                        <Button Content="Remove selected" Command="{Binding WledSerial.RemoveMappingCommand}" Margin="0,0,8,0" />
+                        <Button Content="Reset to four banks" Command="{Binding WledSerial.ResetMappingsCommand}" />
+                    </WrapPanel>
+                    <Grid ColumnDefinitions="120,120,*" Margin="8,0"><TextBlock Text="First LED" /><TextBlock Grid.Column="1" Text="LED count" /><TextBlock Grid.Column="2" Text="Stage Kit assignment" /></Grid>
+                    <ListBox ItemsSource="{Binding WledSerial.Options.Mappings}" SelectedItem="{Binding WledSerial.SelectedMapping, Mode=TwoWay}" MaxHeight="350">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="serial:WledSerialMapping">
+                                <Grid ColumnDefinitions="120,120,*">
+                                    <NumericUpDown Minimum="1" Maximum="2048" Value="{Binding Start, Mode=TwoWay}" Margin="0,0,8,0" />
+                                    <NumericUpDown Grid.Column="1" Minimum="1" Maximum="2048" Value="{Binding Count, Mode=TwoWay}" Margin="0,0,8,0" />
+                                    <ComboBox Grid.Column="2" MinWidth="170" ItemsSource="{Binding AvailableAssignments}" SelectedItem="{Binding Assignment, Mode=TwoWay}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+            <Border Classes="panel">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="heading" Text="Color test" />
+                    <TextBlock Classes="hint" Text="Enable output, then test all configured LEDs without running YARG. The test lasts two seconds and returns to mapped lighting. Blackout overrides tests. Disabling output sends black and releases the port; WLED can resume its own effects after its realtime timeout." />
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding WledSerialEnabledSetting.IsEnabled}">
+                        <ComboBox ItemsSource="{Binding WledSerial.TestColors}" SelectedItem="{Binding WledSerial.TestColor, Mode=TwoWay}" MinWidth="120" />
+                        <Button Content="Test for 2 seconds" Command="{Binding WledSerial.TestColorCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

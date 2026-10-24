@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using YALCY.Diagnostics;
 using System;
 using System.Threading;
@@ -5,9 +6,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using Haukcode.sACN;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
 using Timer = System.Timers.Timer;
@@ -130,7 +129,7 @@ public class DmxTalker
                 _udpIntake = _mainViewModel.UdpIntake;
                 _packetProcessedHandler = packet => UpdateDataPacket(packet, _mainViewModel);
                 _udpIntake.PacketProcessed += _packetProcessedHandler;
-                UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+                LightingOutput.CommandReceived += OnStageKitEvent;
                 StatusFooter.UpdateStatus("DMX", IntegrationStatus.Connected);
 
                 _isStopping = false;
@@ -161,7 +160,7 @@ public class DmxTalker
                 lock (_sendLock)
                 {
                     // unsubscribe events, clear packet, final send, dispose
-                    UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+                    LightingOutput.CommandReceived -= OnStageKitEvent;
 
                     // Unsubscribe safely
                     if (_udpIntake != null && _packetProcessedHandler != null)
@@ -222,7 +221,7 @@ public class DmxTalker
         return Haukcode.Network.Utils.GetFirstBindAddress().IPAddress;
     }
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         if (_mainViewModel == null) return;
 
@@ -244,15 +243,15 @@ public class DmxTalker
 
         switch (commandId)
         {
-            case StageKitTalker.CommandId.FogOn:
+            case LightingCommand.FogOn:
                 SetChannels(_mainViewModel.FogChannels, 255);
                 break;
 
-            case StageKitTalker.CommandId.FogOff:
+            case LightingCommand.FogOff:
                 SetChannels(_mainViewModel.FogChannels, 0);
                 break;
 
-            case StageKitTalker.CommandId.DisableAll:
+            case LightingCommand.DisableAll:
                 _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
                 lock (_sendLock)
                 {
@@ -260,46 +259,46 @@ public class DmxTalker
                 }
                 break;
 
-            case StageKitTalker.CommandId.StrobeOff:
+            case LightingCommand.StrobeOff:
                 _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
                 SetChannels(_mainViewModel.StrobeChannels, 0);
                 break;
 
-            case StageKitTalker.CommandId.StrobeSlow:
+            case LightingCommand.StrobeSlow:
                 HandleStrobeCommand(commandId, 4);
                 break;
 
-            case StageKitTalker.CommandId.StrobeMedium:
+            case LightingCommand.StrobeMedium:
                 HandleStrobeCommand(commandId, 6);
                 break;
 
-            case StageKitTalker.CommandId.StrobeFast:
+            case LightingCommand.StrobeFast:
                 HandleStrobeCommand(commandId, 8);
                 break;
 
-            case StageKitTalker.CommandId.StrobeFastest:
+            case LightingCommand.StrobeFastest:
                 HandleStrobeCommand(commandId, 10);
                 break;
 
-            case StageKitTalker.CommandId.BlueLeds:
+            case LightingCommand.BlueLeds:
                 SetLeds(_mainViewModel.BlueChannels);
                 break;
 
-            case StageKitTalker.CommandId.GreenLeds:
+            case LightingCommand.GreenLeds:
                 SetLeds(_mainViewModel.GreenChannels);
                 break;
 
-            case StageKitTalker.CommandId.YellowLeds:
+            case LightingCommand.YellowLeds:
                 SetLeds(_mainViewModel.YellowChannels);
                 break;
 
-            case StageKitTalker.CommandId.RedLeds:
+            case LightingCommand.RedLeds:
                 SetLeds(_mainViewModel.RedChannels);
                 break;
         }
     }
 
-    private void HandleStrobeCommand(StageKitTalker.CommandId commandId, int commandMultiplier)
+    private void HandleStrobeCommand(LightingCommand commandId, int commandMultiplier)
     {
         if (_mainViewModel == null) return;
 
@@ -322,7 +321,7 @@ public class DmxTalker
     {
         if (_mainViewModel != null)
         {
-            var allowFlash = isOn && !UsbDeviceMonitor.IsOutputSuppressed;
+            var allowFlash = isOn && !LightingOutput.IsOutputSuppressed;
             SetChannels(_mainViewModel.StrobeChannels, allowFlash ? (byte)255 : (byte)0);
         }
 
@@ -362,7 +361,7 @@ public class DmxTalker
             if (_sendClient == null) return;
             if (_mainViewModel == null) return;
 
-            if (UsbDeviceMonitor.IsOutputSuppressed)
+            if (LightingOutput.IsOutputSuppressed)
             {
                 Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
             }

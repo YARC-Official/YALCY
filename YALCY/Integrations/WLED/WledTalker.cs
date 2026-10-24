@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -9,9 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
 
@@ -635,7 +634,7 @@ public sealed class WledTalker : IDisposable
         if (_isSubscribed) return;
         _isSubscribed = true;
 
-        UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+        LightingOutput.CommandReceived += OnStageKitEvent;
 
         if (_mainViewModel?.UdpIntake != null)
         {
@@ -648,7 +647,7 @@ public sealed class WledTalker : IDisposable
         if (!_isSubscribed) return;
         _isSubscribed = false;
 
-        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        LightingOutput.CommandReceived -= OnStageKitEvent;
 
         if (_mainViewModel?.UdpIntake != null)
         {
@@ -660,7 +659,7 @@ public sealed class WledTalker : IDisposable
 
     #region StageKit Event Dispatching
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         if (!_isEnabled) return;
 
@@ -668,46 +667,46 @@ public sealed class WledTalker : IDisposable
         {
             switch (commandId)
             {
-                case StageKitTalker.CommandId.BlueLeds:
+                case LightingCommand.BlueLeds:
                     _stageKitBlueParam = parameter;
                     UpdateStageKitVirtualPod(0, parameter, WledRgbwColor.StageKitBlue);
                     break;
 
-                case StageKitTalker.CommandId.RedLeds:
+                case LightingCommand.RedLeds:
                     _stageKitRedParam = parameter;
                     UpdateStageKitVirtualPod(8, parameter, WledRgbwColor.StageKitRed);
                     break;
 
-                case StageKitTalker.CommandId.GreenLeds:
+                case LightingCommand.GreenLeds:
                     _stageKitGreenParam = parameter;
                     UpdateStageKitVirtualPod(16, parameter, WledRgbwColor.StageKitGreen);
                     break;
 
-                case StageKitTalker.CommandId.YellowLeds:
+                case LightingCommand.YellowLeds:
                     _stageKitYellowParam = parameter;
                     UpdateStageKitVirtualPod(24, parameter, WledRgbwColor.StageKitYellow);
                     break;
 
-                case StageKitTalker.CommandId.StrobeOff:
+                case LightingCommand.StrobeOff:
                     StopStrobe();
                     break;
 
-                case StageKitTalker.CommandId.StrobeSlow:
-                case StageKitTalker.CommandId.StrobeMedium:
-                case StageKitTalker.CommandId.StrobeFast:
-                case StageKitTalker.CommandId.StrobeFastest:
+                case LightingCommand.StrobeSlow:
+                case LightingCommand.StrobeMedium:
+                case LightingCommand.StrobeFast:
+                case LightingCommand.StrobeFastest:
                     StartStrobe(commandId, UdpIntake.BeatsPerMinute.Value);
                     break;
 
-                case StageKitTalker.CommandId.FogOn:
+                case LightingCommand.FogOn:
                     _isFogBreathingActive = true;
                     break;
 
-                case StageKitTalker.CommandId.FogOff:
+                case LightingCommand.FogOff:
                     _isFogBreathingActive = false;
                     break;
 
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     StopStrobe();
                     _isFogBreathingActive = false;
                     _isStarPowerActive = false;
@@ -882,7 +881,7 @@ public sealed class WledTalker : IDisposable
 
     #region Strobe Control
 
-    private void StartStrobe(StageKitTalker.CommandId commandId, float bpm)
+    private void StartStrobe(LightingCommand commandId, float bpm)
     {
         _isStrobeActive = true;
 
@@ -908,7 +907,7 @@ public sealed class WledTalker : IDisposable
     {
         if (!_isEnabled) return Task.CompletedTask;
 
-        bool allowFlash = isOn && !UsbDeviceMonitor.IsOutputSuppressed;
+        bool allowFlash = isOn && !LightingOutput.IsOutputSuppressed;
         _isManualStrobeFlashOn = allowFlash;
         RenderAndFlushFrame();
 
@@ -1554,7 +1553,7 @@ public sealed class WledTalker : IDisposable
                 bool isG = (_stageKitGreenParam & (1 << k)) != 0;
                 bool isY = (_stageKitYellowParam & (1 << k)) != 0;
 
-                var (r, g, b, isActive) = StageKitColorBlender.BlendPod(isB, isR, isG, isY);
+                var (r, g, b, isActive) = LightingColorBlender.BlendPod(isB, isR, isG, isY);
                 if (isActive)
                 {
                     podColors[k] = new WledRgbwColor(r, g, b, 0);

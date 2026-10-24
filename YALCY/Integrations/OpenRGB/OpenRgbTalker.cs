@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 using YALCY.Diagnostics;
 using System;
 using System.Collections.Generic;
@@ -7,9 +8,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using OpenRGB.NET;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.ViewModels.OpenRGB;
 using YALCY.Views.Components;
@@ -163,7 +162,7 @@ public class OpenRgbTalker
                 }
             });
 
-            UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+            LightingOutput.CommandReceived += OnStageKitEvent;
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Connected);
         }
         catch (Exception ex)
@@ -189,7 +188,7 @@ public class OpenRgbTalker
         else
         {
             StatusFooter.UpdateStatus("OpenRGB", IntegrationStatus.Off);
-            UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+            LightingOutput.CommandReceived -= OnStageKitEvent;
             _manualStrobeFlasher.Stop(SetStrobeFlashStateAsync);
 
             StopBreathingEffect();
@@ -375,52 +374,52 @@ public class OpenRgbTalker
     private byte _stageKitGreenParam;
     private byte _stageKitYellowParam;
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         try
         {
             switch (commandId)
             {
-                case StageKitTalker.CommandId.BlueLeds:
+                case LightingCommand.BlueLeds:
                     _stageKitBlueParam = parameter;
                     UpdateLightPodColor(parameter, new Color(0, 0, 255), 0);
                     break;
 
-                case StageKitTalker.CommandId.RedLeds:
+                case LightingCommand.RedLeds:
                     _stageKitRedParam = parameter;
                     UpdateLightPodColor(parameter, new Color(255, 0, 0), 8);
                     break;
 
-                case StageKitTalker.CommandId.GreenLeds:
+                case LightingCommand.GreenLeds:
                     _stageKitGreenParam = parameter;
                     UpdateLightPodColor(parameter, new Color(0, 255, 0), 16);
                     break;
 
-                case StageKitTalker.CommandId.YellowLeds:
+                case LightingCommand.YellowLeds:
                     _stageKitYellowParam = parameter;
                     UpdateLightPodColor(parameter, new Color(255, 255, 0), 24);
                     break;
 
-                case StageKitTalker.CommandId.FogOn:
+                case LightingCommand.FogOn:
                     StartBreathingEffect();
                     break;
 
-                case StageKitTalker.CommandId.FogOff:
+                case LightingCommand.FogOff:
                     StopBreathingEffect();
                     break;
 
-                case StageKitTalker.CommandId.StrobeOff:
+                case LightingCommand.StrobeOff:
                     StopStrobeEffect();
                     break;
 
-                case StageKitTalker.CommandId.StrobeSlow:
-                case StageKitTalker.CommandId.StrobeMedium:
-                case StageKitTalker.CommandId.StrobeFast:
-                case StageKitTalker.CommandId.StrobeFastest:
+                case LightingCommand.StrobeSlow:
+                case LightingCommand.StrobeMedium:
+                case LightingCommand.StrobeFast:
+                case LightingCommand.StrobeFastest:
                     StartStrobeEffect(commandId, UdpIntake.BeatsPerMinute.Value);
                     break;
 
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     StopStrobeEffect();
                     StopBreathingEffect();
                     SetDeviceBrightness(0);
@@ -446,7 +445,7 @@ public class OpenRgbTalker
 
     #region Strobe & Fogger Effects
 
-    private void StartStrobeEffect(StageKitTalker.CommandId commandId, float bpm)
+    private void StartStrobeEffect(LightingCommand commandId, float bpm)
     {
         StopStrobeEffect();
 
@@ -469,7 +468,7 @@ public class OpenRgbTalker
 
     private Task SetStrobeFlashStateAsync(bool isOn, CancellationToken cancellationToken)
     {
-        if (UsbDeviceMonitor.IsOutputSuppressed)
+        if (LightingOutput.IsOutputSuppressed)
         {
             isOn = false;
         }
@@ -590,7 +589,7 @@ public class OpenRgbTalker
 
     private void SetDeviceBrightness(byte brightness)
     {
-        if (brightness > 0 && UsbDeviceMonitor.IsOutputSuppressed)
+        if (brightness > 0 && LightingOutput.IsOutputSuppressed)
         {
             return;
         }
@@ -625,7 +624,7 @@ public class OpenRgbTalker
 
     private void SetZoneBrightness(byte brightness)
     {
-        if (brightness > 0 && UsbDeviceMonitor.IsOutputSuppressed)
+        if (brightness > 0 && LightingOutput.IsOutputSuppressed)
         {
             return;
         }
@@ -794,7 +793,7 @@ public class OpenRgbTalker
             bool isG = (_stageKitGreenParam & (1 << k)) != 0;
             bool isY = (_stageKitYellowParam & (1 << k)) != 0;
 
-            var (r, g, b, isActive) = StageKitColorBlender.BlendPod(isB, isR, isG, isY);
+            var (r, g, b, isActive) = LightingColorBlender.BlendPod(isB, isR, isG, isY);
             podColors[k] = new Color(r, g, b);
             if (isActive)
             {

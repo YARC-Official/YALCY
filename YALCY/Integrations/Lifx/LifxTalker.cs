@@ -1,3 +1,4 @@
+using YALCY.Lighting;
 // implementation based on https://lan.developer.lifx.com
 using System;
 using YALCY.Diagnostics;
@@ -12,9 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using YALCY.Integrations;
-using YALCY.Integrations.StageKit;
 using YALCY.Udp;
-using YALCY.Usb;
 using YALCY.ViewModels;
 using YALCY.Views.Components;
 
@@ -306,7 +305,7 @@ public sealed partial class LifxTalker : IDisposable
             return;
         }
 
-        UsbDeviceMonitor.OnStageKitCommand += OnStageKitEvent;
+        LightingOutput.CommandReceived += OnStageKitEvent;
         _isSubscribedToStageKit = true;
     }
 
@@ -317,16 +316,16 @@ public sealed partial class LifxTalker : IDisposable
             return;
         }
 
-        UsbDeviceMonitor.OnStageKitCommand -= OnStageKitEvent;
+        LightingOutput.CommandReceived -= OnStageKitEvent;
         _isSubscribedToStageKit = false;
     }
 
-    private void OnStageKitEvent(StageKitTalker.CommandId commandId, byte parameter)
+    private void OnStageKitEvent(LightingCommand commandId, byte parameter)
     {
         if (!_isEnabled) return;
         if (Options.WholeLightMode)
         {
-            if (commandId == StageKitTalker.CommandId.DisableAll)
+            if (commandId == LightingCommand.DisableAll)
             {
                 _songFlasher.Stop();
                 _lastSongState = null;
@@ -338,44 +337,44 @@ public sealed partial class LifxTalker : IDisposable
         {
             switch (commandId)
             {
-                case StageKitTalker.CommandId.BlueLeds:
+                case LightingCommand.BlueLeds:
                     ApplyColorState(commandId, parameter, GetStageKitColor(commandId));
                     break;
 
-                case StageKitTalker.CommandId.GreenLeds:
+                case LightingCommand.GreenLeds:
                     ApplyColorState(commandId, parameter, GetStageKitColor(commandId));
                     break;
 
-                case StageKitTalker.CommandId.RedLeds:
+                case LightingCommand.RedLeds:
                     ApplyColorState(commandId, parameter, GetStageKitColor(commandId));
                     break;
 
-                case StageKitTalker.CommandId.YellowLeds:
+                case LightingCommand.YellowLeds:
                     ApplyColorState(commandId, parameter, GetStageKitColor(commandId));
                     break;
                 
-                case StageKitTalker.CommandId.StrobeFastest:
+                case LightingCommand.StrobeFastest:
                     HandleStrobeState(commandId, 4);
                     break;
-                case StageKitTalker.CommandId.StrobeFast:
+                case LightingCommand.StrobeFast:
                     HandleStrobeState(commandId, 3);
                     break;
-                case StageKitTalker.CommandId.StrobeMedium:
+                case LightingCommand.StrobeMedium:
                     HandleStrobeState(commandId, 2);
                     break;
-                case StageKitTalker.CommandId.StrobeSlow:
+                case LightingCommand.StrobeSlow:
                     HandleStrobeState(commandId, 1);
                     break;
-                case StageKitTalker.CommandId.StrobeOff:
+                case LightingCommand.StrobeOff:
                     _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
                     if (_mainViewModel?.LifxStrobeMode != StrobeOutputModes.ManualFlash)
                     {
                         ApplyStrobeState(commandId, 1, 1000, true);
                     }
                     break;
-                case StageKitTalker.CommandId.DisableAll:
+                case LightingCommand.DisableAll:
                     _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
-                    ApplyStrobeState(StageKitTalker.CommandId.StrobeOff, 0xFF, 1000, true);
+                    ApplyStrobeState(LightingCommand.StrobeOff, 0xFF, 1000, true);
                     DisableAssignedZones();
                     break;
             }
@@ -391,7 +390,7 @@ public sealed partial class LifxTalker : IDisposable
         }
     }
 
-    private void HandleStrobeState(StageKitTalker.CommandId commandId, int speed)
+    private void HandleStrobeState(LightingCommand commandId, int speed)
     {
         if (_mainViewModel?.LifxStrobeMode == StrobeOutputModes.ManualFlash)
         {
@@ -403,7 +402,7 @@ public sealed partial class LifxTalker : IDisposable
         ApplyStrobeState(commandId, 1, CalculateStrobeSpeed(speed));
     }
 
-    private void ApplyStrobeState(StageKitTalker.CommandId commandId, byte activeSlotsMask, int periodMs, bool cancel = false)
+    private void ApplyStrobeState(LightingCommand commandId, byte activeSlotsMask, int periodMs, bool cancel = false)
     {
         var devices = SnapshotDevices();
         if (devices.Count == 0)
@@ -439,7 +438,7 @@ public sealed partial class LifxTalker : IDisposable
     private Task SetManualStrobeStateAsync(bool isOn, CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested) return Task.CompletedTask;
-        if (UsbDeviceMonitor.IsOutputSuppressed)
+        if (LightingOutput.IsOutputSuppressed)
         {
             isOn = false;
         }
@@ -485,7 +484,7 @@ public sealed partial class LifxTalker : IDisposable
         return Task.CompletedTask;
     }
 
-    private void ApplyColorState(StageKitTalker.CommandId commandId, byte activeSlotsMask, LifxHsbk activeColor)
+    private void ApplyColorState(LightingCommand commandId, byte activeSlotsMask, LifxHsbk activeColor)
     {
         activeColor = activeColor.WithBrightness((ushort)(65535 * Options.Brightness / 100));
         var devices = SnapshotDevices();
@@ -1038,14 +1037,14 @@ public sealed partial class LifxTalker : IDisposable
         return BuildPacket(502, target, payload, tagged: false, ackRequired: false, resRequired: false);
     }
 
-    private static LifxHsbk GetStageKitColor(StageKitTalker.CommandId commandId)
+    private static LifxHsbk GetStageKitColor(LightingCommand commandId)
     {
         return commandId switch
         {
-            StageKitTalker.CommandId.BlueLeds => StageKitBlue,
-            StageKitTalker.CommandId.GreenLeds => StageKitGreen,
-            StageKitTalker.CommandId.YellowLeds => StageKitYellow,
-            StageKitTalker.CommandId.RedLeds => StageKitRed,
+            LightingCommand.BlueLeds => StageKitBlue,
+            LightingCommand.GreenLeds => StageKitGreen,
+            LightingCommand.YellowLeds => StageKitYellow,
+            LightingCommand.RedLeds => StageKitRed,
             _ => LifxHsbk.Off(DefaultKelvin)
         };
     }

@@ -16,6 +16,8 @@ namespace YALCY;
 
 public class SettingsContainer
 {
+    public Integrations.GlowWorm.GlowWormOptions GlowWormOptions { get; set; } = new();
+    public Integrations.WledSerial.WledSerialOptions WledSerialOptions { get; set; } = new();
     public LifxOptions LifxOptions { get; set; } = new();
     public List<EnableSetting> CurrentEnableSettings { get; set; }
     public List<DmxSingleSetting> CurrentSingleSettings { get; set; }
@@ -57,6 +59,10 @@ public sealed class LifxZoneAssignmentSetting
 
 internal static class SettingsManager
 {
+    public static bool GlowWormEnabled { get; set; }
+    public static Integrations.GlowWorm.GlowWormOptions GlowWormOptions { get; private set; } = new();
+    public static bool WledSerialEnabled { get; set; }
+    public static Integrations.WledSerial.WledSerialOptions WledSerialOptions { get; private set; } = new();
     public static LifxOptions LifxOptions { get; private set; } = new();
     public const string SystemThemeVariant = "System";
     public const string DarkThemeVariant = "Dark";
@@ -241,6 +247,10 @@ internal static class SettingsManager
         settings.CurrentEnableSettings.Add(mainViewModel.LifxEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.HomeAssistantEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.WledEnabledSetting);
+        settings.CurrentEnableSettings.Add(mainViewModel.WledSerialEnabledSetting);
+        settings.WledSerialOptions = mainViewModel.WledSerial.Options;
+        settings.CurrentEnableSettings.Add(mainViewModel.GlowWormEnabledSetting);
+        settings.GlowWormOptions = mainViewModel.GlowWorm.Options;
 
         settings.CurrentSingleSettings.Add(mainViewModel.BpmChannelSetting);
         settings.CurrentSingleSettings.Add(mainViewModel.CueChangeChannelSetting);
@@ -329,6 +339,7 @@ internal static class SettingsManager
 
     public static void LoadSettings()
     {
+        AppLog.Write(LogLevel.Information, "Settings", $"Loading settings: {SettingsFilePath}");
         if (!Directory.Exists(SettingsDirectory))
         {
             Directory.CreateDirectory(SettingsDirectory);
@@ -344,6 +355,12 @@ internal static class SettingsManager
             {
                 switch (enable.Label)
                 {
+                    case "Glow Worm Enabled":
+                        GlowWormEnabled = enable.IsEnabled;
+                        break;
+                    case "WLED Serial Enabled":
+                        WledSerialEnabled = enable.IsEnabled;
+                        break;
                     case "UDP Enabled":
                         UdpEnableSettingIsEnabled = enable.IsEnabled;
                         break;
@@ -566,12 +583,14 @@ internal static class SettingsManager
             HomeAssistantStrobeMode =
                 StrobeOutputModes.Normalize(container.HomeAssistantStrobeMode ?? StrobeOutputModes.StrobeCommand);
             WledSettingsManager.Load();
+            WledSerialOptions = container.WledSerialOptions ?? new();
+            GlowWormOptions = container.GlowWormOptions ?? new();
             CloseToTrayOnClose = container.CloseToTrayOnClose;
             ThemeVariant = NormalizeThemeVariant(container.ThemeVariant);
         }
         else // File is either garbage or doesn't exist. Load defaults.
         {
-            AppLog.Write(LogLevel.Warning, "Settings", "Settings file is either garbage or doesn't exist. Loading defaults.");
+            AppLog.Write(LogLevel.Warning, "Settings", $"Settings file is missing or invalid: {SettingsFilePath}. Loading defaults for the current account.");
 
             UdpEnableSettingIsEnabled = true;
             DmxEnabledSettingIsEnabled = true;
@@ -617,6 +636,10 @@ internal static class SettingsManager
             OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
             HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
             WledEnabledSettingIsEnabled = false;
+            GlowWormEnabled = false;
+            GlowWormOptions = new();
+            WledSerialEnabled = false;
+            WledSerialOptions = new();
             WledSettingsManager.Load();
             CloseToTrayOnClose = false;
             ThemeVariant = SystemThemeVariant;
