@@ -8,6 +8,8 @@ namespace YALCY.Views;
 public partial class MainWindow : Window
 {
     private bool _allowClose;
+    private bool _shutdownPending;
+    private bool _shutdownComplete;
 
     public MainWindow()
     {
@@ -40,44 +42,39 @@ public partial class MainWindow : Window
         Hide();
     }
 
-    private void OnMainWindowClosing(object? sender, WindowClosingEventArgs e)
+    private async void OnMainWindowClosing(object? sender, WindowClosingEventArgs e)
     {
-        if (_allowClose)
+        if (_shutdownComplete)
         {
-            SaveSettingsSafely();
             YargTabView.CloseAllDetachedWindows();
             return;
         }
 
-        if (DataContext is MainWindowViewModel viewModel && viewModel.CloseToTrayOnClose)
+        if (!_allowClose && !_shutdownPending &&
+            DataContext is MainWindowViewModel { CloseToTrayOnClose: true, IsShutdownComplete: false })
         {
             e.Cancel = true;
             HideToTray();
             return;
         }
 
-        // Save now: closing the main window shuts the app down without raising ShutdownRequested,
-        // so the save in MainWindowViewModel.ShutdownAsync is not reached on a normal close.
-        SaveSettingsSafely();
-
-        // Close all detached windows first
-        YargTabView.CloseAllDetachedWindows();
-    }
-
-    private void SaveSettingsSafely()
-    {
-        if (DataContext is not MainWindowViewModel viewModel)
-        {
-            return;
-        }
-
+        e.Cancel = true;
+        if (_shutdownPending) return;
+        _shutdownPending = true;
         try
         {
-            SettingsManager.SaveSettings(viewModel);
+            if (DataContext is MainWindowViewModel viewModel)
+                await viewModel.ShutdownAsync();
         }
         catch (System.Exception ex)
         {
-            AppLog.Write(LogLevel.Error, "Application", $"Error saving settings: {ex.Message}");
+            AppLog.Write(LogLevel.Error, "Application", $"Error shutting down: {ex.Message}");
+        }
+        finally
+        {
+            _shutdownComplete = true;
+            // Let the canceled Closing event unwind before issuing the final close.
+            Avalonia.Threading.Dispatcher.UIThread.Post(Close);
         }
     }
 }

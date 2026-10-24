@@ -422,7 +422,7 @@ public class DmxTalker
         for (int i = 0; i < _mainViewModel.MasterDimmerSettings.Channel.Length; i++)
         {
             SetChannelToValue(_mainViewModel.MasterDimmerSettings.Channel[i],
-                (byte)_mainViewModel.MasterDimmerValues.Channel[i]);
+                (byte)Math.Clamp(_mainViewModel.MasterDimmerValues.Channel[i], 0, 255));
         }
     }
 
@@ -514,21 +514,21 @@ public class DmxTalker
             _cueChangeLastItemAdded = _latestCueChange;
         }
 
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.Beat] != _beatLineLastItemAdded)
+        if (viewModel.UdpIntake.Beat.Value != _beatLineLastItemAdded)
         {
-            _latestBeatLine = udpBuffer[(int)UdpIntake.ByteIndexName.Beat];
+            _latestBeatLine = viewModel.UdpIntake.Beat.Value;
             _beatLineLastItemAdded = _latestBeatLine;
         }
 
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe] != _keyFrameLastItemAdded)
+        if (viewModel.UdpIntake.Keyframe.Value != _keyFrameLastItemAdded)
         {
-            _latestKeyFrame = udpBuffer[(int)UdpIntake.ByteIndexName.Keyframe];
+            _latestKeyFrame = viewModel.UdpIntake.Keyframe.Value;
             _keyFrameLastItemAdded = _latestKeyFrame;
         }
 
-        if (!_bonusEffectLocked && udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect] != _bonusEffectLastItemAdded)
+        if (!_bonusEffectLocked && (byte)(viewModel.UdpIntake.BonusEffect.Value ? 1 : 0) != _bonusEffectLastItemAdded)
         {
-            var newValue = udpBuffer[(int)UdpIntake.ByteIndexName.BonusEffect];
+            var newValue = (byte)(viewModel.UdpIntake.BonusEffect.Value ? 1 : 0);
             _bonusEffectLastItemAdded = newValue;
 
             if (newValue == 1)
@@ -591,15 +591,15 @@ public class DmxTalker
             _postProcessingLastItemAdded = _latestPostProcessing;
         }
 
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.Singalong] != _currentSingalongLastItemAdded)
+        if (viewModel.UdpIntake.Singalong.Value != _currentSingalongLastItemAdded)
         {
-            _latestSingalong = udpBuffer[(int)UdpIntake.ByteIndexName.Singalong];
+            _latestSingalong = viewModel.UdpIntake.Singalong.Value;
             _currentSingalongLastItemAdded = _latestSingalong;
         }
 
-        if (udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight] != _currentSpotlightLastItemAdded)
+        if (viewModel.UdpIntake.Spotlight.Value != _currentSpotlightLastItemAdded)
         {
-            _latestSpotlight = udpBuffer[(int)UdpIntake.ByteIndexName.Spotlight];
+            _latestSpotlight = viewModel.UdpIntake.Spotlight.Value;
             _currentSpotlightLastItemAdded = _latestSpotlight;
         }
 

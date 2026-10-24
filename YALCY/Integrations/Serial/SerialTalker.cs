@@ -283,9 +283,15 @@ public class SerialTalker: IDisposable
         controller.SetChannel(_mainViewModel.BonusEffectChannelSetting.Value, (byte)(udpIntake.BonusEffect.Value ? 255 : 0));
         controller.SetChannel(_mainViewModel.CurrentSceneSetting.Value, udpIntake.CurrentScene.Value);
 
-        for (int i = 0; i < 8; i++)
+        var channels = _mainViewModel.MasterDimmerSettings.Channel;
+        var values = _mainViewModel.MasterDimmerValues.Channel;
+        if (channels != null && values != null)
         {
-            controller.SetChannel(_mainViewModel.MasterDimmerSettings.Channel[i], (byte)_mainViewModel.MasterDimmerValues.Channel[i]);
+            for (int i = 0; i < Math.Min(channels.Length, values.Length); i++)
+            {
+                if (channels[i] >= 1 && channels[i] <= 512)
+                    controller.SetChannel(channels[i], (byte)Math.Clamp(values[i], 0, 255));
+            }
         }
 
         controller.WriteSafe();

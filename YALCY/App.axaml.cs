@@ -194,7 +194,7 @@ public class App : Application
         TryStart("RB3E", () => mainViewModel.Rb3ETalker.EnableRb3eTalker(mainViewModel.Rb3eEnabledSetting.IsEnabled, mainViewModel));
         TryStart("StageKit", () => mainViewModel.StageKitTalker.EnableStageKitTalker(mainViewModel.StageKitEnabledSetting.IsEnabled));
 
-        _ = InitializeAsync(mainViewModel);
+        mainViewModel.InitializationTask = InitializeAsync(mainViewModel);
     }
 
     private static void TryStart(string name, Action start)
@@ -213,8 +213,8 @@ public class App : Application
     {
         await mainViewModel.WledSerial.Output.EnableAsync(mainViewModel.WledSerialEnabledSetting.IsEnabled, mainViewModel.WledSerial.Options);
         await mainViewModel.GlowWorm.Output.EnableAsync(mainViewModel.GlowWormEnabledSetting.IsEnabled, mainViewModel.GlowWorm.Options);
-        // Start listening to YARG first and don't wait for it: the receive loop only returns when UDP is switched off.
-        _ = StartUdpIntakeAsync(mainViewModel);
+        // Include listener startup in the lifetime tracked by shutdown.
+        await StartUdpIntakeAsync(mainViewModel);
 
         try
         {

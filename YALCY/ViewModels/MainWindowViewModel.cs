@@ -368,62 +368,67 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             OpenRgbTalker.ConnectToOpenRgbServerAsync(OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort));
     }
 
+    internal Task InitializationTask { get; set; } = Task.CompletedTask;
+    private Task? _shutdownTask;
+    public bool IsShutdownComplete => _shutdownTask?.IsCompleted == true;
+
     /// <summary>
     /// Shuts down all integrations and saves settings. Used by both GUI and CLI.
     /// </summary>
-    public async Task ShutdownAsync()
+    public Task ShutdownAsync() => _shutdownTask ??= ShutdownCoreAsync();
+
+    private async Task ShutdownCoreAsync()
     {
-        LightingEngine.Dispose();
+        // Finish pending connection attempts before disconnecting, so startup cannot reopen an output.
+        await StopSafelyAsync("Initialization", () => InitializationTask);
 
-        // Save the settings
-        SettingsManager.SaveSettings(this);
+        // Stop new input and blackout while all outputs are still connected.
+        await StopSafely("Blackout", () => SafetyController.SetManualBlackout(true));
+        await StopSafelyAsync("UDP", () => UdpIntake.EnableUdpIntake(false, this));
+        await StopSafely("Lighting", () => LightingEngine.Dispose());
+        await StopSafely("Settings", () => SettingsManager.SaveSettings(this));
+        await StopSafely("USB monitor", () => UsbDeviceMonitor.StopUsbDeviceMonitor());
 
-        // Turn off the OpenRGB talker
-        await OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort, this);
+        // A failed save or disconnected device must not prevent the remaining outputs from stopping.
+        await StopSafelyAsync("OpenRGB", () => OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort, this));
+        await StopSafely("RB3E", () => Rb3ETalker.EnableRb3eTalker(false, this));
+        await StopSafely("DMX", () => DmxTalker.EnableDmxTalker(false, this));
+        await StopSafely("Serial", () => SerialTalker.EnableSerialTalker(false, this));
+        await StopSafely("StageKit", () => StageKitTalker.EnableStageKitTalker(false));
+        await StopSafelyAsync("Hue", () => HueTalker.EnableHue(false, HueBridgeIp, this));
+        await StopSafelyAsync("LIFX", () => LifxTalker.EnableLifxLan(false, this));
+        await StopSafelyAsync("Home Assistant", () => HomeAssistantTalker.EnableHomeAssistant(false, this));
+        await StopSafelyAsync("WLED", () => WledTalker.EnableWled(false, this));
+        await StopSafelyAsync("WLED Serial", () => WledSerial.Output.EnableAsync(false, WledSerial.Options));
+        await StopSafelyAsync("Glow Worm", () => GlowWorm.Output.EnableAsync(false, GlowWorm.Options));
+    }
 
-        // Turn off the RB3E Talker
-        Rb3ETalker.EnableRb3eTalker(false, this);
+    private static Task StopSafely(string name, Action stop) => StopSafelyAsync(name, () =>
+    {
+        stop();
+        return Task.CompletedTask;
+    });
 
-        // Turn off the sACN/DMX talker
-        DmxTalker.EnableDmxTalker(false, this);
-
-        // Turn off the Serial Talker
-        SerialTalker.EnableSerialTalker(false, this);
-
-        // Turn off the StageKit
-        StageKitTalker.EnableStageKitTalker(false);
-
-        // Turn off the Hue Talker
-        await HueTalker.EnableHue(false, HueBridgeIp, this);
-
-        // Turn off the LIFX Talker
-        await LifxTalker.EnableLifxLan(false, this);
-
-        // Turn off the Home Assistant Talker
-        await HomeAssistantTalker.EnableHomeAssistant(false, this);
-
-        // Turn off the WLED Talker
-        await WledTalker.EnableWled(false, this);
-        await WledSerial.Output.EnableAsync(false, WledSerial.Options);
-        await GlowWorm.Output.EnableAsync(false, GlowWorm.Options);
-
-        // Turn off the USB device monitor
-        UsbDeviceMonitor.StopUsbDeviceMonitor();
-
-        // Turn off the UDP listener
-        await UdpIntake.EnableUdpIntake(false, this);
+    private static async Task StopSafelyAsync(string name, Func<Task> stop)
+    {
+        try { await stop(); }
+        catch (Exception ex)
+        {
+            AppLog.Write(LogLevel.Error, name, $"Shutdown failed: {ex.Message}");
+        }
     }
 
     private bool _isShuttingDown;
     private async void ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
+        if (IsShutdownComplete) return;
+        e.Cancel = true;
         if (_isShuttingDown) return;
         _isShuttingDown = true;
-
-        e.Cancel = true;
         await ShutdownAsync();
         _desktop?.Shutdown();
     }
+
 }
 
 public class EnableSetting : ReactiveObject

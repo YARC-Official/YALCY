@@ -18,6 +18,7 @@ internal interface ILightingSafetyActions
 
 internal sealed class LightingSafetyController
 {
+    // Serialize state, output actions, and notifications as one transition.
     private readonly object _stateLock = new();
     private readonly TimeProvider _timeProvider;
     private readonly ILightingSafetyActions _actions;
@@ -115,16 +116,16 @@ internal sealed class LightingSafetyController
             }
 
             stateChanged = SetStateLocked(state);
-        }
 
-        if (resumeOutput)
-        {
-            _actions.ExitSafeMode(replayState: true);
-        }
+            if (resumeOutput)
+            {
+                _actions.ExitSafeMode(replayState: true);
+            }
 
-        if (stateChanged)
-        {
-            RaiseStateChanged(state);
+            if (stateChanged)
+            {
+                RaiseStateChanged(state);
+            }
         }
     }
 
@@ -147,14 +148,14 @@ internal sealed class LightingSafetyController
                 ? LightingSafetyState.ManualBlackout
                 : LightingSafetyState.TimedOut;
             SetStateLocked(state.Value);
-        }
 
-        if (enterSafeMode)
-        {
-            _actions.EnterSafeMode();
-        }
+            if (enterSafeMode)
+            {
+                _actions.EnterSafeMode();
+            }
 
-        RaiseStateChanged(state.Value);
+            RaiseStateChanged(state.Value);
+        }
     }
 
     public void NotifyStreamStopped()
@@ -175,14 +176,14 @@ internal sealed class LightingSafetyController
                 ? LightingSafetyState.ManualBlackout
                 : LightingSafetyState.TimedOut;
             SetStateLocked(state.Value);
-        }
 
-        if (enterSafeMode)
-        {
-            _actions.EnterSafeMode();
-        }
+            if (enterSafeMode)
+            {
+                _actions.EnterSafeMode();
+            }
 
-        RaiseStateChanged(state.Value);
+            RaiseStateChanged(state.Value);
+        }
     }
 
     public void SetManualBlackout(bool enabled)
@@ -231,18 +232,18 @@ internal sealed class LightingSafetyController
             }
 
             SetStateLocked(state);
-        }
 
-        if (enterSafeMode)
-        {
-            _actions.EnterSafeMode();
-        }
-        else if (resumeOutput)
-        {
-            _actions.ExitSafeMode(replayState);
-        }
+            if (enterSafeMode)
+            {
+                _actions.EnterSafeMode();
+            }
+            else if (resumeOutput)
+            {
+                _actions.ExitSafeMode(replayState);
+            }
 
-        RaiseStateChanged(state);
+            RaiseStateChanged(state);
+        }
     }
 
     private bool SetStateLocked(LightingSafetyState state)

@@ -16,6 +16,8 @@ public interface IDmxChannelSetting
 {
     string Label { get; set; }
     int[]? Channel { get; set; }
+    int Minimum { get; }
+    int Maximum { get; }
 }
 
 public class DmxSingleSetting : ReactiveObject
@@ -59,6 +61,9 @@ public class SacnAdapterOption
 
 public class DmxChannelSetting : ReactiveObject, IDmxChannelSetting
 {
+    public int Minimum => 1;
+    public int Maximum => 512;
+
     private string _label;
     private int[]? _channel;
 
@@ -91,6 +96,9 @@ public class DmxChannelSetting : ReactiveObject, IDmxChannelSetting
 
 public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
 {
+    public int Minimum => 1;
+    public int Maximum => 512;
+
     private string _label;
     private int[]? _channel;
     private DmxTalker? _dmxTalker;
@@ -138,6 +146,9 @@ public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
 
 public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
 {
+    public int Minimum => 0;
+    public int Maximum => 255;
+
     private string _label;
     private int[]? _channel;
     private DmxTalker? _dmxTalker;
