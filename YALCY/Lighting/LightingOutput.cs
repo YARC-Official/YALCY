@@ -38,7 +38,8 @@ public static class LightingOutput
 
     public static void Preview(LightingCommand commandId, byte parameter)
     {
-        DispatchReport(commandId, parameter);
+        // Hardware previews must obey the same blackout gate as game cues.
+        Publish(commandId, parameter);
     }
 
     private static void DispatchReport(LightingCommand commandId, byte parameter)

@@ -16,6 +16,10 @@ namespace YALCY;
 
 public class SettingsContainer
 {
+    public bool ArtNetEnabled { get; set; }
+    public string ArtNetDestinationIp { get; set; } = "";
+    public int ArtNetUniverse { get; set; }
+    public string? ArtNetAdapterIp { get; set; }
     public Integrations.GlowWorm.GlowWormOptions GlowWormOptions { get; set; } = new();
     public Integrations.WledSerial.WledSerialOptions WledSerialOptions { get; set; } = new();
     public LifxOptions LifxOptions { get; set; } = new();
@@ -59,6 +63,10 @@ public sealed class LifxZoneAssignmentSetting
 
 internal static class SettingsManager
 {
+    public static bool ArtNetEnabled { get; set; }
+    public static string ArtNetDestinationIp { get; set; } = "";
+    public static int ArtNetUniverse { get; set; }
+    public static string? ArtNetAdapterIp { get; set; }
     public static bool GlowWormEnabled { get; set; }
     public static Integrations.GlowWorm.GlowWormOptions GlowWormOptions { get; private set; } = new();
     public static bool WledSerialEnabled { get; set; }
@@ -296,6 +304,10 @@ internal static class SettingsManager
         settings.OpenRgbServerIp = mainViewModel.OpenRgbServerIp;
         settings.OpenRgbServerPort = mainViewModel.OpenRgbServerPort;
         settings.SacnAdapterIp = mainViewModel.SelectedSacnAdapter?.IpAddress;
+        settings.ArtNetEnabled = mainViewModel.ArtNetEnabledSetting.IsEnabled;
+        settings.ArtNetDestinationIp = mainViewModel.ArtNetDestinationIp;
+        settings.ArtNetUniverse = mainViewModel.ArtNetUniverse;
+        settings.ArtNetAdapterIp = mainViewModel.SelectedArtNetAdapter?.IpAddress;
         settings.HomeAssistantUrl = mainViewModel.HomeAssistantUrl;
         settings.HomeAssistantAccessToken = mainViewModel.HomeAssistantAccessToken;
         settings.DmxStrobeMode = mainViewModel.DmxStrobeMode;
@@ -559,6 +571,10 @@ internal static class SettingsManager
             OpenRgbServerIp = container.OpenRgbServerIp;
             OpenRgbServerPort = container.OpenRgbServerPort;
             SacnAdapterIp = container.SacnAdapterIp;
+            ArtNetEnabled = container.ArtNetEnabled;
+            ArtNetDestinationIp = container.ArtNetDestinationIp ?? "";
+            ArtNetUniverse = Math.Clamp(container.ArtNetUniverse, 0, 32767);
+            ArtNetAdapterIp = container.ArtNetAdapterIp;
             HomeAssistantUrl = string.IsNullOrWhiteSpace(container.HomeAssistantUrl)
                 ? "http://homeassistant.local:8123"
                 : container.HomeAssistantUrl;
@@ -594,6 +610,10 @@ internal static class SettingsManager
 
             UdpEnableSettingIsEnabled = true;
             DmxEnabledSettingIsEnabled = true;
+            ArtNetEnabled = false;
+            ArtNetDestinationIp = "";
+            ArtNetUniverse = 0;
+            ArtNetAdapterIp = null;
             HueEnabledSettingIsEnabled = true;
             StageKitEnabledSettingIsEnabled = true;
             Rb3eEnabledSettingIsEnabled = true;

@@ -190,6 +190,7 @@ public class App : Application
         // the others - above all the UDP intake from YARG - must still come up.
         TryStart("USB monitor", () => mainViewModel.UsbDeviceMonitor.StartUsbDeviceMonitor(mainViewModel));
         TryStart("DMX", () => mainViewModel.DmxTalker.EnableDmxTalker(mainViewModel.DmxEnabledSetting.IsEnabled, mainViewModel));
+        TryStart("Art-Net", () => mainViewModel.ArtNetTalker.EnableDmxTalker(mainViewModel.ArtNetEnabledSetting.IsEnabled, mainViewModel));
         TryStart("Serial", () => mainViewModel.SerialTalker.EnableSerialTalker(mainViewModel.SerialEnabledSetting.IsEnabled, mainViewModel));
         TryStart("RB3E", () => mainViewModel.Rb3ETalker.EnableRb3eTalker(mainViewModel.Rb3eEnabledSetting.IsEnabled, mainViewModel));
         TryStart("StageKit", () => mainViewModel.StageKitTalker.EnableStageKitTalker(mainViewModel.StageKitEnabledSetting.IsEnabled));

@@ -128,7 +128,6 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         set
         {
             this.RaiseAndSetIfChanged(ref _isCompactMode, value);
-            this.RaisePropertyChanged(nameof(IsVisualizerCardVisible));
         }
     }
 
@@ -139,6 +138,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         set
         {
             this.RaiseAndSetIfChanged(ref _isNarrowMode, value);
+            this.RaisePropertyChanged(nameof(IsVisualizerCardVisible));
         }
     }
 
@@ -231,6 +231,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         // Other initialization code
         InitializeCommands();
         InitializeSacnAdapterOptions();
+        InitializeArtNetSettings();
 
         // Initialize collections
         InitializeUdpIntakeCollections();
@@ -244,8 +245,8 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         InitializeOpenRgbCollections();
 
         // Wire up DmxTalker to dimmer settings
-        MasterDimmerSettings.SetDmxTalker(DmxTalker);
-        MasterDimmerValues.SetDmxTalker(DmxTalker);
+        MasterDimmerSettings.SetDmxTalker(DmxTalker, ArtNetTalker);
+        MasterDimmerValues.SetDmxTalker(DmxTalker, ArtNetTalker);
 
         //Things actually start after this fully completes, called from App.axaml.cs
     }
@@ -273,7 +274,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
             SettingsManager.DmxEnabledSettingIsEnabled,
             "YALCY is talking sACN!",
             "YALCY is NOT talking sACN!",
-            async (isEnabled) => DmxTalker.EnableDmxTalker(isEnabled),
+            isEnabled => DmxTalker.EnableDmxTalkerAsync(isEnabled, this),
             "Enable or disable sACN udp output to the network"
         );
 
@@ -392,7 +393,8 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         // A failed save or disconnected device must not prevent the remaining outputs from stopping.
         await StopSafelyAsync("OpenRGB", () => OpenRgbTalker.EnableOpenRgbTalker(false, OpenRgbServerIp ?? "127.0.0.1", OpenRgbServerPort, this));
         await StopSafely("RB3E", () => Rb3ETalker.EnableRb3eTalker(false, this));
-        await StopSafely("DMX", () => DmxTalker.EnableDmxTalker(false, this));
+        await StopSafelyAsync("DMX", () => DmxTalker.EnableDmxTalkerAsync(false, this));
+        await StopSafelyAsync("Art-Net", () => ArtNetTalker.EnableDmxTalkerAsync(false, this));
         await StopSafely("Serial", () => SerialTalker.EnableSerialTalker(false, this));
         await StopSafely("StageKit", () => StageKitTalker.EnableStageKitTalker(false));
         await StopSafelyAsync("Hue", () => HueTalker.EnableHue(false, HueBridgeIp, this));
@@ -433,6 +435,7 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
 
 public class EnableSetting : ReactiveObject
 {
+    internal Task PendingChange { get; private set; } = Task.CompletedTask;
     private string _label;
     private bool _isEnabled;
     private readonly string _onString;
@@ -456,7 +459,7 @@ public class EnableSetting : ReactiveObject
             AppLog.Write(LogLevel.Information, "Settings", $"{Label}: {(value ? "enabled" : "disabled")}.");
             this.RaiseAndSetIfChanged(ref _isEnabled, value);
             this.RaisePropertyChanged(nameof(ToggleButtonContent));
-            _onSettingChanged?.Invoke(value);
+            PendingChange = _onSettingChanged?.Invoke(value) ?? Task.CompletedTask;
         }
     }
 

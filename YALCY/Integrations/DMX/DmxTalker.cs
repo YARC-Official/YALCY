@@ -28,6 +28,12 @@ public class DmxTalker
     private static readonly Guid AcnSourceId = new Guid("{4B454550-504C-4159-494E-475941524721}");
 
     private SACNClient? _sendClient;
+    private ArtNetSender? _artNetClient;
+    private readonly bool _useArtNet;
+    private bool _sendFailed;
+    private string StatusName => _useArtNet ? "Art-Net" : "DMX";
+
+    public DmxTalker(bool useArtNet = false) => _useArtNet = useArtNet;
 
     private readonly byte[] _currentDataPacket = new byte[UniverseSize];
     private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "DMX", $"DMX manual strobe error: {ex.Message}"));
@@ -78,7 +84,33 @@ public class DmxTalker
     private UdpIntake? _udpIntake;
     private MainWindowViewModel? _mainViewModel;
 
-    public bool IsEnabled => _sendClient != null;
+    public bool IsEnabled => _sendClient != null || _artNetClient != null;
+    public bool IsSending => IsEnabled && !_sendFailed;
+    private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
+    private int _pendingTransitions;
+    public bool IsTransitioning => Volatile.Read(ref _pendingTransitions) != 0;
+
+    public async Task EnableDmxTalkerAsync(bool isEnabled, MainWindowViewModel viewModel)
+    {
+        Interlocked.Increment(ref _pendingTransitions);
+        viewModel.RefreshDmxOutputStatus();
+        await _lifecycleGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await Task.Run(() => EnableDmxTalkerCore(isEnabled, viewModel, true)).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            StatusFooter.UpdateStatus(StatusName, IntegrationStatus.Error,
+                $"Could not change {StatusName} output: {ex.Message}");
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+            Interlocked.Decrement(ref _pendingTransitions);
+            viewModel.RefreshDmxOutputStatus();
+        }
+    }
 
     private readonly object _sendLock = new();
     private readonly object _stateLock = new();
@@ -99,11 +131,18 @@ public class DmxTalker
 
     public void EnableDmxTalker(bool isEnabled, MainWindowViewModel? viewModel = null, bool sendBlackoutOnDisable = true)
     {
+        _lifecycleGate.Wait();
+        try { EnableDmxTalkerCore(isEnabled, viewModel, sendBlackoutOnDisable); }
+        finally { _lifecycleGate.Release(); }
+    }
+
+    private void EnableDmxTalkerCore(bool isEnabled, MainWindowViewModel? viewModel, bool sendBlackoutOnDisable)
+    {
         if (isEnabled)
         {
             lock (_stateLock)
             {
-                if (_sendClient != null) return;
+                if (IsEnabled) return;
 
                 if (viewModel != null)
                 {
@@ -116,13 +155,33 @@ public class DmxTalker
                     return;
                 }
 
-                var bindAddress = ResolveBindAddress(_mainViewModel.SelectedSacnAdapter);
-
-                _sendClient = new SACNClient(
-                    senderId: AcnSourceId,
-                    senderName: AcnSourceName,
-                    localAddress: bindAddress
-                );
+                if (_useArtNet)
+                {
+                    try
+                    {
+                        var adapter = _mainViewModel.SelectedArtNetAdapter;
+                        var bindAddress = string.IsNullOrWhiteSpace(adapter?.IpAddress)
+                            ? System.Net.IPAddress.Any : System.Net.IPAddress.Parse(adapter.IpAddress);
+                        _artNetClient = new ArtNetSender(_mainViewModel.ArtNetDestinationIp,
+                            bindAddress, _mainViewModel.ArtNetUniverse);
+                        _sendFailed = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        StatusFooter.UpdateStatus(StatusName, IntegrationStatus.Error, ex.Message);
+                        _mainViewModel.ArtNetStatus = ex.Message;
+                        return;
+                    }
+                }
+                else
+                {
+                    var bindAddress = ResolveBindAddress(_mainViewModel.SelectedSacnAdapter);
+                    _sendClient = new SACNClient(
+                        senderId: AcnSourceId,
+                        senderName: AcnSourceName,
+                        localAddress: bindAddress
+                    );
+                }
 
                 //The three parts of the dmx output: stage kit channels, master dimmers, and the channels read from the udp packet
                 UpdateMasterDimmers();
@@ -130,7 +189,8 @@ public class DmxTalker
                 _packetProcessedHandler = packet => UpdateDataPacket(packet, _mainViewModel);
                 _udpIntake.PacketProcessed += _packetProcessedHandler;
                 LightingOutput.CommandReceived += OnStageKitEvent;
-                StatusFooter.UpdateStatus("DMX", IntegrationStatus.Connected);
+                StatusFooter.UpdateStatus(StatusName, IntegrationStatus.Connected);
+                if (_useArtNet) _mainViewModel.ArtNetStatus = "Sending Art-Net. Disable output before changing connection settings.";
 
                 _isStopping = false;
 
@@ -138,14 +198,24 @@ public class DmxTalker
                 _timer.AutoReset = true;
                 _timer.Elapsed += OnTimerElapsed;
                 _timer.Start();
+                _mainViewModel.RefreshDmxOutputStatus();
             }
         }
         else
         {
             SACNClient? clientToDispose;
+            ArtNetSender? artNetToDispose;
             lock (_stateLock)
             {
-                if (_sendClient == null) return;
+                if (!IsEnabled)
+                {
+                    if (_useArtNet && _mainViewModel != null)
+                    {
+                        StatusFooter.UpdateStatus(StatusName, IntegrationStatus.Off);
+                        _mainViewModel.ArtNetStatus = "Art-Net disabled.";
+                    }
+                    return;
+                }
 
                 _isStopping = true;
 
@@ -173,8 +243,6 @@ public class DmxTalker
                     _packetProcessedHandler = null;
                     _udpIntake = null;
 
-                    StatusFooter.UpdateStatus("DMX", IntegrationStatus.Off);
-
                     //if just changing adapter, don't blackout
                     if (sendBlackoutOnDisable && _mainViewModel != null)
                     {
@@ -182,16 +250,21 @@ public class DmxTalker
                         Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
 
                         // Force send a final packet.
-                        _sendClient?.SendDmxData(null, (ushort)_mainViewModel.BroadcastUniverseSetting.Value,
-                            _currentDataPacket);
+                        SendFrame();
                     }
 
                     clientToDispose = _sendClient;
                     _sendClient = null;
+                    artNetToDispose = _artNetClient;
+                    _artNetClient = null;
+                    StatusFooter.UpdateStatus(StatusName, IntegrationStatus.Off);
+                    if (_useArtNet && _mainViewModel != null) _mainViewModel.ArtNetStatus = "Art-Net disabled.";
+                    _mainViewModel?.RefreshDmxOutputStatus();
                 }
             }
             try
             {
+                artNetToDispose?.Dispose();
                 clientToDispose?.Dispose();
             }
             catch (System.Threading.Channels.ChannelClosedException)
@@ -358,7 +431,7 @@ public class DmxTalker
         lock (_sendLock)
         {
             if (_isStopping) return;
-            if (_sendClient == null) return;
+            if (!IsEnabled) return;
             if (_mainViewModel == null) return;
 
             if (LightingOutput.IsOutputSuppressed)
@@ -372,7 +445,35 @@ public class DmxTalker
             }
 
             // Sacn spec says multicast is the correct default way to go but singlecast can be used if needed.
-            _sendClient?.SendDmxData(null, (ushort)_mainViewModel.BroadcastUniverseSetting.Value, _currentDataPacket);
+            SendFrame();
+        }
+    }
+
+    private void SendFrame()
+    {
+        if (!_useArtNet)
+        {
+            _sendClient?.SendDmxData(null, (ushort)_mainViewModel!.BroadcastUniverseSetting.Value, _currentDataPacket);
+            return;
+        }
+
+        try
+        {
+            _artNetClient?.Send(_currentDataPacket);
+            var recovered = _sendFailed;
+            _sendFailed = false;
+            if (recovered && !_isStopping)
+            {
+                StatusFooter.UpdateStatus(StatusName, IntegrationStatus.Connected);
+                _mainViewModel!.ArtNetStatus = "Sending Art-Net.";
+            }
+        }
+        catch (System.Net.Sockets.SocketException ex)
+        {
+            if (!_sendFailed)
+                StatusFooter.UpdateStatus(StatusName, IntegrationStatus.Error, $"Art-Net send failed: {ex.Message}");
+            _sendFailed = true;
+            _mainViewModel!.ArtNetStatus = $"Art-Net send failed: {ex.Message}";
         }
     }
 
@@ -428,7 +529,7 @@ public class DmxTalker
 
     public void SetChannelToValue(int dmxChannel, byte value)
     {
-        _currentDataPacket[dmxChannel - 1] = value;
+        lock (_sendLock) SetChannelIfValid(dmxChannel, value);
     }
 
     private void UpdateStateChannels(MainWindowViewModel viewModel)

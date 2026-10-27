@@ -15,6 +15,7 @@ YALCY currently supports:
 | :--- | :--- | :--- |
 | **Stage Kit** (PDP, FatsCo) | USB HID | ![Working][working] |
 | **DMX512** | Ethernet (sACN / E1.31) | ![Working][working] |
+| **[Art-Net](docs/Art-Net.md)** | Ethernet (ArtDmx unicast) | ![In Testing][testing] |
 | **Philips Hue** | Entertainment API (UDP) | ![Working][working] |
 | **LIFX** | HTTP API | ![Working][working] |
 | **LIFX** | LAN Protocol | ![In Testing][testing] |

@@ -101,7 +101,7 @@ public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
 
     private string _label;
     private int[]? _channel;
-    private DmxTalker? _dmxTalker;
+    private DmxTalker[] _dmxTalkers = Array.Empty<DmxTalker>();
 
     [DataMember]
     public string Label
@@ -116,24 +116,25 @@ public class DmxDimmerChannelSetting : ReactiveObject, IDmxChannelSetting
         get => _channel;
         set
         {
+            var previousChannels = _channel;
             this.RaiseAndSetIfChanged(ref _channel, value);
             this.RaisePropertyChanged("Item");
             this.RaisePropertyChanged("Item[]");
             // Set previous channel value to 0 and update master dimmers
-            if (_dmxTalker != null && _channel != null)
+            foreach (var talker in _dmxTalkers)
             {
-                foreach (var t in _channel)
+                foreach (var t in previousChannels ?? Array.Empty<int>())
                 {
-                    _dmxTalker.SetChannelToValue(t, 0);
+                    talker.SetChannelToValue(t, 0);
                 }
-                _dmxTalker.UpdateMasterDimmers();
+                talker.UpdateMasterDimmers();
             }
         }
     }
 
-    public void SetDmxTalker(DmxTalker? talker)
+    public void SetDmxTalker(params DmxTalker[] talkers)
     {
-        _dmxTalker = talker;
+        _dmxTalkers = talkers;
     }
 
     public DmxDimmerChannelSetting(string label, params int[]? channels)
@@ -151,7 +152,7 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
 
     private string _label;
     private int[]? _channel;
-    private DmxTalker? _dmxTalker;
+    private DmxTalker[] _dmxTalkers = Array.Empty<DmxTalker>();
 
     [DataMember]
     public string Label
@@ -169,13 +170,13 @@ public class DmxDimmerValueSetting : ReactiveObject, IDmxChannelSetting
             this.RaiseAndSetIfChanged(ref _channel, value);
             this.RaisePropertyChanged("Item");
             this.RaisePropertyChanged("Item[]");
-            _dmxTalker?.UpdateMasterDimmers();
+            foreach (var talker in _dmxTalkers) talker.UpdateMasterDimmers();
         }
     }
 
-    public void SetDmxTalker(DmxTalker? talker)
+    public void SetDmxTalker(params DmxTalker[] talkers)
     {
-        _dmxTalker = talker;
+        _dmxTalkers = talkers;
     }
 
     public DmxDimmerValueSetting(string label, params int[]? channels)
@@ -253,7 +254,8 @@ public partial class MainWindowViewModel
                     await Task.Delay(200, token);
 
                     DmxTalker.EnableDmxTalker(false, sendBlackoutOnDisable: false);
-                    DmxTalker.EnableDmxTalker(true);
+                    if (!token.IsCancellationRequested && DmxEnabledSetting.IsEnabled)
+                        await DmxTalker.EnableDmxTalkerAsync(true, this);
                 }
                 catch (OperationCanceledException) { }
             }, token);

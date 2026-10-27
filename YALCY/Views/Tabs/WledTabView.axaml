@@ -73,6 +73,13 @@
         </Style>
     </UserControl.Styles>
 
+    <!-- Keep star-sized lists bounded, but allow the page to scroll in small windows. -->
+    <ScrollViewer x:Name="PageScroll"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+        <Grid Width="{Binding #PageScroll.Viewport.Width}"
+              Height="{Binding #PageScroll.Viewport.Height}"
+              MinWidth="700" MinHeight="640">
     <Grid Margin="20,16,20,20">
         <Grid.RowDefinitions>
             <!-- Row 0: Hero Header -->
@@ -1006,4 +1013,6 @@
             </Grid>
         </ScrollViewer>
     </Grid>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

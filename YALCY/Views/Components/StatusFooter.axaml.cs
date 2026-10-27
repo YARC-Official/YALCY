@@ -28,6 +28,7 @@ public partial class StatusFooter : UserControl
         { "UDP", "#808080" },
         { "StageKit", "#808080" },
         { "DMX", "#808080" },
+        { "Art-Net", "#808080" },
         { "RB3E", "#808080" },
         { "Serial", "#808080" },
         { "Hue", "#808080" },
@@ -41,6 +42,7 @@ public partial class StatusFooter : UserControl
     private Ellipse? _udpStatusEllipse;
     private Ellipse? _stageKitStatusEllipse;
     private Ellipse? _dmxStatusEllipse;
+    private Ellipse? _artNetStatusEllipse;
     private Ellipse? _rb3eStatusEllipse;
     private Ellipse? _serialStatusEllipse;
     private Ellipse? _hueStatusEllipse;
@@ -59,6 +61,7 @@ public partial class StatusFooter : UserControl
         _udpStatusEllipse = this.FindControl<Ellipse>("UdpStatusEllipse");
         _stageKitStatusEllipse = this.FindControl<Ellipse>("StageKitStatusEllipse");
         _dmxStatusEllipse = this.FindControl<Ellipse>("DmxStatusEllipse");
+        _artNetStatusEllipse = this.FindControl<Ellipse>("ArtNetStatusEllipse");
         _rb3eStatusEllipse = this.FindControl<Ellipse>("Rb3eStatusEllipse");
         _serialStatusEllipse = this.FindControl<Ellipse>("SerialStatusEllipse");
         _hueStatusEllipse = this.FindControl<Ellipse>("HueStatusEllipse");
@@ -113,6 +116,7 @@ public partial class StatusFooter : UserControl
             "UDP" => _udpStatusEllipse,
             "STAGEKIT" => _stageKitStatusEllipse,
             "DMX" => _dmxStatusEllipse,
+            "ART-NET" => _artNetStatusEllipse,
             "RB3E" => _rb3eStatusEllipse,
             "SERIAL" => _serialStatusEllipse,
             "HUE" => _hueStatusEllipse,

@@ -131,7 +131,7 @@
             </TabItem>
             <TabItem>
                 <TabItem.Header>
-                    <components:TabHeader Text="DMX/SACN" />
+                    <components:TabHeader Text="DMX / sACN / Art-Net" />
                 </TabItem.Header>
                 <tabs:DmxSacnTabView />
             </TabItem>

@@ -34,6 +34,11 @@ public class HeadlessHost : IDisposable
         AppLog.Write(LogLevel.Information, "Application", "  USB device monitor: Started");
 
         // Initialize DMX/sACN
+        if (ViewModel.ArtNetEnabledSetting.IsEnabled)
+        {
+            ViewModel.ArtNetTalker.EnableDmxTalker(true, ViewModel);
+        }
+
         if (ViewModel.DmxEnabledSetting.IsEnabled)
         {
             ViewModel.DmxTalker.EnableDmxTalker(true, ViewModel);
