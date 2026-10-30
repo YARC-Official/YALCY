@@ -15,15 +15,15 @@ YALCY currently supports:
 | :--- | :--- | :--- |
 | **Stage Kit** (PDP, FatsCo) | USB HID | ![Working][working] |
 | **DMX512** | Ethernet (sACN / E1.31) | ![Working][working] |
-| **[Art-Net](docs/Art-Net.md)** | Ethernet (ArtDmx unicast) | ![In Testing][testing] |
+| **Art-Net** | Ethernet (ArtDmx unicast) | ![In Testing][testing] |
 | **Philips Hue** | Entertainment API (UDP) | ![Working][working] |
 | **LIFX** | HTTP API | ![Working][working] |
-| **[LIFX](docs/LIFX.md)** | LAN Protocol | ![In Testing][testing] |
+| **LIFX** | LAN Protocol | ![In Testing][testing] |
 | **WLED** | DDP & Realtime UDP & Serial | ![In Testing][testing] |
-| **[Glow Worm Luciferin](docs/Glow-Worm.md)** | RGB UDP + HTTP Bias light control | ![In Testing][testing] |
-| **[Govee LAN](docs/LAN-Lights.md#govee-lan)** | Local UDP (whole-device RGB) | ![In Testing][testing] |
-| **[WiZ](docs/LAN-Lights.md#wiz)** | Local UDP (RGB bulbs) | ![In Testing][testing] |
-| **[Nanoleaf](docs/LAN-Lights.md#nanoleaf)** | Local Panels OpenAPI (whole-controller color) | ![In Testing][testing] |
+| **Glow Worm Luciferin** | RGB UDP + HTTP Bias light control | ![In Testing][testing] |
+| **Govee LAN** | Local UDP (whole-device RGB) | ![In Testing][testing] |
+| **WiZ** | Local UDP (RGB bulbs) | ![In Testing][testing] |
+| **Nanoleaf** | Local Panels OpenAPI (whole-controller color) | ![In Testing][testing] |
 | **OpenRGB** | Network Client (SDK) | ![Working][working] |
 | **RB3E** (Lighting DATA) | UDP Stream (Partial) | ![Working][working] |
 | **Serial** | USB-UART / COM | ![Working][working] |
