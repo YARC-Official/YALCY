@@ -32,20 +32,15 @@ YALCY currently supports:
 
 Download the release for your operating system.
 
-Run YALCY. On your first launch, the setup window explains each lighting output
-and lets you choose which ones to enable. All outputs start **off**; listening
-to YARG starts **on**. Click **Finish setup** to apply and save your choices,
-then use the protocol tabs for pairing, addresses, or channel mappings.
-**Not now** leaves your choices unapplied and offers setup again next launch.
-Existing installations keep their saved settings and skip the wizard.
+Run YALCY.
+
+Some protocols need some setup, see those tabs for more info.
 
 YALCY can be minimized after setup.
 
 Run YARG.
 
 Turn on UDP data stream in experimental settings.
-
-Some protocols need some setup, see those tabs for more info.
 
 Rock on!
 
