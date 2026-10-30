@@ -53,22 +53,3 @@ output retains its existing transport and strobe behavior.
 Discovery confirms a response at scan time. Gameplay UDP sends are not
 acknowledgements that a bulb applied a color. Status deliberately distinguishes
 output being enabled from devices having answered discovery.
-
-## Developer verification
-
-Run `dotnet run --project Tests/YALCY.LifxTests/YALCY.LifxTests.csproj`.
-The harness uses simulated bulbs bound only to local loopback; it does not
-broadcast to or control physical lights. `-- --unit-only` skips UDP tests.
-The Windows build/release workflows run the full harness before publishing.
-
-Coverage includes coalescing, independent rates, duplicate suppression,
-blackout priority, retry backoff, selection serialization, lost discovery
-replies, identification/restoration, gameplay exclusion, periodic state
-recovery, and worker shutdown.
-
-Physical verification is still required for each supported bulb/strip model:
-discovery on actual Wi-Fi, a complete song with multiple bulbs, fast strobes,
-power cycling during playback, DHCP/address changes, multi-zone restoration,
-and blackout during a test. Record the model, firmware, device count, chosen
-rate, observed latency, and recovery time. Emulator results are not hardware
-performance measurements.
