@@ -68,6 +68,18 @@
             <!-- Left side - Status indicators: WrapPanel allows fluid flow across screen widths without collision -->
             <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                 
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="GoveeStatusEllipse" />
+                    <TextBlock Text="Govee LAN" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="WizStatusEllipse" />
+                    <TextBlock Text="WiZ" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#808080" x:Name="NanoleafStatusEllipse" />
+                    <TextBlock Text="Nanoleaf" Foreground="{DynamicResource AppTextSecondary}" FontSize="11" VerticalAlignment="Center" />
+                </StackPanel>
                 <!-- YARG UDP -->
                 <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,14,3" VerticalAlignment="Center">
                     <Ellipse Width="9" Height="9" Fill="#808080" x:Name="UdpStatusEllipse" />

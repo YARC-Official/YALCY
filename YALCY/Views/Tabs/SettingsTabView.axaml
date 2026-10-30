@@ -28,7 +28,7 @@
                                           Height="12"
                                           Foreground="{DynamicResource AppAccentBadgeForeground}"
                                           VerticalAlignment="Center" />
-                                <TextBlock Text="System Options"
+                                <TextBlock Text="Color theme"
                                            FontSize="11"
                                            FontWeight="Bold"
                                            Foreground="{DynamicResource AppAccentBadgeForeground}"
@@ -63,6 +63,11 @@
                                        FontSize="11" 
                                        Foreground="{DynamicResource AppTextMuted}"/>
                         </StackPanel>
+
+                        <Button Content="Run setup wizard"
+                                HorizontalAlignment="Left"
+                                Click="OnRunSetupWizardClicked"
+                                ToolTip.Tip="Review protocol descriptions and change your current selections." />
 
                         <!-- Responsive Grid of Integration Cards -->
                         <UniformGrid x:Name="IntegrationsGrid" Columns="{Binding GridColumns3, FallbackValue=3}">
@@ -555,6 +560,153 @@
                                                   Margin="0"/>
                                 </Grid>
                             </Border>
+                            <!-- Govee LAN -->
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconWled}"
+                                                  Width="18"
+                                                  Height="18"
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="Govee LAN"
+                                                   FontSize="13"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Local UDP · In testing"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding GoveeEnabledSetting.ToggleButtonContent}"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2"
+                                                  ToolTip.Tip="{Binding GoveeEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding GoveeEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  IsEnabled="{Binding !Govee.IsBusy}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+                            <!-- WiZ -->
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconLifx}"
+                                                  Width="18"
+                                                  Height="18"
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="WiZ"
+                                                   FontSize="13"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Local UDP · In testing"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding WizEnabledSetting.ToggleButtonContent}"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2"
+                                                  ToolTip.Tip="{Binding WizEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding WizEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  IsEnabled="{Binding !Wiz.IsBusy}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
+                            <!-- Nanoleaf -->
+                            <Border Background="{DynamicResource AppCardBackground}"
+                                    BorderBrush="{DynamicResource AppBorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Margin="6"
+                                    Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            Width="38"
+                                            Height="38"
+                                            CornerRadius="9"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconHue}"
+                                                  Width="18"
+                                                  Height="18"
+                                                  Foreground="{DynamicResource SystemAccentContrastBrush}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="Nanoleaf"
+                                                   FontSize="13"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AppTextPrimary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Panels OpenAPI · In testing"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding NanoleafEnabledSetting.ToggleButtonContent}"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2"
+                                                  ToolTip.Tip="{Binding NanoleafEnabledSetting.ToolTip}"
+                                                  IsChecked="{Binding NanoleafEnabledSetting.IsEnabled, Mode=TwoWay}"
+                                                  IsEnabled="{Binding !Nanoleaf.IsBusy}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  Margin="0"/>
+                                </Grid>
+                            </Border>
                         </UniformGrid>
                     </StackPanel>
                 </Border>
@@ -738,7 +890,8 @@
                                   Height="14" 
                                   Foreground="{DynamicResource AppTextSecondary}" 
                                   VerticalAlignment="Center"/>
-                        <TextBlock Text="Settings are saved automatically when YALCY closes." 
+                        <TextBlock Text="Use Save settings or Ctrl+S to save now. Settings also save when you quit; hiding to the tray does not save."
+                                   TextWrapping="Wrap"
                                    FontSize="11" 
                                    Foreground="{DynamicResource AppTextSecondary}" 
                                    VerticalAlignment="Center"/>

@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using HueApi.Models.Clip;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using YALCY.Integrations.HomeAssistant;
 using YALCY.Integrations.Hue;
 using YALCY.Integrations.Lifx;
@@ -16,10 +15,14 @@ namespace YALCY;
 
 public class SettingsContainer
 {
+    public bool? SetupCompleted { get; set; }
     public bool ArtNetEnabled { get; set; }
     public string ArtNetDestinationIp { get; set; } = "";
     public int ArtNetUniverse { get; set; }
     public string? ArtNetAdapterIp { get; set; }
+    public Integrations.RoomLights.RoomLightOptions GoveeOptions { get; set; } = new();
+    public Integrations.RoomLights.RoomLightOptions WizOptions { get; set; } = new();
+    public Integrations.RoomLights.RoomLightOptions NanoleafOptions { get; set; } = new();
     public Integrations.GlowWorm.GlowWormOptions GlowWormOptions { get; set; } = new();
     public Integrations.WledSerial.WledSerialOptions WledSerialOptions { get; set; } = new();
     public LifxOptions LifxOptions { get; set; } = new();
@@ -63,10 +66,17 @@ public sealed class LifxZoneAssignmentSetting
 
 internal static class SettingsManager
 {
+    public static bool SetupCompleted { get; set; }
     public static bool ArtNetEnabled { get; set; }
     public static string ArtNetDestinationIp { get; set; } = "";
     public static int ArtNetUniverse { get; set; }
     public static string? ArtNetAdapterIp { get; set; }
+    public static bool GoveeEnabled { get; set; }
+    public static Integrations.RoomLights.RoomLightOptions GoveeOptions { get; private set; } = new();
+    public static bool WizEnabled { get; set; }
+    public static Integrations.RoomLights.RoomLightOptions WizOptions { get; private set; } = new();
+    public static bool NanoleafEnabled { get; set; }
+    public static Integrations.RoomLights.RoomLightOptions NanoleafOptions { get; private set; } = new();
     public static bool GlowWormEnabled { get; set; }
     public static Integrations.GlowWorm.GlowWormOptions GlowWormOptions { get; private set; } = new();
     public static bool WledSerialEnabled { get; set; }
@@ -83,41 +93,6 @@ internal static class SettingsManager
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YALCY", "Settings");
 
     private static readonly string SettingsFilePath = Path.Combine(SettingsDirectory, "Settings.json");
-
-    private static SettingsContainer settings = new()
-    {
-        CurrentEnableSettings = new List<EnableSetting>(),
-        CurrentChannelSettings = new List<DmxChannelSetting>(),
-        CurrentSingleSettings = new List<DmxSingleSetting>(),
-        LifxZoneAssignments = new List<LifxZoneAssignmentSetting>(),
-        HomeAssistantAssignments = new List<HomeAssistantAssignmentSetting>(),
-        CurrentMasterDimmerChannelSettings =
-            new DmxDimmerChannelSetting("Master Dimmer Channels", 1, 8, 15, 22, 29, 36, 43, 50, 57, 64, 71, 78, 85, 92, 99, 106),
-        CurrentMasterDimmerValueChannelSettings =
-            new DmxDimmerValueSetting("Master Dimmer Values", 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255),
-        HueAuthResult = new RegisterEntertainmentResult(),
-        HueBridgeIP = "",
-        UdpListenPort = 0,
-        FogDurationPercent = 100,
-        YargPacketTimeoutSeconds = DefaultYargPacketTimeoutSeconds,
-        OpenRgbServerPort = 0,
-        OpenRgbServerIp = "",
-        SacnAdapterIp = "",
-        HomeAssistantUrl = "http://homeassistant.local:8123",
-        HomeAssistantAccessToken = "",
-        DmxStrobeMode = StrobeOutputModes.StrobeCommand,
-        SerialStrobeMode = StrobeOutputModes.StrobeCommand,
-        Rb3eStrobeMode = StrobeOutputModes.StrobeCommand,
-        HueStrobeMode = StrobeOutputModes.StrobeCommand,
-        HueLampAssignments = new List<HueLampAssignmentSetting>(),
-        HueStrobeIdleColor = HueColorHelper.DefaultStrobeIdleColor,
-        HueStrobeIdleBrightness = HueColorHelper.DefaultStrobeIdleBrightness,
-        LifxStrobeMode = StrobeOutputModes.StrobeCommand,
-        OpenRgbStrobeMode = StrobeOutputModes.ManualFlash,
-        HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand,
-        CloseToTrayOnClose = false,
-        ThemeVariant = SystemThemeVariant,
-    };
 
     public static string ThemeVariant { get; set; } = SystemThemeVariant;
 
@@ -234,17 +209,13 @@ internal static class SettingsManager
         GreenChannelsChannel = new[] { 5, 12, 19, 26, 33, 40, 47, 54 };
     }
 
-    public static void SaveSettings(MainWindowViewModel mainViewModel)
+    internal static SettingsContainer CaptureSettings(MainWindowViewModel mainViewModel)
     {
-        if (!Directory.Exists(SettingsDirectory))
+        var settings = new SettingsContainer
         {
-            Directory.CreateDirectory(SettingsDirectory);
-        }
-
-        settings.CurrentEnableSettings.Clear();
-        settings.CurrentSingleSettings.Clear();
-        settings.CurrentChannelSettings.Clear();
-
+            SetupCompleted = SetupCompleted,
+            CurrentEnableSettings = new(), CurrentSingleSettings = new(), CurrentChannelSettings = new()
+        };
         settings.CurrentEnableSettings.Add(mainViewModel.UdpEnableSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.DmxEnabledSetting);
         settings.CurrentEnableSettings.Add(mainViewModel.HueEnabledSetting);
@@ -258,6 +229,12 @@ internal static class SettingsManager
         settings.CurrentEnableSettings.Add(mainViewModel.WledSerialEnabledSetting);
         settings.WledSerialOptions = mainViewModel.WledSerial.Options;
         settings.CurrentEnableSettings.Add(mainViewModel.GlowWormEnabledSetting);
+        settings.CurrentEnableSettings.Add(mainViewModel.GoveeEnabledSetting);
+        settings.GoveeOptions = mainViewModel.Govee.Options;
+        settings.CurrentEnableSettings.Add(mainViewModel.WizEnabledSetting);
+        settings.WizOptions = mainViewModel.Wiz.Options;
+        settings.CurrentEnableSettings.Add(mainViewModel.NanoleafEnabledSetting);
+        settings.NanoleafOptions = mainViewModel.Nanoleaf.Options;
         settings.GlowWormOptions = mainViewModel.GlowWorm.Options;
 
         settings.CurrentSingleSettings.Add(mainViewModel.BpmChannelSetting);
@@ -317,17 +294,22 @@ internal static class SettingsManager
         settings.HueLampAssignments = new List<HueLampAssignmentSetting>(mainViewModel.GetHueLampAssignments());
         settings.HueStrobeIdleColor = HueColorHelper.NormalizeHex(mainViewModel.HueStrobeIdleColor) ?? HueColorHelper.DefaultStrobeIdleColor;
         settings.HueStrobeIdleBrightness = (int)Math.Round(mainViewModel.HueStrobeIdleBrightness);
-        HueLampAssignments = settings.HueLampAssignments;
-        HueStrobeIdleColor = settings.HueStrobeIdleColor;
-        HueStrobeIdleBrightness = settings.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness;
         settings.LifxStrobeMode = mainViewModel.LifxStrobeMode;
         settings.LifxOptions = mainViewModel.LifxOptions;
         settings.OpenRgbStrobeMode = mainViewModel.OpenRgbStrobeMode;
         settings.HomeAssistantStrobeMode = mainViewModel.HomeAssistantStrobeMode;
-        WledSettingsManager.Save(mainViewModel);
         settings.CloseToTrayOnClose = mainViewModel.CloseToTrayOnClose;
         settings.ThemeVariant = NormalizeThemeVariant(ThemeVariant);
 
+        return settings;
+    }
+
+    public static void SaveSettings(MainWindowViewModel mainViewModel)
+    {
+        var settings = CaptureSettings(mainViewModel);
+        Directory.CreateDirectory(SettingsDirectory);
+        WledSettingsManager.Save(mainViewModel);
+        File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(settings, Formatting.Indented));
         LifxZoneAssignments = settings.LifxZoneAssignments
             .Select(assignment => new LifxZoneAssignmentSetting
             {
@@ -346,342 +328,361 @@ internal static class SettingsManager
             })
             .ToList();
 
-        File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(settings, Formatting.Indented));
+        HueLampAssignments = settings.HueLampAssignments ?? new();
+        HueStrobeIdleColor = settings.HueStrobeIdleColor ?? HueColorHelper.DefaultStrobeIdleColor;
+        HueStrobeIdleBrightness = settings.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness;
+        mainViewModel.MarkSettingsSaved();
     }
 
     public static void LoadSettings()
     {
-        AppLog.Write(LogLevel.Information, "Settings", $"Loading settings: {SettingsFilePath}");
-        if (!Directory.Exists(SettingsDirectory))
+        LoadSettingsFile(SettingsFilePath);
+        WledSettingsManager.Load();
+    }
+
+    // Kept separate from WLED's file so recovery can be tested without user settings.
+    internal static void LoadSettingsFile(string filePath)
+    {
+        LoadDefaults();
+        AppLog.Write(LogLevel.Information, "Settings", $"Loading settings: {filePath}");
+        try
         {
-            Directory.CreateDirectory(SettingsDirectory);
+            var container = JsonConvert.DeserializeObject<SettingsContainer>(File.ReadAllText(filePath));
+            if (container == null)
+                throw new JsonSerializationException("Settings must contain an object.");
+            ApplySettings(container);
         }
-
-        if (IsJsonFileValid(SettingsFilePath))
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
-            var container = JsonConvert.DeserializeObject<SettingsContainer>(File.ReadAllText(SettingsFilePath));
-
-            if (container == null) return;
-
-            foreach (var enable in container.CurrentEnableSettings)
-            {
-                switch (enable.Label)
-                {
-                    case "Glow Worm Enabled":
-                        GlowWormEnabled = enable.IsEnabled;
-                        break;
-                    case "WLED Serial Enabled":
-                        WledSerialEnabled = enable.IsEnabled;
-                        break;
-                    case "UDP Enabled":
-                        UdpEnableSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "DMX Enabled":
-                        DmxEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "Hue Enabled":
-                        HueEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "StageKit Enabled":
-                        StageKitEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "RB3E Enabled":
-                        Rb3eEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "Serial Enabled":
-                        SerialEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "OpenRGB Enabled":
-                        OpenRgbEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "LIFX Enabled":
-                        LifxEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "Home Assistant Enabled":
-                        HomeAssistantEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-
-                    case "WLED Enabled":
-                        WledEnabledSettingIsEnabled = enable.IsEnabled;
-                        break;
-                }
-            }
-
-            //These might need to be constructed like the above, but this seems to work for now.
-            foreach (var single in container.CurrentSingleSettings)
-            {
-                switch (single.Label)
-                {
-                    case "BPM Channel":
-                        BpmChannelSettingValue = single.Value;
-                        break;
-
-                    case "Cue Change Channel":
-                        CueChangeChannelSettingValue = single.Value;
-                        break;
-
-                    case "Post-Processing Channel":
-                        PostProcessingChannelSettingValue = single.Value;
-                        break;
-
-                    case "KeyFrame Channel":
-                        KeyFrameChannelSettingValue = single.Value;
-                        break;
-
-                    case "BeatLine Channel":
-                        BeatLineChannelSettingValue = single.Value;
-                        break;
-
-                    case "Bonus Effect Channel":
-                        BonusEffectChannelSettingValue = single.Value;
-                        break;
-
-                    case "Drum Note Channel":
-                        DrumNoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Guitar Note Channel":
-                        GuitarNoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Bass Note Channel":
-                        BassNoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Keys Note Channel":
-                        KeysNoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Vocals Note Channel":
-                        VocalsNoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Harmony 0 Note Channel":
-                        Harmony0NoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Harmony 1 Note Channel":
-                        Harmony1NoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Harmony 2 Note Channel":
-                        Harmony2NoteChannelSettingValue = single.Value;
-                        break;
-
-                    case "Current Scene":
-                        CurrentSceneSettingValue = single.Value;
-                        break;
-
-                    case "Venue Size":
-                        VenueSizeSettingValue = single.Value;
-                        break;
-
-                    case "Pause State":
-                        PauseStateSettingValue = single.Value;
-                        break;
-
-                    case "Song Section":
-                        SongSectionSettingValue = single.Value;
-                        break;
-
-                    case "Current Spotlight":
-                        CurrentSpotlightSettingValue = single.Value;
-                        break;
-
-                    case "Current Singalong":
-                        CurrentSingalongSettingValue = single.Value;
-                        break;
-
-                    case "Broadcast Universe":
-                        BroadcastUniverseSettingValue = single.Value;
-                        break;
-                }
-            }
-
-            foreach (var channel in container.CurrentChannelSettings)
-            {
-                switch (channel.Label)
-                {
-                    case "Fog Channels":
-                        FogChannelsChannel = channel.Channel;
-                        break;
-
-                    case "Strobe Channels":
-                        StrobeChannelsChannel = channel.Channel;
-                        break;
-
-                    case "Red Channels":
-                        RedChannelsChannel = channel.Channel;
-                        break;
-
-                    case "Blue Channels":
-                        BlueChannelsChannel = channel.Channel;
-                        break;
-
-                    case "Yellow Channels":
-                        YellowChannelsChannel = channel.Channel;
-                        break;
-
-                    case "Green Channels":
-                        GreenChannelsChannel = channel.Channel;
-                        break;
-                }
-            }
-
-            MasterDimmerValuesChannel = container.CurrentMasterDimmerValueChannelSettings.Channel;
-            MasterDimmerSettingsChannel = container.CurrentMasterDimmerChannelSettings.Channel;
-
-            HueAuthResultUsername = container.HueAuthResult.Username;
-            HueAuthResultStreamingClientKey = container.HueAuthResult.StreamingClientKey;
-            HueAuthResultIp = container.HueAuthResult.Ip;
-            HueBridgeIp = container.HueBridgeIP;
-
-            UdpListenPort = container.UdpListenPort;
-            FogDurationPercent = Math.Clamp(container.FogDurationPercent ?? 100, 0, 100);
-            YargPacketTimeoutSeconds = Math.Clamp(
-                container.YargPacketTimeoutSeconds ?? DefaultYargPacketTimeoutSeconds,
-                1,
-                30);
-            LifxZoneAssignments = (container.LifxZoneAssignments ?? new List<LifxZoneAssignmentSetting>())
-                .Where(assignment => !string.IsNullOrWhiteSpace(assignment.Serial) && assignment.ZoneIndex >= 0)
-                .Select(assignment => new LifxZoneAssignmentSetting
-                {
-                    Serial = assignment.Serial.Trim().ToLowerInvariant(),
-                    ZoneIndex = assignment.ZoneIndex,
-                    StageLight = LifxStageAssignments.Normalize(assignment.StageLight)
-                })
-                .ToList();
-            HomeAssistantAssignments = (container.HomeAssistantAssignments ?? new List<HomeAssistantAssignmentSetting>())
-                .Where(assignment => !string.IsNullOrWhiteSpace(assignment.EntityId))
-                .Select(assignment => new HomeAssistantAssignmentSetting
-                {
-                    EntityId = assignment.EntityId.Trim(),
-                    StageLight = HomeAssistantStageAssignments.Normalize(assignment.StageLight)
-                })
-                .ToList();
-
-            OpenRgbServerIp = container.OpenRgbServerIp;
-            OpenRgbServerPort = container.OpenRgbServerPort;
-            SacnAdapterIp = container.SacnAdapterIp;
-            ArtNetEnabled = container.ArtNetEnabled;
-            ArtNetDestinationIp = container.ArtNetDestinationIp ?? "";
-            ArtNetUniverse = Math.Clamp(container.ArtNetUniverse, 0, 32767);
-            ArtNetAdapterIp = container.ArtNetAdapterIp;
-            HomeAssistantUrl = string.IsNullOrWhiteSpace(container.HomeAssistantUrl)
-                ? "http://homeassistant.local:8123"
-                : container.HomeAssistantUrl;
-            HomeAssistantAccessToken = container.HomeAssistantAccessToken ?? "";
-            DmxStrobeMode = StrobeOutputModes.Normalize(container.DmxStrobeMode ?? StrobeOutputModes.StrobeCommand);
-            SerialStrobeMode = StrobeOutputModes.Normalize(container.SerialStrobeMode ?? StrobeOutputModes.StrobeCommand);
-            Rb3eStrobeMode = StrobeOutputModes.Normalize(container.Rb3eStrobeMode ?? StrobeOutputModes.StrobeCommand);
-            HueStrobeMode = StrobeOutputModes.Normalize(container.HueStrobeMode ?? StrobeOutputModes.StrobeCommand);
-            HueLampAssignments = (container.HueLampAssignments ?? new List<HueLampAssignmentSetting>())
-                .Select(assignment => new HueLampAssignmentSetting
-                {
-                    ChannelId = assignment.ChannelId,
-                    Name = assignment.Name ?? string.Empty,
-                    Role = HueLampRoles.Normalize(assignment.Role)
-                })
-                .ToList();
-            HueStrobeIdleColor = HueColorHelper.NormalizeHex(container.HueStrobeIdleColor) ?? HueColorHelper.DefaultStrobeIdleColor;
-            HueStrobeIdleBrightness = Math.Clamp(container.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness, 0, 100);
-            LifxStrobeMode = StrobeOutputModes.Normalize(container.LifxStrobeMode ?? StrobeOutputModes.StrobeCommand);
-            LifxOptions = container.LifxOptions ?? new();
-            OpenRgbStrobeMode = StrobeOutputModes.Normalize(container.OpenRgbStrobeMode ?? StrobeOutputModes.ManualFlash);
-            HomeAssistantStrobeMode =
-                StrobeOutputModes.Normalize(container.HomeAssistantStrobeMode ?? StrobeOutputModes.StrobeCommand);
-            WledSettingsManager.Load();
-            WledSerialOptions = container.WledSerialOptions ?? new();
-            GlowWormOptions = container.GlowWormOptions ?? new();
-            CloseToTrayOnClose = container.CloseToTrayOnClose;
-            ThemeVariant = NormalizeThemeVariant(container.ThemeVariant);
-        }
-        else // File is either garbage or doesn't exist. Load defaults.
-        {
-            AppLog.Write(LogLevel.Warning, "Settings", $"Settings file is missing or invalid: {SettingsFilePath}. Loading defaults for the current account.");
-
-            UdpEnableSettingIsEnabled = true;
-            DmxEnabledSettingIsEnabled = true;
-            ArtNetEnabled = false;
-            ArtNetDestinationIp = "";
-            ArtNetUniverse = 0;
-            ArtNetAdapterIp = null;
-            HueEnabledSettingIsEnabled = true;
-            StageKitEnabledSettingIsEnabled = true;
-            Rb3eEnabledSettingIsEnabled = true;
-            OpenRgbEnabledSettingIsEnabled = true;
-            SerialEnabledSettingIsEnabled = true;
-            LifxEnabledSettingIsEnabled = false;
-            HomeAssistantEnabledSettingIsEnabled = false;
-
-            ResetDmxChannelsToDefaults();
-
-            BroadcastUniverseSettingValue = 1;
-
-            MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
-
-            HueAuthResultUsername = "";
-            HueAuthResultStreamingClientKey = "";
-            HueAuthResultIp = "";
-            HueBridgeIp = "";
-
-            UdpListenPort = DefaultUdpListenPort;
-            FogDurationPercent = 100;
-            YargPacketTimeoutSeconds = DefaultYargPacketTimeoutSeconds;
-            LifxZoneAssignments = Array.Empty<LifxZoneAssignmentSetting>();
-            HomeAssistantAssignments = Array.Empty<HomeAssistantAssignmentSetting>();
-
-            OpenRgbServerIp = "127.0.0.1";
-            OpenRgbServerPort = 6742;
-            SacnAdapterIp = "";
-            HomeAssistantUrl = "http://homeassistant.local:8123";
-            HomeAssistantAccessToken = "";
-            DmxStrobeMode = StrobeOutputModes.StrobeCommand;
-            SerialStrobeMode = StrobeOutputModes.StrobeCommand;
-            Rb3eStrobeMode = StrobeOutputModes.StrobeCommand;
-            HueStrobeMode = StrobeOutputModes.StrobeCommand;
-            HueLampAssignments = Array.Empty<HueLampAssignmentSetting>();
-            HueStrobeIdleColor = HueColorHelper.DefaultStrobeIdleColor;
-            HueStrobeIdleBrightness = HueColorHelper.DefaultStrobeIdleBrightness;
-            LifxStrobeMode = StrobeOutputModes.StrobeCommand;
-            LifxOptions = new();
-            OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
-            HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
-            WledEnabledSettingIsEnabled = false;
-            GlowWormEnabled = false;
-            GlowWormOptions = new();
-            WledSerialEnabled = false;
-            WledSerialOptions = new();
-            WledSettingsManager.Load();
-            CloseToTrayOnClose = false;
-            ThemeVariant = SystemThemeVariant;
+            // Reset again in case applying settings had already begun.
+            LoadDefaults();
+            AppLog.Write(LogLevel.Warning, "Settings",
+                $"Could not load settings from {filePath} ({ex.GetType().Name}). Using defaults.");
         }
     }
 
-    private static bool IsJsonFileValid(string filePath)
+    private static void ApplySettings(SettingsContainer container)
     {
-        if (!File.Exists(filePath))
+        // Existing installations predate the wizard. Preserve their choices and
+        // avoid showing onboarding merely because the marker is absent.
+        SetupCompleted = container.SetupCompleted ?? container.CurrentEnableSettings?.Any(item => item != null) == true;
+        foreach (var enable in (container.CurrentEnableSettings ?? new List<EnableSetting>()).Where(item => item != null))
         {
-            return false;
+            switch (enable.Label)
+            {
+                case "Govee LAN Enabled":
+                    GoveeEnabled = enable.IsEnabled;
+                    break;
+                case "WiZ Enabled":
+                    WizEnabled = enable.IsEnabled;
+                    break;
+                case "Nanoleaf Enabled":
+                    NanoleafEnabled = enable.IsEnabled;
+                    break;
+                case "Glow Worm Enabled":
+                    GlowWormEnabled = enable.IsEnabled;
+                    break;
+                case "WLED Serial Enabled":
+                    WledSerialEnabled = enable.IsEnabled;
+                    break;
+                case "UDP Enabled":
+                    UdpEnableSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "DMX Enabled":
+                    DmxEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "Hue Enabled":
+                    HueEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "StageKit Enabled":
+                    StageKitEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "RB3E Enabled":
+                    Rb3eEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "Serial Enabled":
+                    SerialEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "OpenRGB Enabled":
+                    OpenRgbEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "LIFX Enabled":
+                    LifxEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "Home Assistant Enabled":
+                    HomeAssistantEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+
+                case "WLED Enabled":
+                    WledEnabledSettingIsEnabled = enable.IsEnabled;
+                    break;
+            }
         }
 
-        try
+        //These might need to be constructed like the above, but this seems to work for now.
+        foreach (var single in (container.CurrentSingleSettings ?? new List<DmxSingleSetting>()).Where(item => item != null))
         {
-            var jsonContent = File.ReadAllText(filePath);
-            JToken.Parse(jsonContent);
-            return true;
+            switch (single.Label)
+            {
+                case "BPM Channel":
+                    BpmChannelSettingValue = single.Value;
+                    break;
+
+                case "Cue Change Channel":
+                    CueChangeChannelSettingValue = single.Value;
+                    break;
+
+                case "Post-Processing Channel":
+                    PostProcessingChannelSettingValue = single.Value;
+                    break;
+
+                case "KeyFrame Channel":
+                    KeyFrameChannelSettingValue = single.Value;
+                    break;
+
+                case "BeatLine Channel":
+                    BeatLineChannelSettingValue = single.Value;
+                    break;
+
+                case "Bonus Effect Channel":
+                    BonusEffectChannelSettingValue = single.Value;
+                    break;
+
+                case "Drum Note Channel":
+                    DrumNoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Guitar Note Channel":
+                    GuitarNoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Bass Note Channel":
+                    BassNoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Keys Note Channel":
+                    KeysNoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Vocals Note Channel":
+                    VocalsNoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Harmony 0 Note Channel":
+                    Harmony0NoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Harmony 1 Note Channel":
+                    Harmony1NoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Harmony 2 Note Channel":
+                    Harmony2NoteChannelSettingValue = single.Value;
+                    break;
+
+                case "Current Scene":
+                    CurrentSceneSettingValue = single.Value;
+                    break;
+
+                case "Venue Size":
+                    VenueSizeSettingValue = single.Value;
+                    break;
+
+                case "Pause State":
+                    PauseStateSettingValue = single.Value;
+                    break;
+
+                case "Song Section":
+                    SongSectionSettingValue = single.Value;
+                    break;
+
+                case "Current Spotlight":
+                    CurrentSpotlightSettingValue = single.Value;
+                    break;
+
+                case "Current Singalong":
+                    CurrentSingalongSettingValue = single.Value;
+                    break;
+
+                case "Broadcast Universe":
+                    BroadcastUniverseSettingValue = single.Value;
+                    break;
+            }
         }
-        catch (JsonReaderException)
+
+        foreach (var channel in (container.CurrentChannelSettings ?? new List<DmxChannelSetting>()).Where(item => item != null))
         {
-            return false;
+            if (channel.Channel == null) continue;
+            switch (channel.Label)
+            {
+                case "Fog Channels":
+                    FogChannelsChannel = channel.Channel;
+                    break;
+
+                case "Strobe Channels":
+                    StrobeChannelsChannel = channel.Channel;
+                    break;
+
+                case "Red Channels":
+                    RedChannelsChannel = channel.Channel;
+                    break;
+
+                case "Blue Channels":
+                    BlueChannelsChannel = channel.Channel;
+                    break;
+
+                case "Yellow Channels":
+                    YellowChannelsChannel = channel.Channel;
+                    break;
+
+                case "Green Channels":
+                    GreenChannelsChannel = channel.Channel;
+                    break;
+            }
         }
+
+        MasterDimmerValuesChannel = container.CurrentMasterDimmerValueChannelSettings?.Channel ?? MasterDimmerValuesChannel;
+        MasterDimmerSettingsChannel = container.CurrentMasterDimmerChannelSettings?.Channel ?? MasterDimmerSettingsChannel;
+
+        HueAuthResultUsername = container.HueAuthResult?.Username ?? "";
+        HueAuthResultStreamingClientKey = container.HueAuthResult?.StreamingClientKey ?? "";
+        HueAuthResultIp = container.HueAuthResult?.Ip ?? "";
+        HueBridgeIp = container.HueBridgeIP;
+
+        UdpListenPort = container.UdpListenPort == 0 ? DefaultUdpListenPort : container.UdpListenPort;
+        FogDurationPercent = Math.Clamp(container.FogDurationPercent ?? 100, 0, 100);
+        YargPacketTimeoutSeconds = Math.Clamp(
+            container.YargPacketTimeoutSeconds ?? DefaultYargPacketTimeoutSeconds,
+            1,
+            30);
+        LifxZoneAssignments = (container.LifxZoneAssignments ?? new List<LifxZoneAssignmentSetting>())
+            .Where(assignment => assignment != null && !string.IsNullOrWhiteSpace(assignment.Serial) && assignment.ZoneIndex >= 0)
+            .Select(assignment => new LifxZoneAssignmentSetting
+            {
+                Serial = assignment.Serial.Trim().ToLowerInvariant(),
+                ZoneIndex = assignment.ZoneIndex,
+                StageLight = LifxStageAssignments.Normalize(assignment.StageLight)
+            })
+            .ToList();
+        HomeAssistantAssignments = (container.HomeAssistantAssignments ?? new List<HomeAssistantAssignmentSetting>())
+            .Where(assignment => assignment != null && !string.IsNullOrWhiteSpace(assignment.EntityId))
+            .Select(assignment => new HomeAssistantAssignmentSetting
+            {
+                EntityId = assignment.EntityId.Trim(),
+                StageLight = HomeAssistantStageAssignments.Normalize(assignment.StageLight)
+            })
+            .ToList();
+
+        OpenRgbServerIp = container.OpenRgbServerIp ?? "127.0.0.1";
+        OpenRgbServerPort = container.OpenRgbServerPort == 0 ? (ushort)6742 : container.OpenRgbServerPort;
+        SacnAdapterIp = container.SacnAdapterIp;
+        ArtNetEnabled = container.ArtNetEnabled;
+        ArtNetDestinationIp = container.ArtNetDestinationIp ?? "";
+        ArtNetUniverse = Math.Clamp(container.ArtNetUniverse, 0, 32767);
+        ArtNetAdapterIp = container.ArtNetAdapterIp;
+        HomeAssistantUrl = string.IsNullOrWhiteSpace(container.HomeAssistantUrl)
+            ? "http://homeassistant.local:8123"
+            : container.HomeAssistantUrl;
+        HomeAssistantAccessToken = container.HomeAssistantAccessToken ?? "";
+        DmxStrobeMode = StrobeOutputModes.Normalize(container.DmxStrobeMode ?? StrobeOutputModes.StrobeCommand);
+        SerialStrobeMode = StrobeOutputModes.Normalize(container.SerialStrobeMode ?? StrobeOutputModes.StrobeCommand);
+        Rb3eStrobeMode = StrobeOutputModes.Normalize(container.Rb3eStrobeMode ?? StrobeOutputModes.StrobeCommand);
+        HueStrobeMode = StrobeOutputModes.Normalize(container.HueStrobeMode ?? StrobeOutputModes.StrobeCommand);
+        HueLampAssignments = (container.HueLampAssignments ?? new List<HueLampAssignmentSetting>())
+            .Where(assignment => assignment != null)
+            .Select(assignment => new HueLampAssignmentSetting
+            {
+                ChannelId = assignment.ChannelId,
+                Name = assignment.Name ?? string.Empty,
+                Role = HueLampRoles.Normalize(assignment.Role)
+            })
+            .ToList();
+        HueStrobeIdleColor = HueColorHelper.NormalizeHex(container.HueStrobeIdleColor) ?? HueColorHelper.DefaultStrobeIdleColor;
+        HueStrobeIdleBrightness = Math.Clamp(container.HueStrobeIdleBrightness ?? HueColorHelper.DefaultStrobeIdleBrightness, 0, 100);
+        LifxStrobeMode = StrobeOutputModes.Normalize(container.LifxStrobeMode ?? StrobeOutputModes.StrobeCommand);
+        LifxOptions = container.LifxOptions ?? new();
+        OpenRgbStrobeMode = StrobeOutputModes.Normalize(container.OpenRgbStrobeMode ?? StrobeOutputModes.ManualFlash);
+        HomeAssistantStrobeMode =
+            StrobeOutputModes.Normalize(container.HomeAssistantStrobeMode ?? StrobeOutputModes.StrobeCommand);
+        WledSerialOptions = container.WledSerialOptions ?? new();
+        GoveeOptions = container.GoveeOptions ?? new();
+        WizOptions = container.WizOptions ?? new();
+        NanoleafOptions = container.NanoleafOptions ?? new();
+        GlowWormOptions = container.GlowWormOptions ?? new();
+        CloseToTrayOnClose = container.CloseToTrayOnClose;
+        ThemeVariant = NormalizeThemeVariant(container.ThemeVariant);
+    }
+
+    private static void LoadDefaults()
+    {
+        SetupCompleted = false;
+        UdpEnableSettingIsEnabled = true;
+        DmxEnabledSettingIsEnabled = false;
+        ArtNetEnabled = false;
+        ArtNetDestinationIp = "";
+        ArtNetUniverse = 0;
+        ArtNetAdapterIp = null;
+        HueEnabledSettingIsEnabled = false;
+        StageKitEnabledSettingIsEnabled = false;
+        Rb3eEnabledSettingIsEnabled = false;
+        OpenRgbEnabledSettingIsEnabled = false;
+        SerialEnabledSettingIsEnabled = false;
+        LifxEnabledSettingIsEnabled = false;
+        HomeAssistantEnabledSettingIsEnabled = false;
+
+        ResetDmxChannelsToDefaults();
+
+        BroadcastUniverseSettingValue = 1;
+
+        MasterDimmerValuesChannel = new[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
+
+        HueAuthResultUsername = "";
+        HueAuthResultStreamingClientKey = "";
+        HueAuthResultIp = "";
+        HueBridgeIp = "";
+
+        UdpListenPort = DefaultUdpListenPort;
+        FogDurationPercent = 100;
+        YargPacketTimeoutSeconds = DefaultYargPacketTimeoutSeconds;
+        LifxZoneAssignments = Array.Empty<LifxZoneAssignmentSetting>();
+        HomeAssistantAssignments = Array.Empty<HomeAssistantAssignmentSetting>();
+
+        OpenRgbServerIp = "127.0.0.1";
+        OpenRgbServerPort = 6742;
+        SacnAdapterIp = "";
+        HomeAssistantUrl = "http://homeassistant.local:8123";
+        HomeAssistantAccessToken = "";
+        DmxStrobeMode = StrobeOutputModes.StrobeCommand;
+        SerialStrobeMode = StrobeOutputModes.StrobeCommand;
+        Rb3eStrobeMode = StrobeOutputModes.StrobeCommand;
+        HueStrobeMode = StrobeOutputModes.StrobeCommand;
+        HueLampAssignments = Array.Empty<HueLampAssignmentSetting>();
+        HueStrobeIdleColor = HueColorHelper.DefaultStrobeIdleColor;
+        HueStrobeIdleBrightness = HueColorHelper.DefaultStrobeIdleBrightness;
+        LifxStrobeMode = StrobeOutputModes.StrobeCommand;
+        LifxOptions = new();
+        OpenRgbStrobeMode = StrobeOutputModes.ManualFlash;
+        HomeAssistantStrobeMode = StrobeOutputModes.StrobeCommand;
+        WledEnabledSettingIsEnabled = false;
+        GoveeEnabled = false;
+        GoveeOptions = new();
+        WizEnabled = false;
+        WizOptions = new();
+        NanoleafEnabled = false;
+        NanoleafOptions = new();
+        GlowWormEnabled = false;
+        GlowWormOptions = new();
+        WledSerialEnabled = false;
+        WledSerialOptions = new();
+        CloseToTrayOnClose = false;
+        ThemeVariant = SystemThemeVariant;
     }
 }

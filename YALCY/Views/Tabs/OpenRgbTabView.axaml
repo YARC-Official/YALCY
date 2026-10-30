@@ -233,7 +233,12 @@
                     </StackPanel>
                     
                     <!-- Devices List -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <components:EmptyState Grid.Row="1" IsVisible="{Binding !DevicesWithZones.Count}" VerticalAlignment="Top"
+                            Heading="No OpenRGB devices connected"
+                            Description="Open OpenRGB, make sure it detects your devices, and start its SDK server. Check the server address and port on this page, then connect to load devices and zones.">
+                            <components:EmptyState.Actions><WrapPanel><Button Content="Connect to OpenRGB" Command="{Binding ConnectToOpenRgbServerCommand}" Margin="0,0,8,6" /></WrapPanel></components:EmptyState.Actions>
+                        </components:EmptyState>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !!DevicesWithZones.Count}">
                         <ItemsControl ItemsSource="{Binding DevicesWithZones}" Margin="0,0,0,10">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

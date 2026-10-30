@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="YALCY.Views.Components.EmptyState" x:Name="Root" x:CompileBindings="False">
+    <Border Background="{DynamicResource AppInputBackground}" BorderBrush="{DynamicResource AppBorder}"
+            BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,8" VerticalAlignment="Top">
+        <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{StaticResource IconInfo}" Width="20" Height="20"
+                          Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Heading, ElementName=Root}" FontSize="15" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AppTextPrimary}" TextWrapping="Wrap" />
+            </StackPanel>
+            <TextBlock Text="{Binding Description, ElementName=Root}" TextWrapping="Wrap" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondary}" />
+            <ContentControl Content="{Binding Actions, ElementName=Root}" HorizontalContentAlignment="Stretch" />
+        </StackPanel>
+    </Border>
+</UserControl>

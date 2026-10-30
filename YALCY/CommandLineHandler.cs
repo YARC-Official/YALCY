@@ -74,7 +74,7 @@ public static class CommandLineHandler
     /// <summary>
     /// Executes the commands specified in the argument list on the Avalonia UI thread.
     /// </summary>
-    public static void ExecuteArguments(IEnumerable<string> rawArgs)
+    public static void ExecuteArguments(IEnumerable<string> rawArgs, bool allowHide = true)
     {
         Dispatcher.UIThread.Post(() =>
         {
@@ -127,7 +127,9 @@ public static class CommandLineHandler
 
                 if (isTray)
                 {
-                    App.HideMainWindowToTray();
+                    // On a first launch, keep onboarding visible even when a
+                    // shortcut normally starts the application in the tray.
+                    if (allowHide) App.HideMainWindowToTray();
                 }
                 else if (isShowMain)
                 {

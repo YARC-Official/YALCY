@@ -21,6 +21,10 @@ namespace YALCY.Integrations.Lifx;
 
 public sealed partial class LifxTalker : IDisposable
 {
+    private readonly Func<IEnumerable<IPEndPoint>> _discoveryEndpoints;
+    public LifxTalker() : this(GetBroadcastEndpoints) { }
+    internal LifxTalker(Func<IEnumerable<IPEndPoint>> discoveryEndpoints) => _discoveryEndpoints = discoveryEndpoints;
+
     private const int LifxLanPort = 56700;
     private const int HeaderSize = 36;
     private uint DefaultTransitionMs => (uint)Options.TransitionMs;
@@ -45,7 +49,7 @@ public sealed partial class LifxTalker : IDisposable
     private MainWindowViewModel? _mainViewModel;
     private UdpClient? _commandClient;
     private List<LifxLanDeviceModel> _devices = new();
-    private bool _isEnabled;
+    private volatile bool _isEnabled;
     private bool _isSubscribedToStageKit;
     private bool _discoveryCompleted;
     private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "LIFX", $"LIFX manual strobe error: {ex.Message}"));
@@ -54,8 +58,10 @@ public sealed partial class LifxTalker : IDisposable
     {
         if (!isEnabled) _discoveryCancellation?.Cancel();
         await _lifecycleGate.WaitAsync();
+        if (viewModel != null) _mainViewModel = viewModel;
+        SetBusy(true);
         try { await EnableLifxCoreAsync(isEnabled, viewModel); }
-        finally { _lifecycleGate.Release(); }
+        finally { SetBusy(false); _lifecycleGate.Release(); }
     }
 
     private async Task EnableLifxCoreAsync(bool isEnabled, MainWindowViewModel? viewModel)
@@ -78,6 +84,11 @@ public sealed partial class LifxTalker : IDisposable
             StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Connecting);
             await DiscoverDevicesAsync(_mainViewModel);
             if (!_isEnabled) return;
+            if (Options.WholeLightMode)
+                _wholeLightOutput = new LifxWholeLightOutput(SendWholeDevice,
+                    () => LightingOutput.IsOutputSuppressed,
+                    (device, ex) => UpdateViewModelStatus($"LIFX status: Could not send to {device.Label}.",
+                        $"{ex.Message} Retrying the latest state; other lights continue."));
             SubscribeToStageKit();
             if (_mainViewModel != null) _mainViewModel.UdpIntake.PacketProcessed += OnSongPacket;
             _rediscoveryCancellation = new CancellationTokenSource();
@@ -91,6 +102,8 @@ public sealed partial class LifxTalker : IDisposable
         if (_mainViewModel != null) _mainViewModel.UdpIntake.PacketProcessed -= OnSongPacket;
         _songFlasher.Stop();
         _lastSongState = null;
+        var output = Interlocked.Exchange(ref _wholeLightOutput, null);
+        if (output != null) await output.DisposeAsync();
         await _discoveryGate.WaitAsync();
         _discoveryGate.Release();
         _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
@@ -122,6 +135,7 @@ public sealed partial class LifxTalker : IDisposable
             _mainViewModel = viewModel;
         }
 
+        SetBusy(true);
         var shouldUpdateFooter = _isEnabled;
 
         if (shouldUpdateFooter)
@@ -154,13 +168,14 @@ public sealed partial class LifxTalker : IDisposable
                 _devices = devices;
             }
 
+            _wholeLightOutput?.RetainDevices(devices.Where(IsIncluded).Select(d => d.Serial));
             UpdateViewModelDevices(devices);
 
             if (devices.Count == 0)
             {
                 UpdateViewModelStatus(
                     "LIFX status: No LIFX devices discovered on the local network.",
-                    "Make sure your bulbs are powered on and reachable on the same LAN segment.");
+                    "Keep bulbs powered on and on the same non-guest Wi-Fi/LAN. Allow YALCY through the private-network firewall (UDP 56700), disable client isolation, and try a longer discovery window.");
 
                 if (shouldUpdateFooter)
                 {
@@ -175,13 +190,13 @@ public sealed partial class LifxTalker : IDisposable
             if (includedCount == 0)
             {
                 UpdateViewModelStatus("LIFX status: No included lights are ready for output.",
-                    "Check the included-lights filter and discovery warnings in the log. Devices must answer the color/power query before they can be controlled.");
+                    "Check the device checkboxes and discovery warnings. Lights must answer the color/power query; increase the discovery window and scan again if a light has no response.");
                 if (shouldUpdateFooter) StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Error);
                 return;
             }
             UpdateViewModelStatus(
                 $"LIFX status: Discovered {devices.Count} device(s), {zoneCount} zone(s); {includedCount} device(s) included and ready.",
-                Options.WholeLightMode ? "Included lights follow whole-light song colors." : "Each zone can be mapped to one Stage Kit light below.");
+                Options.WholeLightMode ? "Ready for whole-room song colors. UDP sends are not confirmation that a bulb applied the color." : "Map each zone to a Stage Kit light below. Unassigned zones are left unchanged.");
 
             if (shouldUpdateFooter)
             {
@@ -198,7 +213,7 @@ public sealed partial class LifxTalker : IDisposable
                 StatusFooter.UpdateStatus("LIFX", IntegrationStatus.Error);
             }
         }
-        finally { _discoveryCancellation = null; _discoveryGate.Release(); }
+        finally { _discoveryCancellation = null; SetBusy(false); _discoveryGate.Release(); }
     }
 
     private async Task<List<LifxLanDeviceModel>> DiscoverDevicesCoreAsync(CancellationToken cancellationToken)
@@ -206,88 +221,62 @@ public sealed partial class LifxTalker : IDisposable
         using var discoveryClient = CreateUdpClient();
         var discoveredDevices = new Dictionary<string, LifxLanDeviceModel>(StringComparer.OrdinalIgnoreCase);
 
-        var getServicePacket = BuildPacket(2, null, ReadOnlySpan<byte>.Empty, tagged: true, ackRequired: false, resRequired: false);
-        foreach (var endpoint in GetBroadcastEndpoints())
+        // Retry within the configured window. Losing a single broadcast or
+        // state response must not make an otherwise reachable bulb disappear.
+        async Task ProbeAsync(Func<Task> send, Action<UdpReceiveResult> receive)
         {
-            try { await discoveryClient.SendAsync(getServicePacket, getServicePacket.Length, endpoint); }
-            catch (SocketException ex)
+            for (var attempt = 0; attempt < 2; attempt++)
             {
-                AppLog.Write(LogLevel.Warning, "LIFX", $"Discovery broadcast to {endpoint} failed: {ex.Message}. Trying the remaining network interfaces.");
-            }
-        }
-
-        using (var discoveryTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-        {
-            discoveryTimeout.CancelAfter(Options.DiscoverySeconds * 1000);
-            while (true)
-            {
-                try
+                cancellationToken.ThrowIfCancellationRequested();
+                await send();
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeout.CancelAfter(Options.DiscoverySeconds * 500);
+                while (true)
                 {
-                    var result = await discoveryClient.ReceiveAsync(discoveryTimeout.Token);
-                    ParseDiscoveryPacket(result.Buffer, result.RemoteEndPoint, discoveredDevices);
-                }
-                catch (OperationCanceledException)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    break;
+                    try { receive(await discoveryClient.ReceiveAsync(timeout.Token)); }
+                    catch (OperationCanceledException)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        break;
+                    }
                 }
             }
         }
 
-        if (discoveredDevices.Count == 0)
+        await ProbeAsync(async () =>
         {
-            return new List<LifxLanDeviceModel>();
-        }
-
-        foreach (var device in discoveredDevices.Values)
-        {
-            var endpoint = new IPEndPoint(device.Address, device.Port);
-            var getColorPacket = BuildPacket(101, device.Target, ReadOnlySpan<byte>.Empty, tagged: false, ackRequired: false, resRequired: false);
-            await discoveryClient.SendAsync(getColorPacket, getColorPacket.Length, endpoint);
-        }
-
-        using (var detailsTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-        {
-            detailsTimeout.CancelAfter(Options.DiscoverySeconds * 1000);
-            while (true)
+            var packet = BuildPacket(2, null, ReadOnlySpan<byte>.Empty, tagged: true, ackRequired: false, resRequired: false);
+            foreach (var endpoint in _discoveryEndpoints())
             {
-                try
+                try { await discoveryClient.SendAsync(packet, packet.Length, endpoint); }
+                catch (SocketException ex)
                 {
-                    var result = await discoveryClient.ReceiveAsync(detailsTimeout.Token);
-                    ParseDetailsPacket(result.Buffer, discoveredDevices);
-                }
-                catch (OperationCanceledException)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    break;
+                    AppLog.Write(LogLevel.Warning, "LIFX", $"Discovery broadcast to {endpoint} failed: {ex.Message}. Trying remaining interfaces.");
                 }
             }
-        }
+        }, result => ParseDiscoveryPacket(result.Buffer, result.RemoteEndPoint, discoveredDevices));
 
-        foreach (var device in discoveredDevices.Values)
-        {
-            var endpoint = new IPEndPoint(device.Address, device.Port);
-            var getZonesPacket = BuildGetColorZonesPacket(device.Target);
-            await discoveryClient.SendAsync(getZonesPacket, getZonesPacket.Length, endpoint);
-        }
+        if (discoveredDevices.Count == 0) return new List<LifxLanDeviceModel>();
 
-        using (var zoneTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+        await ProbeAsync(async () =>
         {
-            zoneTimeout.CancelAfter(Options.DiscoverySeconds * 1000);
-            while (true)
+            foreach (var device in discoveredDevices.Values.Where(d => !d.HasState))
             {
-                try
-                {
-                    var result = await discoveryClient.ReceiveAsync(zoneTimeout.Token);
-                    ParseZonePacket(result.Buffer, discoveredDevices);
-                }
-                catch (OperationCanceledException)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    break;
-                }
+                var packet = BuildPacket(101, device.Target, ReadOnlySpan<byte>.Empty, tagged: false, ackRequired: false, resRequired: false);
+                try { await discoveryClient.SendAsync(packet, packet.Length, new IPEndPoint(device.Address, device.Port)); }
+                catch (SocketException ex) { AppLog.Write(LogLevel.Warning, "LIFX", $"Could not query {device.Serial}: {ex.Message}"); }
             }
-        }
+        }, result => ParseDetailsPacket(result.Buffer, discoveredDevices));
+
+        await ProbeAsync(async () =>
+        {
+            foreach (var device in discoveredDevices.Values.Where(d => d.HasState && d.Zones.Count == 0))
+            {
+                var packet = BuildGetColorZonesPacket(device.Target);
+                try { await discoveryClient.SendAsync(packet, packet.Length, new IPEndPoint(device.Address, device.Port)); }
+                catch (SocketException ex) { AppLog.Write(LogLevel.Warning, "LIFX", $"Could not query zones on {device.Serial}: {ex.Message}"); }
+            }
+        }, result => ParseZonePacket(result.Buffer, discoveredDevices));
 
         EnsureDeviceZones(discoveredDevices.Values);
         ApplyZoneAssignments(discoveredDevices.Values);
@@ -329,7 +318,7 @@ public sealed partial class LifxTalker : IDisposable
             {
                 _songFlasher.Stop();
                 _lastSongState = null;
-                SendWholeColor(LifxPalette.Color("White", 0), 0);
+                SendWholeColor(LifxPalette.Color("White", 0), 0, urgent: true);
             }
             return;
         }
@@ -801,7 +790,9 @@ public sealed partial class LifxTalker : IDisposable
             return;
         }
 
-        var port = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(buffer.AsSpan(37, 4)));
+        var advertisedPort = BinaryPrimitives.ReadUInt32LittleEndian(buffer.AsSpan(37, 4));
+        if (advertisedPort is 0 or > 65535) return;
+        var port = (int)advertisedPort;
         var target = buffer.AsSpan(8, 6).ToArray();
         var serial = Convert.ToHexString(target).ToLowerInvariant();
 
@@ -1005,7 +996,7 @@ public sealed partial class LifxTalker : IDisposable
         }
 
         var visualDevices = devices
-            .Select(device => new LifxDeviceViewModel(device))
+            .Select(device => new LifxDeviceViewModel(device, Options, this))
             .ToList();
 
         _mainViewModel.SetLifxDevices(visualDevices);
@@ -1159,6 +1150,8 @@ public sealed partial class LifxTalker : IDisposable
         if (_mainViewModel != null) _mainViewModel.UdpIntake.PacketProcessed -= OnSongPacket;
         UnsubscribeFromStageKit();
         _manualStrobeFlasher.Stop(SetManualStrobeStateAsync);
+        var output = Interlocked.Exchange(ref _wholeLightOutput, null);
+        if (output != null) output.DisposeAsync().AsTask().GetAwaiter().GetResult();
         RestoreColors(_devices);
 
         lock (_socketLock)

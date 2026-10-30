@@ -63,14 +63,9 @@ public static class WledSettingsManager
     public static readonly WledSetting Default = new();
     public static WledSetting Current { get; private set; } = new();
 
-    public static void Save(MainWindowViewModel mainViewModel)
+    internal static WledSetting Capture(MainWindowViewModel mainViewModel)
     {
-        if (!Directory.Exists(SettingsDirectory))
-        {
-            Directory.CreateDirectory(SettingsDirectory);
-        }
-
-        Current = new WledSetting
+        return new WledSetting
         {
             ServerIp = string.IsNullOrWhiteSpace(mainViewModel.WledServerIp) ? Default.ServerIp : mainViewModel.WledServerIp,
             ServerPort = mainViewModel.WledServerPort,
@@ -108,7 +103,14 @@ public static class WledSettingsManager
             AdditionalControllers = mainViewModel.GetAdditionalControllersSettings()
         };
 
-        File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(Current, Formatting.Indented));
+    }
+
+    public static void Save(MainWindowViewModel mainViewModel)
+    {
+        Directory.CreateDirectory(SettingsDirectory);
+        var current = Capture(mainViewModel);
+        File.WriteAllText(SettingsFilePath, JsonConvert.SerializeObject(current, Formatting.Indented));
+        Current = current;
     }
 
     public static void Load()

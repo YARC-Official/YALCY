@@ -138,6 +138,9 @@ public class HeadlessHost : IDisposable
         }
 
         await ViewModel.WledSerial.Output.EnableAsync(ViewModel.WledSerialEnabledSetting.IsEnabled, ViewModel.WledSerial.Options);
+        await ViewModel.Govee.StartAsync();
+        await ViewModel.Wiz.StartAsync();
+        await ViewModel.Nanoleaf.StartAsync();
         await ViewModel.GlowWorm.Output.EnableAsync(ViewModel.GlowWormEnabledSetting.IsEnabled, ViewModel.GlowWorm.Options);
         // Start input after outputs are ready so initial cues reach every enabled output.
         if (ViewModel.UdpEnableSetting.IsEnabled)

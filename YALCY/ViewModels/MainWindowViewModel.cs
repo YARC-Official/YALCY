@@ -249,10 +249,14 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         MasterDimmerValues.SetDmxTalker(DmxTalker, ArtNetTalker);
 
         //Things actually start after this fully completes, called from App.axaml.cs
+        InitializeSettingsSaveStatus();
     }
 
     private void InitializeEnableSettings()
     {
+        Govee.Initialize(SettingsManager.GoveeEnabled);
+        Wiz.Initialize(SettingsManager.WizEnabled);
+        Nanoleaf.Initialize(SettingsManager.NanoleafEnabled);
         GlowWormEnabledSetting = new EnableSetting("Glow Worm Enabled", SettingsManager.GlowWormEnabled,
             "Glow Worm enabled", "Glow Worm disabled", enabled => GlowWorm.Output.EnableAsync(enabled, GlowWorm.Options),
             "Send RGB frames to Glow Worm Luciferin over UDP");
@@ -317,9 +321,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         LifxEnabledSetting = new EnableSetting(
             "LIFX Enabled",
             SettingsManager.LifxEnabledSettingIsEnabled,
-            "YALCY is talking LIFX!",
-            "YALCY is NOT talking LIFX!",
-            async (isEnabled) => await LifxTalker.EnableLifxLan(isEnabled),
+            "LIFX output enabled",
+            "LIFX output disabled",
+            async (isEnabled) => await LifxTalker.EnableLifxLan(isEnabled, this),
             "Enable or disable output to LIFX LAN devices"
         );
 
@@ -402,6 +406,9 @@ public partial class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
         await StopSafelyAsync("Home Assistant", () => HomeAssistantTalker.EnableHomeAssistant(false, this));
         await StopSafelyAsync("WLED", () => WledTalker.EnableWled(false, this));
         await StopSafelyAsync("WLED Serial", () => WledSerial.Output.EnableAsync(false, WledSerial.Options));
+        await StopSafelyAsync("Govee", () => Govee.StopAsync());
+        await StopSafelyAsync("Wiz", () => Wiz.StopAsync());
+        await StopSafelyAsync("Nanoleaf", () => Nanoleaf.StopAsync());
         await StopSafelyAsync("Glow Worm", () => GlowWorm.Output.EnableAsync(false, GlowWorm.Options));
     }
 

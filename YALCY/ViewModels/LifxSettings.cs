@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
+using Avalonia;
 using Avalonia.Threading;
 using ReactiveUI;
 using YALCY.Integrations.Lifx;
@@ -16,7 +17,15 @@ public partial class MainWindowViewModel
     public IReadOnlyList<string> LifxTestColors => LifxPalette.Names;
     public string LifxTestColor { get; set; } = "Blue";
     private ICommand? _testLifxColorCommand;
-    public ICommand TestLifxColorCommand => _testLifxColorCommand ??= ReactiveCommand.CreateFromTask(() => LifxTalker.TestColorAsync(LifxTestColor));
+    public ICommand TestLifxColorCommand => _testLifxColorCommand ??= ReactiveCommand.CreateFromTask(() => LifxTalker.TestColorAsync(LifxTestColor, this));
+    private bool _lifxBusy;
+    public bool LifxBusy { get => _lifxBusy; private set { this.RaiseAndSetIfChanged(ref _lifxBusy, value); this.RaisePropertyChanged(nameof(CanConfigureLifx)); } }
+    public bool CanConfigureLifx => !LifxBusy && !LifxEnabledSetting.IsEnabled;
+    public void SetLifxBusy(bool busy)
+    {
+        if (Application.Current?.ApplicationLifetime == null || Dispatcher.UIThread.CheckAccess()) LifxBusy = busy;
+        else Dispatcher.UIThread.Post(() => LifxBusy = busy);
+    }
     private string _lifxStatus = string.Empty;
     private string _lifxMessage = string.Empty;
     private List<LifxZoneAssignmentSetting> _savedLifxZoneAssignments = new();
@@ -48,8 +57,12 @@ public partial class MainWindowViewModel
 
     private void FeedInLifxSettings()
     {
-        LifxStatus = "LIFX status: Currently doing nothing.";
-        LifxMessage = string.Empty;
+        LifxStatus = "LIFX status: Ready to set up.";
+        LifxMessage = "Choose whole-room colors or advanced zone mapping, discover your lights, select and test them, then enable LIFX output.";
+        LifxEnabledSetting.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(EnableSetting.IsEnabled)) this.RaisePropertyChanged(nameof(CanConfigureLifx));
+        };
         _savedLifxZoneAssignments = CloneAssignments(SettingsManager.LifxZoneAssignments);
     }
 
@@ -87,7 +100,7 @@ public partial class MainWindowViewModel
 
         try
         {
-            if (Dispatcher.UIThread.CheckAccess())
+            if (Application.Current?.ApplicationLifetime == null || Dispatcher.UIThread.CheckAccess())
             {
                 UpdateCollection();
             }
@@ -112,7 +125,7 @@ public partial class MainWindowViewModel
 
         try
         {
-            if (Dispatcher.UIThread.CheckAccess())
+            if (Application.Current?.ApplicationLifetime == null || Dispatcher.UIThread.CheckAccess())
             {
                 UpdateStatus();
             }
@@ -156,17 +169,48 @@ public partial class MainWindowViewModel
     }
 }
 
-public sealed class LifxDeviceViewModel
+public sealed class LifxDeviceViewModel : ReactiveObject
 {
-    internal LifxDeviceViewModel(LifxLanDeviceModel device)
+    private readonly LifxOptions _options;
+    private bool _isIncluded;
+    private int _updateRate;
+    public bool IsIncluded
     {
+        get => _isIncluded;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isIncluded, value);
+            (_options.DeviceEnabled ??= new())[Serial] = value;
+        }
+    }
+    public int UpdateRate
+    {
+        get => _updateRate;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _updateRate, Math.Clamp(value, 0, 60));
+            (_options.DeviceUpdateRates ??= new())[Serial] = _updateRate;
+        }
+    }
+    public bool IsReady { get; }
+    public ICommand IdentifyCommand { get; }
+
+    internal LifxDeviceViewModel(LifxLanDeviceModel device, LifxOptions options, LifxTalker talker)
+    {
+        _options = options;
+        _isIncluded = options.Includes(device.Serial, device.Label, device.Address.ToString());
+        _updateRate = Math.Clamp(options.DeviceUpdateRates?.GetValueOrDefault(device.Serial) ?? 0, 0, 60);
+        IsReady = device.HasState;
+        IdentifyCommand = ReactiveCommand.CreateFromTask(() => talker.IdentifyAsync(device.Serial));
         Label = device.Label;
         IpAddress = device.Address.ToString();
         Serial = device.Serial;
         Port = device.Port;
         PowerState = device.IsPowered ? "On" : "Off";
         ZoneCount = device.Zones.Count;
-        DeviceSummary = $"{PowerState} | {ZoneCount} zone(s) | {IpAddress}:{Port}";
+        DeviceSummary = device.HasState
+            ? $"Responded to discovery | Last reported power: {PowerState} | {ZoneCount} zone(s) | {IpAddress}:{Port}"
+            : $"No color/power response | {IpAddress}:{Port}  -  increase the discovery window and scan again.";
         Zones = new ObservableCollection<LifxZoneViewModel>(
             device.Zones
                 .OrderBy(zone => zone.ZoneIndex)

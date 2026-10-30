@@ -10,10 +10,20 @@ public partial class MainWindow : Window
     private bool _allowClose;
     private bool _shutdownPending;
     private bool _shutdownComplete;
+    private readonly Avalonia.Threading.DispatcherTimer _saveStatusTimer = new()
+    {
+        Interval = System.TimeSpan.FromMilliseconds(500)
+    };
 
     public MainWindow()
     {
         InitializeComponent();
+        _saveStatusTimer.Tick += (_, _) =>
+        {
+            if (IsVisible && DataContext is MainWindowViewModel model) model.RefreshSettingsSaveStatus();
+        };
+        Opened += (_, _) => _saveStatusTimer.Start();
+        Closed += (_, _) => _saveStatusTimer.Stop();
 
         // Close all detached windows when main window is closing
         this.Closing += OnMainWindowClosing;

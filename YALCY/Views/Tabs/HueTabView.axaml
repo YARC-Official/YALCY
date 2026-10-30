@@ -321,7 +321,12 @@
                         </Border>
 
                         <!-- Lamps List -->
-                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="520">
+                        <components:EmptyState Grid.Row="2" IsVisible="{Binding !HueLamps.Count}" VerticalAlignment="Top"
+                            Heading="No Hue lamps discovered yet"
+                            Description="Enter your bridge IP above, press the physical link button on the bridge, then pair it. Configure a YARG Entertainment area in the Hue app and discover its lamps.">
+                            <components:EmptyState.Actions><WrapPanel><Button Content="Pair bridge" Command="{Binding RegisterHueBridgeCommand}" Margin="0,0,8,6" /><Button Content="Discover lamps" Command="{Binding DiscoverHueLampsCommand}" Margin="0,0,8,6" /></WrapPanel></components:EmptyState.Actions>
+                        </components:EmptyState>
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !!HueLamps.Count}" MaxHeight="520">
                             <ItemsControl ItemsSource="{Binding HueLamps}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HueLampViewModel">

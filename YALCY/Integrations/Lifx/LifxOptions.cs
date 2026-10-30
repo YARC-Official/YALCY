@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using ReactiveUI;
 using Newtonsoft.Json;
 
@@ -11,6 +13,22 @@ public sealed class LifxOptions : ReactiveObject
     private int _brightness = 100, _transitionMs = 150, _discoverySeconds = 2, _rediscoverySeconds = 30;
     private bool _autoDiscover = true;
     private string _includeLights = "";
+    private int _updatesPerSecond = 20;
+    [JsonProperty] public int UpdatesPerSecond { get => _updatesPerSecond; set => this.RaiseAndSetIfChanged(ref _updatesPerSecond, Math.Clamp(value, 1, 60)); }
+    // Serial-based overrides survive renames, DHCP changes, and temporary absence.
+    [JsonProperty] public Dictionary<string, bool> DeviceEnabled { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    [JsonProperty] public Dictionary<string, int> DeviceUpdateRates { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    internal bool Includes(string serial, string label, string address)
+    {
+        if (DeviceEnabled != null && DeviceEnabled.TryGetValue(serial.ToLowerInvariant(), out var enabled)) return enabled;
+        var filters = IncludeLights.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return filters.Length == 0 || filters.Any(f => string.Equals(f, label, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(f, serial, StringComparison.OrdinalIgnoreCase) || f == address);
+    }
+
+    internal int UpdateRate(string serial) => DeviceUpdateRates != null && DeviceUpdateRates.TryGetValue(serial.ToLowerInvariant(), out var rate) && rate > 0
+        ? Math.Clamp(rate, 1, 60) : UpdatesPerSecond;
     [JsonProperty] public bool WholeLightMode { get => _wholeLightMode; set => this.RaiseAndSetIfChanged(ref _wholeLightMode, value); }
     [JsonProperty] public int Brightness { get => _brightness; set => this.RaiseAndSetIfChanged(ref _brightness, Math.Clamp(value, 0, 100)); }
     [JsonProperty] public int TransitionMs { get => _transitionMs; set => this.RaiseAndSetIfChanged(ref _transitionMs, Math.Clamp(value, 0, 5000)); }

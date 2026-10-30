@@ -17,6 +17,19 @@
         mc:Ignorable="d">
 
     <Window.Styles>
+        <Style Selector="Button.SaveSettings.unsaved">
+            <Setter Property="Background" Value="#0078D4" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#0078D4" />
+        </Style>
+        <Style Selector="Button.SaveSettings.unsaved:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#106EBE" />
+            <Setter Property="TextBlock.Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.SaveSettings.unsaved:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#005A9E" />
+            <Setter Property="TextBlock.Foreground" Value="White" />
+        </Style>
         <!-- TabControl Root Styling -->
         <Style Selector="TabControl">
             <Setter Property="Template">
@@ -114,9 +127,27 @@
         </Style>
     </Window.Styles>
     
-    <Grid RowDefinitions="*,Auto,Auto">
+    <Grid RowDefinitions="Auto,*,Auto,Auto,Auto">
+        <!-- Outside the tab content so blackout stays visible on every page. -->
+        <Border Grid.Row="0" IsVisible="{Binding IsBlackoutActive}"
+                Background="#8A0019" BorderBrush="#FF667D" BorderThickness="0,0,0,2"
+                Padding="20,16" AutomationProperties.Name="Blackout active">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <PathIcon Data="{StaticResource IconWarning}" Width="28" Height="28"
+                          Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center" Margin="0,0,20,0">
+                    <TextBlock Text="BLACKOUT ACTIVE" FontSize="20" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="{Binding BlackoutExplanation}" TextWrapping="Wrap" Foreground="White" FontSize="13" />
+                </StackPanel>
+                <Button Grid.Column="2" Content="Resume Output" Command="{Binding ResumeOutputCommand}"
+                        IsVisible="{Binding IsManualBlackout}" VerticalAlignment="Center"
+                        Background="White" Foreground="#8A0019" FontWeight="Bold" Padding="18,12"
+                        AutomationProperties.Name="Resume lighting output"
+                        ToolTip.Tip="Release manual blackout. If YARG has timed out, output remains suppressed until valid data returns." />
+            </Grid>
+        </Border>
         <!-- Main content area -->
-        <TabControl Grid.Row="0" Margin="0" TabStripPlacement="Top">
+        <TabControl Grid.Row="1" Margin="0" TabStripPlacement="Top">
             <TabItem>
                 <TabItem.Header>
                     <components:TabHeader Text="YARG" />
@@ -186,6 +217,18 @@
                 <tabs:GlowWormTabView />
             </TabItem>
             <TabItem>
+                <TabItem.Header><components:TabHeader Text="Govee LAN" /></TabItem.Header>
+                <tabs:RoomLightTabView DataContext="{Binding Govee}" />
+            </TabItem>
+            <TabItem>
+                <TabItem.Header><components:TabHeader Text="WiZ" /></TabItem.Header>
+                <tabs:RoomLightTabView DataContext="{Binding Wiz}" />
+            </TabItem>
+            <TabItem>
+                <TabItem.Header><components:TabHeader Text="Nanoleaf" /></TabItem.Header>
+                <tabs:RoomLightTabView DataContext="{Binding Nanoleaf}" />
+            </TabItem>
+            <TabItem>
                 <TabItem.Header>
                     <components:TabHeader Text="Settings" />
                 </TabItem.Header>
@@ -200,7 +243,27 @@
         </TabControl>
         
         <!-- Status Footer -->
-        <components:LogPanel Grid.Row="1" />
-        <components:StatusFooter Grid.Row="2" />
+        <components:LogPanel Grid.Row="2" />
+        <Border Grid.Row="3" Background="{DynamicResource AppPanelBackground}"
+                BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,1,0,0" Padding="16,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Background="#FFCC66" CornerRadius="4" Width="8" Height="8" Margin="0,0,10,0"
+                        IsVisible="{Binding HasUnsavedChanges}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,16,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SaveStatus}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppTextPrimary}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding SaveDetail}" FontSize="11"
+                               Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="2" Content="Save settings" Command="{Binding SaveSettingsCommand}"
+                        Classes="SaveSettings" Classes.unsaved="{Binding HasUnsavedChanges}"
+                        FontWeight="SemiBold" Padding="16,8" VerticalAlignment="Center"
+                        ToolTip.Tip="Save all settings now (Ctrl+S)" />
+            </Grid>
+        </Border>
+        <components:StatusFooter Grid.Row="4" />
     </Grid>
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveSettingsCommand}" />
+    </Window.KeyBindings>
 </Window>

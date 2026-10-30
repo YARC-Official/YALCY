@@ -9,6 +9,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using YALCY.ViewModels;
 using YALCY.Views;
+using YALCY.Views.Windows;
 
 namespace YALCY;
 
@@ -67,7 +68,7 @@ public class App : Application
                 DataContext = MainViewModel
             };
 
-            bool startHidden = CommandLineHandler.ShouldStartHidden(Program.StartupArgs);
+            bool startHidden = SettingsManager.SetupCompleted && CommandLineHandler.ShouldStartHidden(Program.StartupArgs);
             if (startHidden)
             {
                 desktop.MainWindow.WindowState = WindowState.Minimized;
@@ -80,9 +81,33 @@ public class App : Application
             //Don't move this. With how Avalonia works, this must be here or else there will be duplicate errors for things like the udp ports
             InitializeComponents();
 
+            if (!SettingsManager.SetupCompleted)
+            {
+                var setupShown = false;
+                desktop.MainWindow.Opened += async (_, _) =>
+                {
+                    if (setupShown) return;
+                    setupShown = true;
+                    try
+                    {
+                        await MainViewModel.InitializationTask;
+                        if (MainViewModel.IsShutdownComplete || !desktop.MainWindow.IsVisible) return;
+                        var setup = new FirstRunSetupWindow
+                        {
+                            DataContext = new FirstRunSetupViewModel(MainViewModel)
+                        };
+                        await setup.ShowDialog(desktop.MainWindow);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLog.Write(LogLevel.Error, "Application", $"Could not show first-run setup: {ex.Message}");
+                    }
+                };
+            }
+
             if (Program.StartupArgs != null && Program.StartupArgs.Length > 0)
             {
-                CommandLineHandler.ExecuteArguments(Program.StartupArgs);
+                CommandLineHandler.ExecuteArguments(Program.StartupArgs, allowHide: SettingsManager.SetupCompleted);
             }
         }
 
@@ -213,6 +238,9 @@ public class App : Application
     private static async Task InitializeAsync(MainWindowViewModel mainViewModel)
     {
         await mainViewModel.WledSerial.Output.EnableAsync(mainViewModel.WledSerialEnabledSetting.IsEnabled, mainViewModel.WledSerial.Options);
+        await mainViewModel.Govee.StartAsync();
+        await mainViewModel.Wiz.StartAsync();
+        await mainViewModel.Nanoleaf.StartAsync();
         await mainViewModel.GlowWorm.Output.EnableAsync(mainViewModel.GlowWormEnabledSetting.IsEnabled, mainViewModel.GlowWorm.Options);
         // Include listener startup in the lifetime tracked by shutdown.
         await StartUdpIntakeAsync(mainViewModel);

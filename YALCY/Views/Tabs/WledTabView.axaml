@@ -534,6 +534,12 @@
                                     <Button Grid.Column="1" Content="➕ Add Controller" Command="{Binding AddAdditionalControllerCommand}" Padding="8,4" FontSize="10" FontWeight="SemiBold" />
                                 </Grid>
 
+                                <components:EmptyState IsVisible="{Binding !WledAdditionalControllers.Count}" Heading="No additional controllers"
+                                    Description="This is optional: your primary controller is configured above. Add another controller only if you want the same lighting sent to more WLED devices.">
+                                    <components:EmptyState.Actions>
+                                        <Button Content="Add controller" Command="{Binding AddAdditionalControllerCommand}" HorizontalAlignment="Left" />
+                                    </components:EmptyState.Actions>
+                                </components:EmptyState>
                                 <ItemsControl ItemsSource="{Binding WledAdditionalControllers}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:WledControllerViewModel">

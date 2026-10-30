@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:YALCY.ViewModels" xmlns:lights="clr-namespace:YALCY.Integrations.RoomLights"
+             xmlns:components="clr-namespace:YALCY.Views.Components"
+             x:Class="YALCY.Views.Tabs.RoomLightTabView" x:DataType="vm:RoomLightPanelViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="{DynamicResource AppPanelBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+            <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="12" /><Setter Property="Padding" Value="16" />
+        </Style>
+        <Style Selector="TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource AppTextMuted}" /><Setter Property="TextWrapping" Value="Wrap" /></Style>
+    </UserControl.Styles>
+    <ScrollViewer>
+        <StackPanel Margin="20,16,20,20" Spacing="12">
+            <components:TabHeroHeader HeaderTitle="{Binding Name}" Subtitle="Local lighting · In testing" IconData="{StaticResource IconUdp}">
+                <components:TabHeroHeader.BadgeContent>
+                    <ToggleSwitch IsChecked="{Binding EnabledSetting.IsEnabled, Mode=TwoWay}" IsEnabled="{Binding !IsBusy}" OnContent="Enabled" OffContent="Disabled" />
+                </components:TabHeroHeader.BadgeContent>
+            </components:TabHeroHeader>
+            <Border Classes="panel">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Setup" FontWeight="Bold" FontSize="16" />
+                    <TextBlock Classes="hint" Text="{Binding SetupHint}" />
+                    <TextBlock Classes="hint" Text="Disable output before editing. New devices start unchecked. Select only lights you want YALCY to control. Save your settings after configuration." />
+                    <WrapPanel IsEnabled="{Binding CanConfigure}">
+                        <Button Content="Discover lights" Command="{Binding DiscoverCommand}" IsVisible="{Binding CanDiscover}" Margin="0,0,8,8" />
+                        <Button Content="Add IP address" Command="{Binding AddCommand}" Margin="0,0,8,8" />
+                        <Button Content="Remove selected" Command="{Binding RemoveCommand}" Margin="0,0,8,8" />
+                        <Button Content="Pair selected" Command="{Binding PairCommand}" IsVisible="{Binding IsNanoleaf}" Margin="0,0,8,8" />
+                    </WrapPanel>
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
+                    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Classes="panel">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Devices and cue assignments" FontWeight="Bold" FontSize="16" />
+                    <TextBlock Classes="hint" Text="All colors mixes the active cue banks. A color bank follows any active light in that bank; Light 1–8 mixes the colors at that position. These outputs do not generate rapid strobe flashes." />
+                    <components:EmptyState IsVisible="{Binding !Options.Devices.Count}" Heading="No lights added yet"
+                                           Description="{Binding EmptyStateDescription}">
+                        <components:EmptyState.Actions>
+                            <WrapPanel IsEnabled="{Binding CanConfigure}">
+                                <Button Content="Discover lights" Command="{Binding DiscoverCommand}" IsVisible="{Binding CanDiscover}" Margin="0,0,8,6" />
+                                <Button Content="Add IP address" Command="{Binding AddCommand}" Margin="0,0,8,6" />
+                            </WrapPanel>
+                        </components:EmptyState.Actions>
+                    </components:EmptyState>
+                    <ListBox IsVisible="{Binding !!Options.Devices.Count}" ItemsSource="{Binding Options.Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" MaxHeight="420">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="lights:RoomLightDevice">
+                                <StackPanel Spacing="6" Margin="4,6">
+                                    <WrapPanel IsEnabled="{Binding $parent[UserControl].((vm:RoomLightPanelViewModel)DataContext).CanConfigure}">
+                                        <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}" Content="Use" Margin="0,0,10,6" />
+                                        <TextBox Text="{Binding Name, Mode=TwoWay}" Watermark="Name" Width="170" Margin="0,0,8,6" />
+                                        <TextBox Text="{Binding Address, Mode=TwoWay}" Watermark="192.168.1.50" Width="170" Margin="0,0,8,6" />
+                                        <ComboBox ItemsSource="{Binding AvailableAssignments}" SelectedItem="{Binding Assignment, Mode=TwoWay}" Width="145" Margin="0,0,8,6" />
+                                    </WrapPanel>
+                                    <TextBox Text="{Binding Token, Mode=TwoWay}" PasswordChar="●" Watermark="Nanoleaf pairing token"
+                                             IsVisible="{Binding $parent[UserControl].((vm:RoomLightPanelViewModel)DataContext).IsNanoleaf}"
+                                             IsEnabled="{Binding $parent[UserControl].((vm:RoomLightPanelViewModel)DataContext).CanConfigure}" />
+                                    <TextBlock Text="{Binding Status}" Classes="hint" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <WrapPanel IsEnabled="{Binding CanConfigure}">
+                        <StackPanel Margin="0,0,16,8"><TextBlock Text="Brightness (%)" /><NumericUpDown Minimum="0" Maximum="100" Width="145" Value="{Binding Options.Brightness, Mode=TwoWay}" /></StackPanel>
+                        <StackPanel Margin="0,0,16,8"><TextBlock Text="Updates / second" /><NumericUpDown Minimum="1" Maximum="10" Width="145" Value="{Binding Options.UpdatesPerSecond, Mode=TwoWay}" /></StackPanel>
+                    </WrapPanel>
+                    <CheckBox Content="Restore previous light state when output stops" IsEnabled="{Binding CanConfigure}" IsChecked="{Binding Options.RestoreOnDisable, Mode=TwoWay}" />
+                    <TextBlock Classes="hint" Text="Restoration is best effort. Blackout overrides restoration; with restoration off, stopping output turns lights off. Network delays and device firmware limit responsiveness. A device must return its initial state before YALCY controls it." />
+                </StackPanel>
+            </Border>
+            <Border Classes="panel">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Test selected light" FontWeight="Bold" FontSize="16" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding EnabledSetting.IsEnabled}">
+                        <ComboBox ItemsSource="{Binding TestColors}" SelectedItem="{Binding TestColor, Mode=TwoWay}" MinWidth="130" />
+                        <Button Content="Test for 2 seconds" Command="{Binding TestCommand}" />
+                    </StackPanel>
+                    <TextBlock Classes="hint" Text="Select a checked device row to test. The test returns to cue output after two seconds and respects global blackout." />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

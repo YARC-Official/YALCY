@@ -13,6 +13,8 @@ public partial class MainWindowViewModel
 {
     private string _yargStreamStatus = "Waiting for YARG";
     private bool _isManualBlackout;
+    private bool _isBlackoutActive;
+    private string _blackoutExplanation = string.Empty;
     private string _blackoutButtonText = "BLACKOUT";
 
     internal LightingSafetyController SafetyController { get; private set; } = null!;
@@ -39,6 +41,17 @@ public partial class MainWindowViewModel
     public string BlackoutButtonForeground => IsManualBlackout ? "#000000" : "#FFFFFF";
 
     public ICommand ToggleBlackoutCommand { get; private set; } = null!;
+    public ICommand ResumeOutputCommand { get; private set; } = null!;
+    public bool IsBlackoutActive
+    {
+        get => _isBlackoutActive;
+        private set => this.RaiseAndSetIfChanged(ref _isBlackoutActive, value);
+    }
+    public string BlackoutExplanation
+    {
+        get => _blackoutExplanation;
+        private set => this.RaiseAndSetIfChanged(ref _blackoutExplanation, value);
+    }
 
     private void InitializeSafety()
     {
@@ -50,6 +63,7 @@ public partial class MainWindowViewModel
         UdpIntake.SetSafetyController(SafetyController);
         ToggleBlackoutCommand = ReactiveCommand.Create(() =>
             SafetyController.SetManualBlackout(!SafetyController.IsManualBlackout));
+        ResumeOutputCommand = ReactiveCommand.Create(() => SafetyController.SetManualBlackout(false));
         OnSafetyStateChanged(SafetyController.State);
     }
 
@@ -66,6 +80,10 @@ public partial class MainWindowViewModel
                 _ => "Waiting for YARG"
             };
             IsManualBlackout = state == LightingSafetyState.ManualBlackout;
+            IsBlackoutActive = state is LightingSafetyState.ManualBlackout or LightingSafetyState.TimedOut;
+            BlackoutExplanation = IsManualBlackout
+                ? "All lighting output and color tests are suppressed. Select Resume Output to release manual blackout."
+                : "The YARG stream stopped or timed out. All lighting output is suppressed and will resume automatically when valid YARG data returns.";
             BlackoutButtonText = IsManualBlackout ? "RESUME OUTPUT" : "BLACKOUT";
             this.RaisePropertyChanged(nameof(BlackoutButtonBackground));
             this.RaisePropertyChanged(nameof(BlackoutButtonForeground));

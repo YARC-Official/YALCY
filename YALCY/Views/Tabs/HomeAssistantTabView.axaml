@@ -240,7 +240,12 @@
                         </Border>
 
                         <!-- Lights List -->
-                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="520">
+                        <components:EmptyState Grid.Row="2" IsVisible="{Binding !HomeAssistantLights.Count}" VerticalAlignment="Top"
+                            Heading="No Home Assistant lights added yet"
+                            Description="Enter your Home Assistant URL and access token above, then discover light entities. You can also enter a light entity ID in the Add Entity field above. Assign the lights you want YALCY to control.">
+                            <components:EmptyState.Actions><WrapPanel><Button Content="Discover lights" Command="{Binding DiscoverHomeAssistantLightsCommand}" Margin="0,0,8,6" /></WrapPanel></components:EmptyState.Actions>
+                        </components:EmptyState>
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !!HomeAssistantLights.Count}" MaxHeight="520">
                             <ItemsControl ItemsSource="{Binding HomeAssistantLights}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HomeAssistantLightViewModel">

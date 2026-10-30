@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:YALCY.ViewModels"
+        x:Class="YALCY.Views.Windows.FirstRunSetupWindow"
+        x:DataType="vm:FirstRunSetupViewModel"
+        Title="Welcome to YALCY" Width="780" Height="740"
+        MinWidth="520" MinHeight="420" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppPanelBackground}">
+    <Window.Styles>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{DynamicResource AppCardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+    </Window.Styles>
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24">
+        <StackPanel Spacing="8" Margin="0,0,0,16">
+            <TextBlock Text="Welcome to YALCY" FontSize="28" FontWeight="Bold" />
+            <TextBlock Classes="hint" Text="{Binding Introduction}" />
+            <TextBlock Classes="hint" Text="Select only the hardware you use. Your choices take effect when you finish. You can change them later in each protocol's tab." />
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel IsEnabled="{Binding !IsBusy}" Margin="0,0,12,0" Spacing="6">
+                <Border Classes="card">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="6" Margin="0,0,16,0">
+                            <TextBlock Text="YARG game input" FontSize="17" FontWeight="Bold" />
+                            <TextBlock Classes="hint" Text="{Binding YargInput.Description}" />
+                            <TextBlock Classes="hint" Text="{Binding YargInput.SetupHint}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding YargInput.IsEnabled, Mode=TwoWay}" OnContent="On" OffContent="Off"
+                                      AutomationProperties.Name="Listen to YARG" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <TextBlock Text="Lighting outputs" FontSize="19" FontWeight="SemiBold" Margin="0,8,0,8" />
+                <ItemsControl ItemsSource="{Binding Outputs}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProtocolSetupOption">
+                            <Border Classes="card">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="6" Margin="0,0,16,0">
+                                        <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="Bold" />
+                                        <TextBlock Text="{Binding Connection}" Classes="hint" FontSize="12" />
+                                        <TextBlock Text="{Binding Description}" Classes="hint" />
+                                        <TextBlock Text="{Binding SetupHint}" Classes="hint" FontSize="12" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsEnabled, Mode=TwoWay}" OnContent="On" OffContent="Off"
+                                                  AutomationProperties.Name="{Binding Name}" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Spacing="10" Margin="0,16,0,0">
+            <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Classes="hint" Text="Some outputs need pairing or an address before lights will respond. Finish here, then open the selected protocol tabs to complete their setup." />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource AppTextPrimary}" TextWrapping="Wrap" />
+            <ProgressBar IsVisible="{Binding IsBusy}" IsIndeterminate="True" Height="4" />
+            <Grid ColumnDefinitions="*,Auto,Auto" IsEnabled="{Binding !IsBusy}">
+                <Button Grid.Column="1" Content="Not now" Click="OnSkip" Margin="0,0,12,0" />
+                <Button Grid.Column="2" Content="Finish setup" Click="OnFinish" Classes="accent" />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>

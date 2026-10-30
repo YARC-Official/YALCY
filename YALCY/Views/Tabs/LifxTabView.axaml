@@ -34,7 +34,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="20,16,20,20" Spacing="16">
             <components:TabHeroHeader HeaderTitle="LIFX Lighting"
-                                      Subtitle="Song colors and individually mapped zones over your local network"
+                                      Subtitle="Discover, select, identify, then enable. No cloud token required."
                                       IconData="{StaticResource IconLifx}">
                 <components:TabHeroHeader.BadgeContent>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
@@ -55,11 +55,11 @@
             </components:TabHeroHeader>
             <Border Classes="panel">
                 <StackPanel Spacing="10">
-                    <TextBlock Classes="heading" Text="Output &amp; feel" />
+                    <TextBlock Classes="heading" Text="1. Choose your lighting mode" />
                     <TextBlock Classes="hint" Text="Disable LIFX output to change configuration or test colors. Keep your lights powered on and on the same local network." />
-                    <StackPanel Spacing="10" IsEnabled="{Binding !LifxEnabledSetting.IsEnabled}">
-                        <ToggleSwitch Content="Whole-light song colors" IsChecked="{Binding LifxOptions.WholeLightMode, Mode=TwoWay}" />
-                        <TextBlock Classes="hint" Text="On: every included light changes color with the song, including orange, cyan, purple and white. Off: each zone follows its assigned Stage Kit LED. Existing mappings are retained." />
+                    <StackPanel Spacing="10" IsEnabled="{Binding CanConfigureLifx}">
+                        <ToggleSwitch Content="Whole-room song colors (recommended for smart bulbs)" IsChecked="{Binding LifxOptions.WholeLightMode, Mode=TwoWay}" />
+                        <TextBlock Classes="hint" Text="On: selected lights change color with the song; no zone assignments needed. Off: advanced Stage Kit zone mapping. Your existing mappings are retained." />
                         <UniformGrid Columns="{Binding GridColumns4, FallbackValue=4}">
                             <Border Classes="tile"><StackPanel Spacing="8"><TextBlock Text="Brightness (%)" /><NumericUpDown Minimum="0" Maximum="100" Value="{Binding LifxOptions.Brightness, Mode=TwoWay}" /></StackPanel></Border>
                             <Border Classes="tile"><StackPanel Spacing="8"><TextBlock Text="Color fade (ms)" /><NumericUpDown Minimum="0" Maximum="5000" Increment="25" Value="{Binding LifxOptions.TransitionMs, Mode=TwoWay}" /></StackPanel></Border>
@@ -67,9 +67,17 @@
                             <Border Classes="tile"><StackPanel Spacing="8"><TextBlock Text="Rediscover every (s)" /><NumericUpDown Minimum="10" Maximum="3600" Value="{Binding LifxOptions.RediscoverySeconds, Mode=TwoWay}" /></StackPanel></Border>
                         </UniformGrid>
                         <CheckBox Content="Automatically rediscover lights while enabled" IsChecked="{Binding LifxOptions.AutoDiscover, Mode=TwoWay}" />
-                        <TextBlock Text="Included lights" FontWeight="SemiBold" />
-                        <TextBox Watermark="All discovered lights, or comma-separated labels, IPs or serials" Text="{Binding LifxOptions.IncludeLights, Mode=TwoWay}" />
-                        <TextBlock Classes="hint" Text="The filter applies to both output modes and color tests. It selects discovered lights; it does not bypass discovery." />
+                        <StackPanel IsVisible="{Binding LifxOptions.WholeLightMode}" Spacing="6">
+                            <TextBlock Text="Default updates per second, per light" />
+                            <NumericUpDown Minimum="1" Maximum="60" Value="{Binding LifxOptions.UpdatesPerSecond, Mode=TwoWay}" />
+                            <TextBlock Classes="hint" Text="Lower this if bulbs struggle with rapid changes. New colors replace pending colors; blackouts bypass the limit. Periodic refreshes recover lost UDP updates." />
+                        </StackPanel>
+                        <Expander Header="Advanced: legacy discovery filter">
+                            <StackPanel Spacing="6">
+                                <TextBox Watermark="All lights, or comma-separated labels, IPs or serials" Text="{Binding LifxOptions.IncludeLights, Mode=TwoWay}" />
+                                <TextBlock Classes="hint" Text="Device checkboxes override this filter. Rediscover after changing it. Selections are saved by serial number, even if a light is renamed or its IP changes." />
+                            </StackPanel>
+                        </Expander>
                         <StackPanel IsVisible="{Binding !LifxOptions.WholeLightMode}" Spacing="6">
                             <TextBlock Text="Stage Kit strobe behavior" FontWeight="SemiBold" />
                             <WrapPanel>
@@ -83,14 +91,15 @@
             </Border>
             <Border Classes="panel">
                 <StackPanel Spacing="10">
-                    <TextBlock Classes="heading" Text="Discover &amp; test" />
+                    <TextBlock Classes="heading" Text="2. Discover &amp; test" />
                     <WrapPanel>
-                        <Button Content="Discover lights" Command="{Binding DiscoverLifxDevicesCommand}" Margin="0,0,12,6" />
-                        <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding !LifxEnabledSetting.IsEnabled}">
+                        <Button Content="Discover lights" IsEnabled="{Binding !LifxBusy}" Command="{Binding DiscoverLifxDevicesCommand}" Margin="0,0,12,6" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding CanConfigureLifx}">
                             <ComboBox ItemsSource="{Binding LifxTestColors}" SelectedItem="{Binding LifxTestColor, Mode=TwoWay}" MinWidth="110" />
                             <Button Content="Test for 2 seconds" Command="{Binding TestLifxColorCommand}" />
                         </StackPanel>
                     </WrapPanel>
+                    <ProgressBar IsVisible="{Binding LifxBusy}" IsIndeterminate="True" Height="4" />
                     <TextBlock Text="{Binding LifxStatus}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding LifxMessage}" Classes="hint" />
                     <TextBlock Classes="hint" Text="Tests use the brightness and fade settings, then restore original colors and power. See the Log panel for discovery and send details." />
@@ -98,17 +107,30 @@
             </Border>
             <Border Classes="panel">
                 <StackPanel Spacing="10">
-                    <TextBlock Classes="heading" Text="Devices &amp; zone assignments" />
-                    <TextBlock Classes="hint" Text="Discovery lists devices below. In Stage Kit mode, map zones to Blue, Green, Yellow, Red or Strobe. Unassigned zones are left alone. Whole-light mode uses the included-lights filter instead." />
-                    <ItemsControl ItemsSource="{Binding LifxDevices}">
+                    <TextBlock Classes="heading" Text="3. Select your lights, then enable LIFX above" />
+                    <TextBlock Classes="hint" Text="Check the lights YALCY should control. Identify briefly lights only that device, including an unchecked one, then restores it. Disable output before changing selections or testing." />
+                    <components:EmptyState IsVisible="{Binding !LifxDevices.Count}" Heading="No LIFX lights discovered yet"
+                                           Description="Turn on your lights and connect this computer to the same network, then discover them. If none appear, check the network adapter and discovery settings above. Select the lights you want before enabling output.">
+                        <components:EmptyState.Actions>
+                            <Button Content="Discover lights" Command="{Binding DiscoverLifxDevicesCommand}" IsEnabled="{Binding !LifxBusy}" HorizontalAlignment="Left" />
+                        </components:EmptyState.Actions>
+                    </components:EmptyState>
+                    <ItemsControl ItemsSource="{Binding LifxDevices}" IsEnabled="{Binding CanConfigureLifx}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:LifxDeviceViewModel">
                                 <Border Classes="tile">
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="{Binding Label}" FontWeight="Bold" FontSize="14" />
+                                        <WrapPanel>
+                                            <CheckBox Content="{Binding Label}" IsChecked="{Binding IsIncluded, Mode=TwoWay}" FontWeight="Bold" Margin="0,0,16,0" />
+                                            <Button Content="Identify" Command="{Binding IdentifyCommand}" IsEnabled="{Binding IsReady}" />
+                                        </WrapPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).LifxOptions.WholeLightMode}">
+                                            <TextBlock Text="Updates/sec (0 = default)" VerticalAlignment="Center" />
+                                            <NumericUpDown Minimum="0" Maximum="60" Width="100" Value="{Binding UpdateRate, Mode=TwoWay}" />
+                                        </StackPanel>
                                         <TextBlock Text="{Binding DeviceSummary}" Classes="hint" />
                                         <TextBlock Text="{Binding Serial}" Classes="hint" />
-                                        <ItemsControl ItemsSource="{Binding Zones}">
+                                        <ItemsControl ItemsSource="{Binding Zones}" IsVisible="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).LifxOptions.WholeLightMode}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:LifxZoneViewModel">
                                                     <Grid ColumnDefinitions="100,*" Margin="0,3">

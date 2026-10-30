@@ -25,6 +25,9 @@ public partial class StatusFooter : UserControl
     // Dictionary to store current status colors
     private static readonly Dictionary<string, string> _statusColors = new()
     {
+        { "Govee LAN", "#808080" },
+        { "WiZ", "#808080" },
+        { "Nanoleaf", "#808080" },
         { "UDP", "#808080" },
         { "StageKit", "#808080" },
         { "DMX", "#808080" },
@@ -39,6 +42,9 @@ public partial class StatusFooter : UserControl
     };
 
     // References to the status ellipses
+    private Ellipse? _goveeStatusEllipse;
+    private Ellipse? _wizStatusEllipse;
+    private Ellipse? _nanoleafStatusEllipse;
     private Ellipse? _udpStatusEllipse;
     private Ellipse? _stageKitStatusEllipse;
     private Ellipse? _dmxStatusEllipse;
@@ -58,6 +64,9 @@ public partial class StatusFooter : UserControl
         InitializeComponent();
         
         // Get references to the ellipses
+        _goveeStatusEllipse = this.FindControl<Ellipse>("GoveeStatusEllipse");
+        _wizStatusEllipse = this.FindControl<Ellipse>("WizStatusEllipse");
+        _nanoleafStatusEllipse = this.FindControl<Ellipse>("NanoleafStatusEllipse");
         _udpStatusEllipse = this.FindControl<Ellipse>("UdpStatusEllipse");
         _stageKitStatusEllipse = this.FindControl<Ellipse>("StageKitStatusEllipse");
         _dmxStatusEllipse = this.FindControl<Ellipse>("DmxStatusEllipse");
@@ -113,6 +122,9 @@ public partial class StatusFooter : UserControl
     {
         return integrationName.ToUpper() switch
         {
+            "GOVEE LAN" => _goveeStatusEllipse,
+            "WIZ" => _wizStatusEllipse,
+            "NANOLEAF" => _nanoleafStatusEllipse,
             "UDP" => _udpStatusEllipse,
             "STAGEKIT" => _stageKitStatusEllipse,
             "DMX" => _dmxStatusEllipse,

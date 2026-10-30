@@ -18,19 +18,31 @@ YALCY currently supports:
 | **[Art-Net](docs/Art-Net.md)** | Ethernet (ArtDmx unicast) | ![In Testing][testing] |
 | **Philips Hue** | Entertainment API (UDP) | ![Working][working] |
 | **LIFX** | HTTP API | ![Working][working] |
-| **LIFX** | LAN Protocol | ![In Testing][testing] |
+| **[LIFX](docs/LIFX.md)** | LAN Protocol | ![In Testing][testing] |
 | **WLED** | DDP & Realtime UDP & Serial | ![In Testing][testing] |
 | **[Glow Worm Luciferin](docs/Glow-Worm.md)** | RGB UDP + HTTP Bias light control | ![In Testing][testing] |
+| **[Govee LAN](docs/LAN-Lights.md#govee-lan)** | Local UDP (whole-device RGB) | ![In Testing][testing] |
+| **[WiZ](docs/LAN-Lights.md#wiz)** | Local UDP (RGB bulbs) | ![In Testing][testing] |
+| **[Nanoleaf](docs/LAN-Lights.md#nanoleaf)** | Local Panels OpenAPI (whole-controller color) | ![In Testing][testing] |
 | **OpenRGB** | Network Client (SDK) | ![Working][working] |
 | **RB3E** (Lighting DATA) | UDP Stream (Partial) | ![Working][working] |
 | **Serial** | USB-UART / COM | ![Working][working] |
 
 
+Govee LAN, WiZ, and Nanoleaf are **in testing**: automated protocol and loopback tests are included, but physical hardware has not been validated. See the [setup guide and limitations](docs/LAN-Lights.md).
+
 ## 📥 Downloading and Playing
 
 Download the release for your operating system.
 
-Run it, can be minimized.
+Run YALCY. On your first launch, the setup window explains each lighting output
+and lets you choose which ones to enable. All outputs start **off**; listening
+to YARG starts **on**. Click **Finish setup** to apply and save your choices,
+then use the protocol tabs for pairing, addresses, or channel mappings.
+**Not now** leaves your choices unapplied and offers setup again next launch.
+Existing installations keep their saved settings and skip the wizard.
+
+YALCY can be minimized after setup.
 
 Run YARG.
 
