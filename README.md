@@ -28,9 +28,6 @@ YALCY currently supports:
 | **RB3E** (Lighting DATA) | UDP Stream (Partial) | ![Working][working] |
 | **Serial** | USB-UART / COM | ![Working][working] |
 
-
-Govee LAN, WiZ, and Nanoleaf are **in testing**: automated protocol and loopback tests are included, but physical hardware has not been validated. See the [setup guide and limitations](docs/LAN-Lights.md).
-
 ## 📥 Downloading and Playing
 
 Download the release for your operating system.
