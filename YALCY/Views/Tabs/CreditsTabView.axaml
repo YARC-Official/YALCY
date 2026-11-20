@@ -47,7 +47,14 @@
                         <components:PersonCard  DisplayName="NevesPT" 
                                                 Role="Developer | Designer" 
                                                 GitHubUsername="nevespt"
-                                                Margin="0,0,7,0"/>
+                                                Margin="0,0,7,15"/>
+
+                        <!-- RPAL -->
+                        <components:PersonCard  DisplayName="RPAL"
+                                                Role="Developer"
+                                                GitHubUsername="0urPal"
+                                                Margin="7,0,0,0"/>
+
                      </UniformGrid>
                 </StackPanel>
             </Border>
@@ -69,32 +76,27 @@
                     </StackPanel>
                     
                     <UniformGrid Columns="2" Margin="10,0,0,0">
-                            <!-- RPAL -->
-                           <components:PersonCard DisplayName="RPAL" 
-                                                  Role="Community Member"
-                                                  Margin="0,0,7,15"/>
-                           
                            <!-- RazQ -->
                            <components:PersonCard DisplayName="RazQ" 
                                                   Role="Community Member"
-                                                  Margin="7,0,0,15"/>
+                                                  Margin="0,0,7,15"/>
                            
                            <!-- Alink2thepatrick -->
                            <components:PersonCard DisplayName="Alink2thepatrick" 
                                                   Role="Community Member"
-                                                  Margin="0,0,7,15"/>
+                                                  Margin="7,0,0,15"/>
                            
                            <!-- Kadu -->
                            <components:PersonCard DisplayName="Kadu"
                                                   Role="Designer"
                                                   GitHubUsername="kaduwaengertner"
-                                                  Margin="7,0,0,15"/>
+                                                  Margin="0,0,7,0"/>
 
                            <!-- YARG -->
                            <components:PersonCard DisplayName="YARG Team" 
                                                   Role="and, of course, everyone from the YARG mother-ship"
                                                   GitHubUsername="YARC-Official"
-                                                  Margin="0,0,7,0"/>
+                                                  Margin="7,0,0,0"/>
                            
                        </UniformGrid>
                 </StackPanel>

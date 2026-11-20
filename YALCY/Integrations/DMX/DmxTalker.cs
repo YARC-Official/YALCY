@@ -42,9 +42,7 @@ public class DmxTalker
 
     private volatile byte _latestBpm;
     private volatile byte _latestCueChange;
-    private volatile byte _latestBeatLine;
     private volatile byte _latestBonusEffect;
-    private volatile byte _latestKeyFrame;
     private volatile byte _latestDrumNote;
     private volatile byte _latestPostProcessing;
     private volatile byte _latestGuitarNote;
@@ -63,9 +61,7 @@ public class DmxTalker
 
     private float _bpmLastItemAdded = 0;
     private byte _cueChangeLastItemAdded = 0;
-    private byte _beatLineLastItemAdded = 0;
     private byte _bonusEffectLastItemAdded = 0;
-    private byte _keyFrameLastItemAdded = 0;
     private byte _postProcessingLastItemAdded = 0;
     private byte _currentSingalongLastItemAdded = 0;
     private byte _currentSpotlightLastItemAdded = 0;
@@ -126,6 +122,10 @@ public class DmxTalker
     private byte _lastDrumsRaw;
     private byte _lastKeysRaw;
 
+    // Beats and keyframes arrive as one-packet pulses; these hold each one for long enough to be sent.
+    // Beat: Measure 0, Strong 1, Weak 2, and 3 between beats. Keyframe: First 27, Next 28, Previous 29.
+    private readonly PulseHold _beatLine = new(value => value <= 2, maxPending: 1);
+    private readonly PulseHold _keyFrame = new(value => value != 0, maxPending: 4);
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e) => Sender();
 
@@ -437,6 +437,9 @@ public class DmxTalker
             if (LightingOutput.IsOutputSuppressed)
             {
                 Array.Clear(_currentDataPacket, 0, _currentDataPacket.Length);
+                // Don't let pulses from during the blackout fire once it ends
+                _beatLine.Clear();
+                _keyFrame.Clear();
             }
             else
             {
@@ -540,9 +543,9 @@ public class DmxTalker
         SetChannelIfValid(viewModel.Harmony1NoteChannelSetting.Value, _latestHarmony1Note);
         SetChannelIfValid(viewModel.Harmony2NoteChannelSetting.Value, _latestHarmony2Note);
         SetChannelIfValid(viewModel.CueChangeChannelSetting.Value, _latestCueChange);
-        SetChannelIfValid(viewModel.BeatLineChannelSetting.Value, _latestBeatLine);
+        SetChannelIfValid(viewModel.BeatLineChannelSetting.Value, _beatLine.NextFrame());
         SetChannelIfValid(viewModel.BonusEffectChannelSetting.Value, _latestBonusEffect);
-        SetChannelIfValid(viewModel.KeyFrameChannelSetting.Value, _latestKeyFrame);
+        SetChannelIfValid(viewModel.KeyFrameChannelSetting.Value, _keyFrame.NextFrame());
         SetChannelIfValid(viewModel.DrumNoteChannelSetting.Value, _latestDrumNote);
         SetChannelIfValid(viewModel.PostProcessingChannelSetting.Value, _latestPostProcessing);
         SetChannelIfValid(viewModel.GuitarNoteChannelSetting.Value, _latestGuitarNote);
@@ -615,17 +618,8 @@ public class DmxTalker
             _cueChangeLastItemAdded = _latestCueChange;
         }
 
-        if (viewModel.UdpIntake.Beat.Value != _beatLineLastItemAdded)
-        {
-            _latestBeatLine = viewModel.UdpIntake.Beat.Value;
-            _beatLineLastItemAdded = _latestBeatLine;
-        }
-
-        if (viewModel.UdpIntake.Keyframe.Value != _keyFrameLastItemAdded)
-        {
-            _latestKeyFrame = viewModel.UdpIntake.Keyframe.Value;
-            _keyFrameLastItemAdded = _latestKeyFrame;
-        }
+        _beatLine.Add(viewModel.UdpIntake.Beat.Value);
+        _keyFrame.Add(viewModel.UdpIntake.Keyframe.Value);
 
         if (!_bonusEffectLocked && (byte)(viewModel.UdpIntake.BonusEffect.Value ? 1 : 0) != _bonusEffectLastItemAdded)
         {

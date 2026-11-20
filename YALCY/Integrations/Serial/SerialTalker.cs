@@ -29,6 +29,13 @@ public class SerialTalker: IDisposable
     private static bool SerialEnabled = false;
     private readonly ManualStrobeFlasher _manualStrobeFlasher = new(ex => AppLog.Write(LogLevel.Error, "Serial", $"Serial manual strobe error: {ex.Message}"));
 
+    // Beats and keyframes arrive as one-packet pulses, often between frames; these hold each one for long
+    // enough to be sent. Fed on every packet, read once per frame.
+    private readonly PulseHold _beatLine = new(value => value <= 2, maxPending: 1);
+    private readonly PulseHold _keyFrame = new(value => value != 0, maxPending: 4);
+    private Action<byte[]>? _packetProcessedHandler;
+    private Udp.UdpIntake? _udpIntake;
+
     public void EnableSerialTalker(bool isEnabled, MainWindowViewModel? viewModel = null)
     {
         if (viewModel != null)
@@ -47,6 +54,17 @@ public class SerialTalker: IDisposable
         {
             LightingOutput.CommandReceived += OnStageKitEvent;
             StatusFooter.UpdateStatus("Serial", IntegrationStatus.Connected);
+
+            // This runs again when a serial device is added, so drop any earlier subscription first
+            UnsubscribePulses();
+            var udpIntake = _mainViewModel.UdpIntake;
+            _udpIntake = udpIntake;
+            _packetProcessedHandler = _ =>
+            {
+                _beatLine.Add(udpIntake.Beat.Value);
+                _keyFrame.Add(udpIntake.Keyframe.Value);
+            };
+            _udpIntake.PacketProcessed += _packetProcessedHandler;
 
             controller = new OpenDmxController();
 
@@ -258,6 +276,9 @@ public class SerialTalker: IDisposable
 
         if (LightingOutput.IsOutputSuppressed)
         {
+            // Don't let pulses from during the blackout fire once it ends
+            _beatLine.Clear();
+            _keyFrame.Clear();
             controller.WriteSafe();
             return;
         }
@@ -271,12 +292,12 @@ public class SerialTalker: IDisposable
         controller.SetChannel(_mainViewModel.Harmony2NoteChannelSetting.Value, (byte)udpIntake.CurrentHarmony2Note.Value);
 
         controller.SetChannel(_mainViewModel.BpmChannelSetting.Value, (byte)Udp.UdpIntake.BeatsPerMinute.Value);
-        controller.SetChannel(_mainViewModel.KeyFrameChannelSetting.Value, udpIntake.Keyframe.Value);
+        controller.SetChannel(_mainViewModel.KeyFrameChannelSetting.Value, _keyFrame.NextFrame());
         controller.SetChannel(_mainViewModel.VenueSizeSetting.Value, Udp.UdpIntake.Venue.Value);
         controller.SetChannel(_mainViewModel.CueChangeChannelSetting.Value, udpIntake.LightingCue.Value);
         controller.SetChannel(_mainViewModel.PostProcessingChannelSetting.Value, udpIntake.PostProcessing.Value);
         controller.SetChannel(_mainViewModel.PauseStateSetting.Value, udpIntake.Paused.Value);
-        controller.SetChannel(_mainViewModel.BeatLineChannelSetting.Value, udpIntake.Beat.Value);
+        controller.SetChannel(_mainViewModel.BeatLineChannelSetting.Value, _beatLine.NextFrame());
         controller.SetChannel(_mainViewModel.CurrentSingalongSetting.Value, udpIntake.Singalong.Value);
         controller.SetChannel(_mainViewModel.CurrentSpotlightSetting.Value, udpIntake.Spotlight.Value);
         controller.SetChannel(_mainViewModel.SongSectionSetting.Value, udpIntake.CurrentSongSection.Value);
@@ -297,9 +318,23 @@ public class SerialTalker: IDisposable
         controller.WriteSafe();
     }
 
+    private void UnsubscribePulses()
+    {
+        if (_udpIntake != null && _packetProcessedHandler != null)
+        {
+            _udpIntake.PacketProcessed -= _packetProcessedHandler;
+        }
+
+        _packetProcessedHandler = null;
+        _udpIntake = null;
+        _beatLine.Clear();
+        _keyFrame.Clear();
+    }
+
     public void Dispose()
     {
         LightingOutput.CommandReceived -= OnStageKitEvent;
+        UnsubscribePulses();
         _manualStrobeFlasher.Stop(SetStrobeChannelsForManualFlashAsync);
         StatusFooter.UpdateStatus("Serial", IntegrationStatus.Off);
         if (controller != null)
